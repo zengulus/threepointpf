@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CharacterInput, Contribution, Effect } from "@threepointpf/rules-schema";
+import type { AdvancementSlot, CharacterInput, Contribution, Effect } from "@threepointpf/rules-schema";
 import { RulesEngine, abilityModifier, evaluate, reduceContributions } from "./index.js";
 
 const fixture: CharacterInput = {
@@ -15,6 +15,29 @@ const fixture: CharacterInput = {
     { id: "power-attack", name: "Power Attack", enabled: true, effects: [{ kind: "modifier", target: "attack.melee", value: -2, bonusType: "untyped" }, { kind: "modifier", target: "damage.melee", value: 6, bonusType: "untyped" }] },
   ],
 };
+
+function advancementSlots(trackEntries: Record<string, string[]>): AdvancementSlot[] {
+  const slotCount = Math.max(...Object.values(trackEntries).map((entries) => entries.length));
+  return Array.from({ length: slotCount }, (_, slotIndex) => ({
+    id: `level-${slotIndex + 1}`,
+    tracks: Object.entries(trackEntries).map(([id, entries]) => ({ id, entry: { progressionId: entries[slotIndex] ?? entries[entries.length - 1]! } })),
+  }));
+}
+
+function advancementCharacter(trackEntries: Record<string, string[]>): CharacterInput {
+  return {
+    ...fixture,
+    baseBab: undefined,
+    baseSaves: undefined,
+    hitDiceCount: undefined,
+    baseHpBeforeConstitution: 30,
+    baseAbilities: { str: 10, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+    advancementSlots: advancementSlots(trackEntries),
+    features: [],
+    skillRanks: {},
+    skills: undefined,
+  };
+}
 
 describe("bonus reduction", () => {
   const c = (value: number, bonusType: Contribution["bonusType"]): Contribution => ({ target: "ac", value, bonusType, source: String(value), label: String(value) });
@@ -157,6 +180,67 @@ describe("character dependency graph", () => {
     expect(strength?.children?.[0]?.children?.some((item) => item.source === "base-ability")).toBe(true);
   });
   it("supports direct stable target evaluation", () => expect(evaluate("ability.str", fixture).value).toBe(18));
+});
+
+describe("declarative advancement", () => {
+  it("derives an ordinary Fighter track and exposes its baseline provenance", () => {
+    const derived = new RulesEngine(advancementCharacter({ martial: ["fighter", "fighter", "fighter"] })).derive();
+    expect(derived.advancement).toMatchObject({ slotCount: 3, trackIds: ["martial"], hitDiceCount: 3, hitDieSides: [10, 10, 10], skillPoints: 6 });
+    expect(derived.attacks[0]?.attack.value).toBe(3);
+    expect(derived.saves.fortitude.value).toBe(5); // good Fort +3, CON +2
+    expect(derived.saves.reflex.value).toBe(3); // poor Reflex +1, DEX +2
+    expect(derived.maxHp.value).toBe(36); // manual HP baseline 30 + CON +2 × 3 HD
+    const bab = derived.attacks[0]?.attack.contributions.find((item) => item.source === "advancement.track.martial.bab");
+    expect(bab?.value).toBe(3);
+    expect(bab?.note).toContain("complete advancement-track");
+  });
+
+  it("supports multiclass progression on one track", () => {
+    const derived = new RulesEngine(advancementCharacter({ main: ["fighter", "fighter", "rogue"] })).derive();
+    expect(derived.attacks[0]?.attack.value).toBe(2); // Fighter +2; Rogue level 1 adds 0 BAB.
+    expect(derived.saves.fortitude.value).toBe(5); // Fighter good Fort +3 plus CON +2.
+    expect(derived.saves.reflex.value).toBe(4); // Rogue level 1 good Reflex +2 plus DEX +2.
+    expect(derived.advancement?.hitDieSides).toEqual([10, 10, 8]);
+  });
+
+  it("uses explicit gestalt aggregation rules across two tracks", () => {
+    const derived = new RulesEngine(advancementCharacter({ martial: ["fighter", "fighter", "fighter"], arcane: ["wizard", "wizard", "wizard"] })).derive();
+    expect(derived.attacks[0]?.attack.value).toBe(3); // Best complete BAB track: Fighter 3, not a per-slot sum.
+    expect(derived.saves.fortitude.value).toBe(5); // Fighter good Fort +3 + CON 2.
+    expect(derived.saves.will.value).toBe(3); // Wizard good Will +3 + WIS 0.
+    expect(derived.advancement).toMatchObject({ slotCount: 3, trackIds: ["martial", "arcane"], hitDiceCount: 3, hitDieSides: [10, 10, 10] });
+    expect(derived.maxHp.value).toBe(36); // One best HD per slot, not six HD.
+  });
+
+  it("does not maximize BAB independently per slot", () => {
+    const staggeredGestaltFixture = advancementCharacter({ first: ["fighter", "wizard", "wizard", "wizard"], second: ["wizard", "fighter", "fighter", "fighter"] });
+    const derived = new RulesEngine(staggeredGestaltFixture).derive();
+    expect(derived.attacks[0]?.attack.value).toBe(3); // Track totals are 2 and 3; per-slot maximization would incorrectly produce 4.
+    const bab = derived.attacks[0]?.attack.contributions.find((item) => item.source.includes(".bab"));
+    expect(bab?.source).toBe("advancement.track.second.bab");
+    expect(bab?.children?.map((item) => item.value)).toEqual([2, 3]);
+  });
+
+  it("supports an arbitrary three-track representation without a gestalt special case", () => {
+    const derived = new RulesEngine(advancementCharacter({ martial: ["fighter", "fighter"], arcane: ["wizard", "wizard"], scout: ["rogue", "rogue"] })).derive();
+    expect(derived.advancement?.trackIds).toEqual(["martial", "arcane", "scout"]);
+    expect(derived.attacks[0]?.attack.value).toBe(2);
+    expect(derived.advancement?.hitDieSides).toEqual([10, 10]);
+  });
+
+  it("keeps feature effects and roll plans on the same advancement-derived baseline", () => {
+    const character = advancementCharacter({ martial: ["fighter", "fighter"] });
+    character.features = [{ id: "focus", name: "Focus", enabled: true, effects: [
+      { kind: "modifier", target: "attack.melee", value: 1, bonusType: "untyped" },
+      { kind: "modifier", target: "save.fortitude", value: 2, bonusType: "morale" },
+    ] }];
+    const engine = new RulesEngine(character);
+    const derived = engine.derive();
+    expect(derived.attacks[0]?.attack.value).toBe(3); // BAB 2 + STR 0 + feature 1
+    expect(derived.saves.fortitude.value).toBe(7); // Fighter good Fort 3 + CON 2 + feature 2
+    expect(engine.createAttackRollPlan("greatsword").modifier).toBe(derived.attacks[0]?.attack.value);
+    expect(engine.createSaveRollPlan("fortitude").modifier).toBe(derived.saves.fortitude.value);
+  });
 });
 
 function evaluateCharacterForTest(input: CharacterInput) { return new RulesEngine(input).derive(); }

@@ -12,3 +12,20 @@ it("persist → reload → evaluate keeps authored state and derived state ident
   const repository = new InMemoryCharacterRepository(); await repository.save(character); const loaded = await repository.load(character.id);
   expect(loaded).toEqual(character); expect(new RulesEngine(loaded!).derive()).toEqual(new RulesEngine(character).derive());
 });
+
+it("persists and reloads ordered advancement slots without manual baselines", async () => {
+  const advanced: CharacterInput = {
+    ...character,
+    id: "advanced",
+    baseBab: undefined,
+    baseSaves: undefined,
+    hitDiceCount: undefined,
+    advancementSlots: [
+      { id: "level-1", tracks: [{ id: "main", entry: { progressionId: "fighter" } }] },
+      { id: "level-2", tracks: [{ id: "main", entry: { progressionId: "rogue" } }] },
+    ],
+  };
+  const repository = new InMemoryCharacterRepository(); await repository.save(advanced); const loaded = await repository.load(advanced.id);
+  expect(loaded).toEqual(advanced);
+  expect(new RulesEngine(loaded!).derive().advancement).toMatchObject({ slotCount: 2, trackIds: ["main"], hitDiceCount: 2 });
+});

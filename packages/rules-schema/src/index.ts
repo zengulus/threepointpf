@@ -158,17 +158,53 @@ export interface AttackDefinition {
   mode?: "melee" | "ranged";
 }
 
+export const babProgressions = ["full", "threeQuarters", "half", "quarter"] as const;
+export type BabProgression = (typeof babProgressions)[number];
+export const saveProgressions = ["good", "poor"] as const;
+export type SaveProgression = (typeof saveProgressions)[number];
+
+/** A deliberately small class-like progression definition; it is not a class corpus. */
+export interface ProgressionDefinition {
+  id: string;
+  name: string;
+  hitDieSides: number;
+  babProgression: BabProgression;
+  saveProgressions: Record<SaveId, SaveProgression>;
+  skillPointsPerLevel?: number;
+}
+
+/** One progression choice occupying one level on one advancement track. */
+export interface AdvancementEntry {
+  progressionId: string;
+}
+
+/** A named lane through the ordered slots (one lane for normal, two for gestalt, etc.). */
+export interface AdvancementTrack {
+  id: string;
+  entry: AdvancementEntry;
+}
+
+/** Array order is character level order; each slot may contain any number of tracks. */
+export interface AdvancementSlot {
+  id: string;
+  tracks: AdvancementTrack[];
+}
+
 export interface CharacterInput {
   id: string;
   campaignId?: string;
   name: string;
   baseAbilities: AbilityScores;
-  baseBab: number;
-  baseSaves: Record<SaveId, number>;
+  /** Manual/legacy baseline. Omit in advancement mode. */
+  baseBab?: number;
+  /** Manual/legacy baseline. Omit in advancement mode. */
+  baseSaves?: Record<SaveId, number>;
   /** Hit points from hit dice/other authored sources before the Constitution modifier is applied. */
   baseHpBeforeConstitution: number;
-  /** Explicit count of hit dice receiving the effective Constitution modifier. */
-  hitDiceCount: number;
+  /** Manual/legacy baseline. Advancement mode derives one HD per slot. */
+  hitDiceCount?: number;
+  /** Ordered advancement is present for structural progression mode. */
+  advancementSlots?: AdvancementSlot[];
   skillRanks: Record<string, number>;
   skills?: Record<string, SkillConfiguration>;
   attacks: AttackDefinition[];
@@ -201,13 +237,33 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   damageAbility: abilityIdSchema.optional(), damageAbilityMultiplier: z.number().optional(), baseDamage: diceExpressionSchema,
   weaponBonus: z.number().optional(), attackTags: z.array(z.enum(["weapon.melee", "weapon.ranged", "weapon.two-handed", "weapon.off-hand", "natural.attack"])).optional(), mode: z.enum(["melee", "ranged"]).optional(),
 });
+export const progressionDefinitionSchema: z.ZodType<ProgressionDefinition> = z.object({
+  id: z.string().min(1), name: z.string().min(1), hitDieSides: z.number().int().positive(),
+  babProgression: z.enum(babProgressions),
+  saveProgressions: z.object({ fortitude: z.enum(saveProgressions), reflex: z.enum(saveProgressions), will: z.enum(saveProgressions) }),
+  skillPointsPerLevel: z.number().nonnegative().optional(),
+});
+export const advancementEntrySchema: z.ZodType<AdvancementEntry> = z.object({ progressionId: z.string().min(1) });
+export const advancementTrackSchema: z.ZodType<AdvancementTrack> = z.object({ id: z.string().min(1), entry: advancementEntrySchema });
+export const advancementSlotSchema: z.ZodType<AdvancementSlot> = z.object({ id: z.string().min(1), tracks: z.array(advancementTrackSchema).min(1) }).superRefine((slot, context) => {
+  const ids = new Set<string>();
+  for (const track of slot.tracks) {
+    if (ids.has(track.id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["tracks"], message: `Duplicate advancement track id ${track.id} in slot ${slot.id}` });
+    ids.add(track.id);
+  }
+});
+export const advancementSlotsSchema = z.array(advancementSlotSchema).min(1);
 export const characterInputSchema: z.ZodType<CharacterInput> = z.object({
   id: z.string().min(1), campaignId: z.string().optional(), name: z.string().min(1),
-  baseAbilities: z.object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() }), baseBab: z.number(),
-  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }), baseHpBeforeConstitution: z.number(), hitDiceCount: z.number().int().positive(),
+  baseAbilities: z.object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() }), baseBab: z.number().optional(),
+  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }).optional(), baseHpBeforeConstitution: z.number(), hitDiceCount: z.number().int().positive().optional(), advancementSlots: advancementSlotsSchema.optional(),
   skillRanks: z.record(z.number()), skills: z.record(z.object({ governingAbility: abilityIdSchema, classSkill: z.boolean().optional(), miscellaneous: z.number().optional(), armorAndSize: z.number().optional() })).optional(),
   attacks: z.array(attackDefinitionSchema), features: z.array(featureInstanceSchema), damageTaken: z.number().int().nonnegative(), temporaryHp: z.number().int().nonnegative(), baseLandSpeed: z.number().optional(),
 }).superRefine((character, context) => {
+  const advancementMode = Boolean(character.advancementSlots?.length);
+  if (!advancementMode && character.baseBab === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["baseBab"], message: "baseBab is required in manual mode" });
+  if (!advancementMode && character.baseSaves === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["baseSaves"], message: "baseSaves is required in manual mode" });
+  if (!advancementMode && character.hitDiceCount === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["hitDiceCount"], message: "hitDiceCount is required in manual mode" });
   const replacements = new Map<string, number>();
   for (const feature of character.features) {
     if (!feature.enabled) continue;
@@ -259,6 +315,15 @@ export interface DerivedSkill {
   classSkill: boolean;
 }
 
+export interface AdvancementSummary {
+  slotCount: number;
+  trackIds: string[];
+  hitDiceCount: number;
+  /** Best available die type per ordered slot; HP-from-HD remains a later layer. */
+  hitDieSides: number[];
+  skillPoints: number;
+}
+
 export interface DerivedAttack {
   definition: AttackDefinition;
   attack: EvaluationResult;
@@ -270,6 +335,7 @@ export interface DerivedCharacter {
   grants: GrantedCapability[];
   abilities: Record<AbilityId, { score: EvaluationResult; modifier: EvaluationResult }>;
   maxHp: EvaluationResult;
+  advancement?: AdvancementSummary;
   /** Derived from max HP and authored damage; it intentionally changes when max HP changes. */
   currentHp: number;
   damageTaken: number;

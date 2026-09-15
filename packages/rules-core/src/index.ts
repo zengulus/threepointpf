@@ -21,6 +21,7 @@ import {
   targetLabels,
 } from "@threepointpf/rules-schema";
 import type { RollPlan } from "@threepointpf/dice";
+import { evaluateAdvancement, progressionDefinitions, type AdvancementEvaluation } from "./advancement.js";
 
 const defaultSkillAbilities: Record<string, AbilityId> = {
   acrobatics: "dex", appraise: "int", bluff: "cha", climb: "str", craft: "int", diplomacy: "cha",
@@ -121,10 +122,12 @@ function base(target: TargetId, value: number, source: string, label: string): C
 export class RulesEngine {
   readonly character: CharacterInput;
   private readonly effects: Effect[];
+  private readonly advancement?: AdvancementEvaluation;
 
   constructor(character: CharacterInput) {
     this.character = character;
     this.effects = featureEffects(character);
+    this.advancement = character.advancementSlots?.length ? evaluateAdvancement(character.advancementSlots, progressionDefinitions) : undefined;
     const replacementTargets = new Set<TargetId>();
     for (const effect of this.effects) {
       if (effect.kind !== "replaceBase") continue;
@@ -140,6 +143,36 @@ export class RulesEngine {
       if (effect.kind === "modifier") matching.push(effectContribution(effect, target));
     }
     return matching;
+  }
+
+  private trackEvidence(target: TargetId, property: "bab" | SaveId, selected: string): Contribution[] {
+    if (!this.advancement) return [];
+    return this.advancement.tracks.map((track) => {
+      const value = property === "bab" ? track.bab : track.saves[property];
+      return sourceContribution(target, value, `advancement.track.${track.id}.${property}`, `Track ${track.id} ${property === "bab" ? "BAB" : property}`, undefined, { note: track.id === selected ? "Selected complete-track total" : "Complete-track candidate" });
+    });
+  }
+
+  private baseBabContribution(target: TargetId): Contribution {
+    if (!this.advancement) return base(target, this.character.baseBab ?? 0, "base-bab", "Base Attack Bonus");
+    const selected = this.advancement.babTrack;
+    if (this.effects.some((effect) => effect.kind === "replaceBase" && effect.target === target)) return this.replacement(target, selected.bab, `advancement.track.${selected.id}.bab`, `Track ${selected.id} BAB`);
+    return sourceContribution(target, selected.bab, `advancement.track.${selected.id}.bab`, `Track ${selected.id} BAB`, undefined, { children: this.trackEvidence(target, "bab", selected.id), note: "Best complete advancement-track total" });
+  }
+
+  private baseSaveContribution(id: SaveId, target: TargetId): Contribution {
+    if (!this.advancement) return base(target, this.character.baseSaves?.[id] ?? 0, `base-save.${id}`, `Base ${id}`);
+    const selected = this.advancement.saveTracks[id];
+    if (this.effects.some((effect) => effect.kind === "replaceBase" && effect.target === target)) return this.replacement(target, selected.saves[id], `advancement.track.${selected.id}.save.${id}`, `Track ${selected.id} ${id}`);
+    return sourceContribution(target, selected.saves[id], `advancement.track.${selected.id}.save.${id}`, `Track ${selected.id} ${id}`, undefined, { children: this.trackEvidence(target, id, selected.id), note: "Best complete advancement-track total" });
+  }
+
+  private hitDiceCountContribution(): Contribution {
+    if (!this.advancement) return sourceContribution("hp", this.character.hitDiceCount ?? 0, "manual-hit-dice-count", "Hit dice count");
+    return sourceContribution("hp", this.advancement.hitDiceCount, "advancement.hit-dice-count", `${this.advancement.hitDiceCount} hit dice`, undefined, {
+      note: "One hit die per ordered slot; best die type per slot",
+      children: this.advancement.hitDieSources.map((source) => sourceContribution("hp", source.sides, `advancement.slot.${source.slotId}.track.${source.trackId}.hit-die`, `Slot ${source.slotId}: Track ${source.trackId} d${source.sides}`, undefined, { note: "Selected best hit die for slot" })),
+    });
   }
 
   /** A replaceBase effect replaces the intrinsic/base scalar; dependencies and modifiers still apply. */
@@ -187,7 +220,7 @@ export class RulesEngine {
     const target = `save.${id}` as TargetId;
     const ability: AbilityId = id === "fortitude" ? "con" : id === "reflex" ? "dex" : "wis";
     const contributions = [
-      this.replacement(target, this.character.baseSaves[id], `base-save.${id}`, `Base ${id}`),
+      this.advancement ? this.baseSaveContribution(id, target) : this.replacement(target, this.character.baseSaves?.[id] ?? 0, `base-save.${id}`, `Base ${id}`),
       this.abilityContribution(ability, target),
       ...this.directModifiers(target),
     ];
@@ -232,7 +265,7 @@ export class RulesEngine {
   private combat(target: "cmb" | "cmd"): EvaluationResult {
     const contributions: Contribution[] = [
       this.replacement(target, target === "cmd" ? 10 : 0, `${target}.base`, target === "cmd" ? "Base CMD" : "Base CMB"),
-      base(target, this.character.baseBab, "base-bab", "Base Attack Bonus"),
+      this.baseBabContribution(target),
       this.abilityContribution("str", target),
       ...(target === "cmd" ? [this.abilityContribution("dex", target)] : []),
       ...this.directModifiers(target),
@@ -264,11 +297,13 @@ export class RulesEngine {
 
   private hpResult(): EvaluationResult {
     const constitution = this.abilityContribution("con", "hp");
+    const hitDice = this.hitDiceCountContribution();
     return this.result("hp", [this.replacement("hp", this.character.baseHpBeforeConstitution, "base-hp-before-con", "HP before Constitution"), {
       ...constitution,
-      value: constitution.value * this.character.hitDiceCount,
-      label: `${this.character.hitDiceCount}× ${constitution.label}`,
-      note: `${this.character.hitDiceCount} × (${constitution.note ?? "CON modifier"})`,
+      value: constitution.value * hitDice.value,
+      label: `${hitDice.value}× ${constitution.label}`,
+      note: `${hitDice.value} × (${constitution.note ?? "CON modifier"})`,
+      children: [...(constitution.children ?? []), hitDice],
     }]);
   }
 
@@ -276,7 +311,7 @@ export class RulesEngine {
     const mode = definition.mode ?? (definition.attackTags?.includes("weapon.ranged") ? "ranged" : "melee");
     const target = `attack.${mode}` as TargetId;
     const attackContributions = [
-      this.replacement(target, this.character.baseBab, "base-bab", "Base Attack Bonus"),
+      this.advancement ? this.baseBabContribution(target) : this.replacement(target, this.character.baseBab ?? 0, "base-bab", "Base Attack Bonus"),
       this.abilityContribution(definition.attackAbility, target),
       ...(definition.weaponBonus ? [base(target, definition.weaponBonus, `weapon.${definition.id}`, "Weapon bonus")] : []),
       ...this.directModifiers(target),
@@ -326,11 +361,19 @@ export class RulesEngine {
     const skills: Record<string, DerivedSkill> = {};
     for (const id of skillKeys) skills[id] = this.skillResult(id);
     const maxHp = this.hpResult();
+    const advancement = this.advancement ? {
+      slotCount: this.advancement.slotCount,
+      trackIds: this.advancement.tracks.map((track) => track.id),
+      hitDiceCount: this.advancement.hitDiceCount,
+      hitDieSides: this.advancement.hitDieSides,
+      skillPoints: this.advancement.skillPoints,
+    } : undefined;
     return {
       input: this.character,
       grants: this.grants(),
       abilities,
       maxHp,
+      ...(advancement ? { advancement } : {}),
       currentHp: maxHp.value - this.character.damageTaken,
       damageTaken: this.character.damageTaken,
       temporaryHp: this.character.temporaryHp,
@@ -369,3 +412,5 @@ export function evaluate(target: TargetId, character: CharacterInput): Evaluatio
 }
 
 export type { CharacterInput, TargetId, Contribution, EvaluationResult, DerivedCharacter, DerivedAttack, DamageEvaluation } from "@threepointpf/rules-schema";
+export { evaluateAdvancement, progressionDefinitions } from "./advancement.js";
+export type { AdvancementEvaluation, SlotHitDie, TrackAdvancementResult } from "./advancement.js";

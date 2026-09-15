@@ -14,6 +14,12 @@ The architecture is sound for a first slice. The most important boundary is alre
 
 ## Corrections made in this pass
 
+### Advancement tracks
+
+Advancement is represented as ordered `AdvancementSlot[]`. Each slot contains any number of named `AdvancementTrack` entries, so track count expresses normal, gestalt, tristalt, or another campaign structure without an `isGestalt` boolean. An entry references a small `ProgressionDefinition` containing hit-die sides, BAB progression, Fortitude/Reflex/Will progression, and optional skill points. The seed catalog is deliberately limited to Fighter, Wizard, and Rogue.
+
+Aggregation is property-specific: BAB chooses the highest complete track total, each save chooses its highest complete track total, and hit dice provide one die per slot using the highest die type available in that slot. BAB is never maximized independently at each slot, so staggered fractional tracks cannot manufacture full BAB. The selected track and candidate totals appear as nested provenance on the existing attack/save contributions. Hit-die sides are available for a future HP-from-HD layer; the current authored `baseHpBeforeConstitution` remains the HP baseline.
+
 ### Set and replacement semantics
 
 `replaceBase` is a replacement for an intrinsic/base scalar, not another contribution added beside the authored base. Competing enabled replacements for the same target are rejected; feature-array order is never precedence. Dependencies and ordinary modifiers still apply afterward.
@@ -31,10 +37,10 @@ The current baseline targets are:
 | `cmb` / `cmd` | 0 / 10 |
 | `skill.*` | authored ranks |
 | `speed.land` | authored land speed, otherwise 30 |
-| `attack.*` | authored BAB |
+| `attack.*` | manual BAB or selected advancement-track BAB |
 | `damage.*` | 0 |
 
-This is deliberately uniform and is covered by tests for ability scores, saves, HP and speed. Set is suitable for future authored overrides such as a feat, template or alternate progression without silently double counting the old baseline.
+This is deliberately uniform and is covered by tests for ability scores, saves, HP and speed. `replaceBase` is suitable for future authored overrides such as an alternate progression without silently double counting the old baseline.
 
 ### Grant retained for future use
 
@@ -48,7 +54,7 @@ AC context is represented as `normal`, `touch` or `flatFooted`. A modifier targe
 
 ### HP meaning is explicit
 
-The authored fields are `baseHpBeforeConstitution`, `hitDiceCount`, `damageTaken`, and `temporaryHp`. `maxHp` is derived as the baseline plus the effective Constitution modifier once per hit die. `currentHp` is derived from `maxHp - damageTaken`, so a temporary Constitution change updates current HP consistently without rewriting damage state; temporary HP remains a separate value. The web and TTS state contracts receive the derived HP state from the TypeScript engine.
+The authored fields are `baseHpBeforeConstitution`, `damageTaken`, and `temporaryHp` in advancement mode; manual mode additionally accepts `baseBab`, `baseSaves`, and `hitDiceCount`. `maxHp` is derived as the baseline plus the effective Constitution modifier once per hit die. `currentHp` is derived from `maxHp - damageTaken`, so a temporary Constitution change updates current HP consistently without rewriting damage state; temporary HP remains a separate value. The web and TTS state contracts receive the derived HP state from the TypeScript engine.
 
 ### Provenance preserves dependencies
 
@@ -70,12 +76,12 @@ Attack tags are now a narrow union (`weapon.melee`, `weapon.ranged`, `weapon.two
 
 The following are known scope boundaries, not hidden assumptions:
 
-- BAB, base saves and HP-before-Constitution are authored inputs. Class charts and level progression from the workbook are not yet a progression engine.
+- HP-before-Constitution remains an authored baseline. Manual BAB/saves/HD are retained for legacy mode; the small advancement model now supplies BAB, saves, HD count, and HD sides without importing class charts wholesale.
 - AC supports the current base, Dexterity, natural armor and explicit AC effects. Armor/equipment inventories, shield handling, size, concealment, cover, conditions and special defenses are not yet modeled.
 - Movement currently reduces additive speed contributions. Multipliers, caps and all non-land modes need a future operation model; the target IDs already leave room for those modes.
 - Attacks currently derive one attack modifier and one damage modifier per entry. Iterative attacks, two-weapon penalties, critical rules, ammunition, range and special attack text are outside this slice.
 - Skills use authored ranks, governing ability, class-skill flag, misc and armor/size adjustments. Class-based skill configuration and trained-only rules are future data, not inferred from a class string.
-- Gestalt is not represented by an `isGestalt` boolean. Future advancement tracks/slots should contribute progression data to the same baseline targets.
+- Gestalt is not represented by an `isGestalt` boolean; track count in ordered advancement slots supplies that structure.
 
 These omissions are preferable to spreadsheet-shaped special cases because they leave the calculation path declarative and testable.
 
@@ -85,13 +91,15 @@ The browser and TTS script are untrusted clients. They may request a plan and su
 
 Supabase stores authored character inputs, feature state, attack definitions and roll history. Derived totals are not persisted as authoritative state. Edge Function request bodies and character rows are validated before use, and the public browser/TTS credentials are bearer tokens rather than service-role credentials. The remaining production work is operational—short-lived token issuance, row-level policy review, rate limiting, replay/idempotency policy and deployment secrets—not a reason to move rules into clients.
 
+The HP migration preserves pre-`cacd050` rows by reconstructing `damage_taken` from the old derived maximum (`base_hp_before_con` plus the old effective base Constitution modifier) before dropping absolute `current_hp`; it also converts legacy baseline-effect names and makes manual baseline columns nullable for advancement mode.
+
 ## Maintainability decisions
 
-The core remains a single small module in this pass because its dependency stages are still easy to audit together and the public API is compact. If class advancement, conditions, equipment or operation types are added, split it along those boundaries (`reducers`, `provenance`, `advancement`, `defense`, `combat`) before the file becomes the new spreadsheet. The current tests exercise the invariants that should survive that split: typed reduction, replacement, dependency propagation, explicit AC contexts, nested provenance, active grants and roll-plan parity.
+The core remains small and auditable, with advancement isolated in its first dedicated module. If conditions, equipment or operation types are added, continue splitting along those boundaries (`reducers`, `provenance`, `advancement`, `defense`, `combat`) before the code becomes the new spreadsheet. The current tests exercise the invariants that should survive that split: typed reduction, replacement, dependency propagation, explicit AC contexts, nested provenance, active grants and roll-plan parity.
 
 ## Recommended next increments
 
-1. Add declarative advancement tracks and a typed operation layer for multipliers, caps and conditional effects.
+1. Expand the small advancement seed and add HP-from-HD without changing the track aggregation contract.
 2. Add equipment/armor/shield inputs and source-specific AC applicability using the same contribution tree.
 3. Expand attack entries to iterative/full-attack and critical metadata without adding numeric meaning to tags.
 4. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary.

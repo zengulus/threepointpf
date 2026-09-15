@@ -8,7 +8,7 @@ The main sheet separates base ability scores from temporary effects, base BAB/sa
 
 `inputs → enabled feature effects → typed contributions → reducers → derived values`.
 
-BAB and saves are manual v0 inputs here. The workbook's class charts are intentionally not imported as a progression engine; they can seed future declarative advancement data.
+Manual BAB and saves remain supported for legacy mode. The first declarative advancement layer now supplies those baselines, HD count/sides, and optional skill-point metadata from a deliberately tiny seed rather than importing the workbook's class charts wholesale.
 
 ## Effect Table semantics
 
@@ -30,10 +30,12 @@ The workbook carries land/fly/swim/burrow/climb effects and condition multiplier
 
 `replaceBase` replaces the intrinsic/base scalar for its target; competing active replacements are rejected, so feature-array order is not precedence. Dependent ability modifiers or ordinary contributions still apply. It is used consistently for ability scores, base saves, AC base, HP before Constitution, BAB-backed attack baselines, skill ranks, movement and other scalar targets. It does not add the old base a second time.
 
+Advancement is an ordered array of slots, each containing named tracks with one progression entry for that slot. Progression definitions supply HD sides, full/three-quarters/half/quarter BAB, good/poor save progressions, and optional skill points. BAB and saves select complete track totals; HD selects one best die per slot. These are explicit aggregation rules, not a general best-value reducer. Only the small Fighter/Wizard/Rogue seed is present, and HP-from-HD remains future work.
+
 `GrantEffect` is retained as a non-numeric future capability. Active grants are exposed with source provenance, but no current v0 total consumes them.
 
-AC applicability is required through `appliesTo: normal | touch | flatFooted` on generic `ac` modifiers. Bonus type does not imply AC context, and missing applicability is rejected. `ac.natural` is a distinct natural-armor target with a zero baseline that contributes to normal and flat-footed AC, never touch AC. `baseHpBeforeConstitution` and `hitDiceCount` are authored HP inputs; `maxHp` applies Constitution once per hit die, while `damageTaken` and `temporaryHp` are persisted mutable state and `currentHp` is derived.
+AC applicability is required through `appliesTo: normal | touch | flatFooted` on generic `ac` modifiers. Bonus type does not imply AC context, and missing applicability is rejected. `ac.natural` is a distinct natural-armor target with a zero baseline that contributes to normal and flat-footed AC, never touch AC. `baseHpBeforeConstitution` is the current authored HP baseline; `hitDiceCount` is manual in legacy mode and derived from advancement slots otherwise. `maxHp` applies Constitution once per hit die, while `damageTaken` and `temporaryHp` are persisted mutable state and `currentHp` is derived.
 
 ## Deliberate discrepancies
 
-The new model does not preserve spreadsheet-only custom-effect row limits, combined bonus categories, lookup formulas, formula-reference cells, or the workbook's gestalt switch. Those are implementation mechanisms, not the domain model. This milestone keeps BAB/saves as replaceable authored inputs so future advancement tracks can provide them without introducing an `isGestalt` foundation.
+The new model does not preserve spreadsheet-only custom-effect row limits, combined bonus categories, lookup formulas, formula-reference cells, or the workbook's gestalt switch. Those are implementation mechanisms, not the domain model. This milestone keeps manual BAB/saves/HD as an explicit compatibility mode while advancement tracks provide the same baseline facts without introducing an `isGestalt` foundation.

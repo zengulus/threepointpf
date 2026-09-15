@@ -19,5 +19,12 @@ describe("runtime rules schemas", () => {
       features: [{ id: "a", name: "A", enabled: true, effects: [{ kind: "replaceBase", target: "ac", value: 10 }] }, { id: "b", name: "B", enabled: true, effects: [{ kind: "replaceBase", target: "ac", value: 12 }] }],
     })).toThrow(/Ambiguous active baseline replacements/);
   });
+  it("allows advancement mode to replace manual BAB, save, and hit-die baselines", () => {
+    expect(characterInputSchema.parse({
+      id: "fighter", name: "Fighter", baseAbilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, baseHpBeforeConstitution: 10,
+      skillRanks: {}, attacks: [], damageTaken: 0, temporaryHp: 0,
+      advancementSlots: [{ id: "level-1", tracks: [{ id: "main", entry: { progressionId: "fighter" } }] }], features: [],
+    }).advancementSlots).toHaveLength(1);
+  });
   it("rejects free-form attack tags", () => expect(() => attackDefinitionSchema.parse({ id: "weapon", name: "Weapon", attackAbility: "str", baseDamage: { count: 1, sides: 8 }, attackTags: ["adds-a-bonus"] })).toThrow());
 });

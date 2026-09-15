@@ -35,10 +35,11 @@ export class SupabaseCharacterRepository implements CharacterRepository {
       campaign_id: campaignId,
       name: character.name,
       base_abilities: character.baseAbilities,
-      base_bab: character.baseBab,
-      base_saves: character.baseSaves,
+      base_bab: character.baseBab ?? null,
+      base_saves: character.baseSaves ?? null,
       base_hp_before_con: character.baseHpBeforeConstitution,
-      hit_dice_count: character.hitDiceCount,
+      hit_dice_count: character.hitDiceCount ?? null,
+      advancement_slots: character.advancementSlots ?? [],
       skill_ranks: character.skillRanks,
       skill_configuration: character.skills ?? {},
       damage_taken: character.damageTaken,
@@ -69,8 +70,8 @@ export class SupabaseCharacterRepository implements CharacterRepository {
     const { data: attackRows, error: attackError } = await this.client.from("character_attacks").select("*").eq("character_id", id);
     if (attackError) throw attackError;
     return parseCharacterInput({
-      id: row.id, campaignId: row.campaign_id ?? undefined, name: row.name, baseAbilities: row.base_abilities, baseBab: row.base_bab,
-      baseSaves: row.base_saves, baseHpBeforeConstitution: row.base_hp_before_con, hitDiceCount: row.hit_dice_count, skillRanks: row.skill_ranks, skills: row.skill_configuration,
+      id: row.id, campaignId: row.campaign_id ?? undefined, name: row.name, baseAbilities: row.base_abilities,
+      baseBab: row.base_bab ?? undefined, baseSaves: row.base_saves ?? undefined, baseHpBeforeConstitution: row.base_hp_before_con, hitDiceCount: row.hit_dice_count ?? undefined, advancementSlots: Array.isArray(row.advancement_slots) && row.advancement_slots.length > 0 ? row.advancement_slots : undefined, skillRanks: row.skill_ranks, skills: row.skill_configuration,
       damageTaken: row.damage_taken, temporaryHp: row.temporary_hp, baseLandSpeed: row.base_land_speed, features: (featureRows ?? []).map((item: any) => ({ id: item.id, definitionId: item.definition_id ?? undefined, name: item.name, description: item.description ?? undefined, enabled: item.enabled, effects: item.effects })),
       attacks: (attackRows ?? []).map((item: any) => item.definition),
     });

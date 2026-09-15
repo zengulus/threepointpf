@@ -1,5 +1,7 @@
--- Make Constitution-per-hit-die and mutable HP state explicit. This migration
--- converts the v0 absolute current_hp field before removing it.
+-- Make Constitution-per-hit-die and mutable HP state explicit. Before
+-- cacd050, max HP was base_hp_before_con plus the then-current base CON
+-- modifier, so reconstruct damage from that old derived max before removing
+-- the absolute current_hp field.
 alter table public.characters add column if not exists hit_dice_count integer;
 alter table public.characters add column if not exists damage_taken integer;
 alter table public.characters add column if not exists temporary_hp integer;
@@ -7,7 +9,12 @@ alter table public.characters add column if not exists temporary_hp integer;
 update public.characters
 set
   hit_dice_count = coalesce(hit_dice_count, 1),
-  damage_taken = coalesce(damage_taken, greatest(base_hp_before_con - current_hp, 0)),
+  damage_taken = coalesce(damage_taken, greatest(
+    base_hp_before_con
+      + floor(((base_abilities->>'con')::numeric - 10) / 2)::integer
+      - current_hp,
+    0
+  )),
   temporary_hp = coalesce(temporary_hp, 0);
 
 alter table public.characters alter column hit_dice_count set default 1;
