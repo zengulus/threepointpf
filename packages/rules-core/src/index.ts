@@ -100,6 +100,9 @@ function featureEffects(character: CharacterInput): Effect[] {
   for (const feature of character.features) {
     if (!feature.enabled) continue;
     for (const effect of feature.effects) {
+      if (effect.kind === "modifier" && effect.target === "ac" && (!effect.appliesTo || effect.appliesTo.length === 0)) {
+        throw new Error("AC modifiers require explicit appliesTo contexts");
+      }
       const source = effect.source ?? { id: `feature.${feature.id}`, label: feature.name };
       effects.push({ ...effect, source });
     }
@@ -108,7 +111,7 @@ function featureEffects(character: CharacterInput): Effect[] {
 }
 
 function effectContribution(effect: Extract<Effect, { kind: "modifier" }>, target: TargetId): Contribution {
-  return sourceContribution(target, effect.value, effect.source?.id ?? "effect", effect.source?.label ?? "Effect", effect.bonusType, { appliesTo: effect.appliesTo });
+  return sourceContribution(target, effect.value, effect.source?.id ?? "effect", effect.source?.label ?? "Effect", effect.bonusType, { appliesTo: "appliesTo" in effect ? effect.appliesTo : undefined });
 }
 
 function base(target: TargetId, value: number, source: string, label: string): Contribution {
@@ -122,6 +125,12 @@ export class RulesEngine {
   constructor(character: CharacterInput) {
     this.character = character;
     this.effects = featureEffects(character);
+    const replacementTargets = new Set<TargetId>();
+    for (const effect of this.effects) {
+      if (effect.kind !== "replaceBase") continue;
+      if (replacementTargets.has(effect.target)) throw new Error(`Ambiguous active baseline replacements for ${effect.target}`);
+      replacementTargets.add(effect.target);
+    }
   }
 
   private directModifiers(target: TargetId): Contribution[] {
@@ -133,10 +142,12 @@ export class RulesEngine {
     return matching;
   }
 
-  /** A set replaces the intrinsic/base scalar for its target; dependencies and modifiers still apply. */
+  /** A replaceBase effect replaces the intrinsic/base scalar; dependencies and modifiers still apply. */
   private replacement(target: TargetId, fallback: number, source: string, label: string): Contribution {
-    const set = [...this.effects].reverse().find((effect): effect is Extract<Effect, { kind: "set" }> => effect.kind === "set" && effect.target === target);
-    return set ? base(target, set.value, set.source?.id ?? "effect", set.source?.label ?? "Set value") : base(target, fallback, source, label);
+    const replacements = this.effects.filter((effect): effect is Extract<Effect, { kind: "replaceBase" }> => effect.kind === "replaceBase" && effect.target === target);
+    if (replacements.length > 1) throw new Error(`Ambiguous active baseline replacements for ${target}`);
+    const replacement = replacements[0];
+    return replacement ? base(target, replacement.value, replacement.source?.id ?? "effect", replacement.source?.label ?? "Baseline replacement") : base(target, fallback, source, label);
   }
 
   private result(target: TargetId, contributions: Contribution[], context?: DefenseContext): EvaluationResult {
@@ -201,8 +212,8 @@ export class RulesEngine {
   }
 
   private appliesToDefense(contribution: Contribution, context: DefenseContext): boolean {
-    // Omitted applicability means a general AC effect. It is never inferred from bonusType.
-    return contribution.appliesTo === undefined || contribution.appliesTo.includes(context);
+    // Missing applicability is invalid metadata, never a broad/general effect.
+    return contribution.appliesTo?.includes(context) ?? false;
   }
 
   private initiativeResult(): EvaluationResult {
@@ -214,7 +225,7 @@ export class RulesEngine {
     return this.effects.flatMap((effect) => {
       if (effect.kind !== "modifier" || !effect.source) return [];
       if (effect.target !== "skill.all" && effect.target !== "skill.initiative") return [];
-      return [effectContribution({ ...effect, target }, target)];
+      return [effectContribution(effect, target)];
     });
   }
 
@@ -252,7 +263,13 @@ export class RulesEngine {
   }
 
   private hpResult(): EvaluationResult {
-    return this.result("hp", [this.replacement("hp", this.character.baseHpBeforeConstitution, "base-hp-before-con", "HP before Constitution"), this.abilityContribution("con", "hp")]);
+    const constitution = this.abilityContribution("con", "hp");
+    return this.result("hp", [this.replacement("hp", this.character.baseHpBeforeConstitution, "base-hp-before-con", "HP before Constitution"), {
+      ...constitution,
+      value: constitution.value * this.character.hitDiceCount,
+      label: `${this.character.hitDiceCount}× ${constitution.label}`,
+      note: `${this.character.hitDiceCount} × (${constitution.note ?? "CON modifier"})`,
+    }]);
   }
 
   private attackFor(definition: AttackDefinition): DerivedAttack {
@@ -308,11 +325,15 @@ export class RulesEngine {
     for (const id of Object.keys(this.character.skills ?? {})) skillKeys.add(id);
     const skills: Record<string, DerivedSkill> = {};
     for (const id of skillKeys) skills[id] = this.skillResult(id);
+    const maxHp = this.hpResult();
     return {
       input: this.character,
       grants: this.grants(),
       abilities,
-      maxHp: this.hpResult(),
+      maxHp,
+      currentHp: maxHp.value - this.character.damageTaken,
+      damageTaken: this.character.damageTaken,
+      temporaryHp: this.character.temporaryHp,
       saves,
       ac: this.ac("normal"),
       touchAc: this.ac("touch"),

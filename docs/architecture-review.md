@@ -16,7 +16,7 @@ The architecture is sound for a first slice. The most important boundary is alre
 
 ### Set and replacement semantics
 
-`SetEffect` is now a replacement for an intrinsic/base scalar, not another contribution added beside the authored base. The last enabled Set for a target wins. Dependencies and ordinary modifiers still apply afterward.
+`replaceBase` is a replacement for an intrinsic/base scalar, not another contribution added beside the authored base. Competing enabled replacements for the same target are rejected; feature-array order is never precedence. Dependencies and ordinary modifiers still apply afterward.
 
 The current baseline targets are:
 
@@ -42,13 +42,13 @@ This is deliberately uniform and is covered by tests for ability scores, saves, 
 
 ### AC applicability is explicit
 
-AC context is represented as `normal`, `touch` or `flatFooted`. A modifier targeting `ac` may carry `appliesTo`; omitted applicability means the effect is general and is included in all three contexts. The engine never infers context from `bonusType`: an untyped or armor bonus can be scoped explicitly, and a deflection or dodge bonus can be explicitly included in touch AC.
+AC context is represented as `normal`, `touch` or `flatFooted`. A modifier targeting `ac` must carry a non-empty `appliesTo` list; omitted applicability is rejected and can never expand to all contexts. The engine never infers context from `bonusType`: an untyped or armor bonus can be scoped explicitly, and a deflection or dodge bonus can be explicitly included in touch AC.
 
 `ac.natural` is a target-specific natural-armor component. It is included in normal and flat-footed AC and excluded from touch AC. This prevents natural armor from being accidentally treated as a general AC modifier while keeping its Pathfinder behavior visible in the target vocabulary.
 
 ### HP meaning is explicit
 
-The authored field is now `baseHpBeforeConstitution`. `maxHp` is derived as that value plus the effective Constitution modifier. `currentHp` remains authored state and is not recomputed or overwritten by toggles. The web and TTS state contracts use `maxHp`, so temporary Constitution changes cannot be confused with current damage.
+The authored fields are `baseHpBeforeConstitution`, `hitDiceCount`, `damageTaken`, and `temporaryHp`. `maxHp` is derived as the baseline plus the effective Constitution modifier once per hit die. `currentHp` is derived from `maxHp - damageTaken`, so a temporary Constitution change updates current HP consistently without rewriting damage state; temporary HP remains a separate value. The web and TTS state contracts receive the derived HP state from the TypeScript engine.
 
 ### Provenance preserves dependencies
 

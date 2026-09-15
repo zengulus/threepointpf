@@ -80,18 +80,28 @@ export interface SourceReference {
   label: string;
 }
 
-export interface ModifierEffect {
+export interface AcModifierEffect {
   kind: "modifier";
-  target: TargetId;
+  target: "ac";
   value: number;
   bonusType: BonusType;
-  /** AC applicability is explicit and independent of bonus type. Only used for target `ac`. */
-  appliesTo?: DefenseContext[];
+  /** AC applicability is explicit and independent of bonus type. */
+  appliesTo: DefenseContext[];
   source?: SourceReference;
 }
 
-export interface SetEffect {
-  kind: "set";
+export interface NonAcModifierEffect {
+  kind: "modifier";
+  target: Exclude<TargetId, "ac">;
+  value: number;
+  bonusType: BonusType;
+  source?: SourceReference;
+}
+
+export type ModifierEffect = AcModifierEffect | NonAcModifierEffect;
+
+export interface ReplaceBaseEffect {
+  kind: "replaceBase";
   target: TargetId;
   value: number;
   source?: SourceReference;
@@ -104,7 +114,7 @@ export interface GrantEffect {
   source?: SourceReference;
 }
 
-export type Effect = ModifierEffect | GrantEffect | SetEffect;
+export type Effect = ModifierEffect | GrantEffect | ReplaceBaseEffect;
 export type EffectDefinition = Effect;
 
 export interface FeatureDefinition {
@@ -157,22 +167,31 @@ export interface CharacterInput {
   baseSaves: Record<SaveId, number>;
   /** Hit points from hit dice/other authored sources before the Constitution modifier is applied. */
   baseHpBeforeConstitution: number;
+  /** Explicit count of hit dice receiving the effective Constitution modifier. */
+  hitDiceCount: number;
   skillRanks: Record<string, number>;
   skills?: Record<string, SkillConfiguration>;
   attacks: AttackDefinition[];
   features: FeatureInstance[];
-  currentHp: number;
+  /** Mutable damage state; current HP is derived from max HP minus this value. */
+  damageTaken: number;
+  /** Temporary HP is tracked separately and does not increase max HP. */
+  temporaryHp: number;
   baseLandSpeed?: number;
 }
 
 export const diceExpressionSchema = z.object({ count: z.number().int().positive(), sides: z.number().int().positive() });
 export const sourceReferenceSchema = z.object({ id: z.string().min(1), label: z.string().min(1) });
 export const targetIdSchema = z.string().min(1).refine(isTargetId, "Unknown target id") as z.ZodType<TargetId>;
-export const effectSchema: z.ZodType<Effect> = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("modifier"), target: targetIdSchema, value: z.number(), bonusType: z.enum(bonusTypes), appliesTo: z.array(z.enum(["normal", "touch", "flatFooted"])).optional(), source: sourceReferenceSchema.optional() }),
-  z.object({ kind: z.literal("set"), target: targetIdSchema, value: z.number(), source: sourceReferenceSchema.optional() }),
+const defenseContextSchema = z.enum(["normal", "touch", "flatFooted"]);
+const acModifierSchema = z.object({ kind: z.literal("modifier"), target: z.literal("ac"), value: z.number(), bonusType: z.enum(bonusTypes), appliesTo: z.array(defenseContextSchema).min(1), source: sourceReferenceSchema.optional() });
+const nonAcModifierSchema = z.object({ kind: z.literal("modifier"), target: targetIdSchema.refine((target) => target !== "ac", "AC modifiers require appliesTo"), value: z.number(), bonusType: z.enum(bonusTypes), source: sourceReferenceSchema.optional() });
+export const effectSchema: z.ZodType<Effect> = z.union([
+  acModifierSchema,
+  nonAcModifierSchema,
+  z.object({ kind: z.literal("replaceBase"), target: targetIdSchema, value: z.number(), source: sourceReferenceSchema.optional() }),
   z.object({ kind: z.literal("grant"), target: targetIdSchema, grant: z.string().min(1), source: sourceReferenceSchema.optional() }),
-]);
+]) as z.ZodType<Effect>;
 export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
   id: z.string().min(1), definitionId: z.string().optional(), name: z.string().min(1), description: z.string().optional(),
   enabled: z.boolean(), effects: z.array(effectSchema),
@@ -185,9 +204,20 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
 export const characterInputSchema: z.ZodType<CharacterInput> = z.object({
   id: z.string().min(1), campaignId: z.string().optional(), name: z.string().min(1),
   baseAbilities: z.object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() }), baseBab: z.number(),
-  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }), baseHpBeforeConstitution: z.number(),
+  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }), baseHpBeforeConstitution: z.number(), hitDiceCount: z.number().int().positive(),
   skillRanks: z.record(z.number()), skills: z.record(z.object({ governingAbility: abilityIdSchema, classSkill: z.boolean().optional(), miscellaneous: z.number().optional(), armorAndSize: z.number().optional() })).optional(),
-  attacks: z.array(attackDefinitionSchema), features: z.array(featureInstanceSchema), currentHp: z.number(), baseLandSpeed: z.number().optional(),
+  attacks: z.array(attackDefinitionSchema), features: z.array(featureInstanceSchema), damageTaken: z.number().int().nonnegative(), temporaryHp: z.number().int().nonnegative(), baseLandSpeed: z.number().optional(),
+}).superRefine((character, context) => {
+  const replacements = new Map<string, number>();
+  for (const feature of character.features) {
+    if (!feature.enabled) continue;
+    for (const effect of feature.effects) {
+      if (effect.kind !== "replaceBase") continue;
+      const count = replacements.get(effect.target) ?? 0;
+      replacements.set(effect.target, count + 1);
+      if (count > 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["features"], message: `Ambiguous active baseline replacements for ${effect.target}` });
+    }
+  }
 });
 
 export function parseCharacterInput(value: unknown): CharacterInput {
@@ -240,6 +270,10 @@ export interface DerivedCharacter {
   grants: GrantedCapability[];
   abilities: Record<AbilityId, { score: EvaluationResult; modifier: EvaluationResult }>;
   maxHp: EvaluationResult;
+  /** Derived from max HP and authored damage; it intentionally changes when max HP changes. */
+  currentHp: number;
+  damageTaken: number;
+  temporaryHp: number;
   saves: Record<SaveId, EvaluationResult>;
   ac: EvaluationResult;
   touchAc: EvaluationResult;

@@ -28,11 +28,11 @@ The workbook carries land/fly/swim/burrow/climb effects and condition multiplier
 
 ## Replacement, grants and defense contexts
 
-`SetEffect` replaces the intrinsic/base scalar for its target; the last enabled Set wins, and dependent ability modifiers or ordinary contributions still apply. It is used consistently for ability scores, base saves, AC base, HP before Constitution, BAB-backed attack baselines, skill ranks, movement and other scalar targets. It does not add the old base a second time.
+`replaceBase` replaces the intrinsic/base scalar for its target; competing active replacements are rejected, so feature-array order is not precedence. Dependent ability modifiers or ordinary contributions still apply. It is used consistently for ability scores, base saves, AC base, HP before Constitution, BAB-backed attack baselines, skill ranks, movement and other scalar targets. It does not add the old base a second time.
 
 `GrantEffect` is retained as a non-numeric future capability. Active grants are exposed with source provenance, but no current v0 total consumes them.
 
-AC applicability is explicit through `appliesTo: normal | touch | flatFooted` on AC modifiers. Bonus type does not imply AC context. Omitted applicability means a general AC effect; `ac.natural` is a distinct natural-armor target with a zero baseline that contributes to normal and flat-footed AC, never touch AC. `baseHpBeforeConstitution` is the authored hit-point baseline, while `maxHp` is derived and `currentHp` is persisted damage state.
+AC applicability is required through `appliesTo: normal | touch | flatFooted` on generic `ac` modifiers. Bonus type does not imply AC context, and missing applicability is rejected. `ac.natural` is a distinct natural-armor target with a zero baseline that contributes to normal and flat-footed AC, never touch AC. `baseHpBeforeConstitution` and `hitDiceCount` are authored HP inputs; `maxHp` applies Constitution once per hit die, while `damageTaken` and `temporaryHp` are persisted mutable state and `currentHp` is derived.
 
 ## Deliberate discrepancies
 

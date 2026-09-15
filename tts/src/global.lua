@@ -39,7 +39,8 @@ function fetchCharacterState(characterId)
         local ok, state = pcall(JSON.decode, request.text)
         if ok and state then
             UI.setAttribute(PANEL_ID .. "-name", "text", state.name or "Character")
-            UI.setAttribute(PANEL_ID .. "-hp", "text", "HP  " .. tostring(state.currentHp) .. " / " .. tostring(state.maxHp))
+            local temporary = (state.temporaryHp or 0) > 0 and ("  +" .. tostring(state.temporaryHp) .. " temp") or ""
+            UI.setAttribute(PANEL_ID .. "-hp", "text", "HP  " .. tostring(state.currentHp) .. " / " .. tostring(state.maxHp) .. temporary)
             UI.setAttribute(PANEL_ID .. "-ac", "text", "AC  " .. tostring(state.ac))
             UI.setAttribute(PANEL_ID .. "-fort", "text", "Fort  " .. signed(state.saves.fortitude))
             UI.setAttribute(PANEL_ID .. "-ref", "text", "Ref   " .. signed(state.saves.reflex))

@@ -5,13 +5,13 @@ import { RulesEngine, abilityModifier, evaluate, reduceContributions } from "./i
 const fixture: CharacterInput = {
   id: "human-martial", campaignId: "demo", name: "Nathan's Character",
   baseAbilities: { str: 18, dex: 14, con: 14, int: 10, wis: 12, cha: 8 }, baseBab: 6,
-  baseSaves: { fortitude: 5, reflex: 2, will: 2 }, baseHpBeforeConstitution: 50, currentHp: 47, baseLandSpeed: 30,
+  baseSaves: { fortitude: 5, reflex: 2, will: 2 }, baseHpBeforeConstitution: 50, hitDiceCount: 1, damageTaken: 5, temporaryHp: 0, baseLandSpeed: 30,
   skillRanks: { acrobatics: 2, perception: 3 }, skills: { acrobatics: { governingAbility: "dex", classSkill: true }, perception: { governingAbility: "wis" } },
   attacks: [{ id: "greatsword", name: "Greatsword", attackAbility: "str", damageAbility: "str", damageAbilityMultiplier: 1.5, baseDamage: { count: 2, sides: 6 }, weaponBonus: 0, attackTags: ["weapon.melee", "weapon.two-handed"], mode: "melee" }],
   features: [
     { id: "weapon-focus", name: "Weapon Focus", enabled: true, effects: [{ kind: "modifier", target: "attack.melee", value: 1, bonusType: "untyped" }] },
     { id: "heroism", name: "Heroism", enabled: true, effects: [{ kind: "modifier", target: "attack.melee", value: 2, bonusType: "morale" }, { kind: "modifier", target: "save.fortitude", value: 2, bonusType: "morale" }, { kind: "modifier", target: "save.reflex", value: 2, bonusType: "morale" }, { kind: "modifier", target: "save.will", value: 2, bonusType: "morale" }, { kind: "modifier", target: "initiative", value: 2, bonusType: "morale" }] },
-    { id: "rage", name: "Rage", enabled: false, effects: [{ kind: "modifier", target: "ability.str", value: 4, bonusType: "morale" }, { kind: "modifier", target: "ability.con", value: 4, bonusType: "morale" }, { kind: "modifier", target: "save.will", value: 2, bonusType: "morale" }, { kind: "modifier", target: "ac", value: -2, bonusType: "untyped" }] },
+    { id: "rage", name: "Rage", enabled: false, effects: [{ kind: "modifier", target: "ability.str", value: 4, bonusType: "morale" }, { kind: "modifier", target: "ability.con", value: 4, bonusType: "morale" }, { kind: "modifier", target: "save.will", value: 2, bonusType: "morale" }, { kind: "modifier", target: "ac", value: -2, bonusType: "untyped", appliesTo: ["normal", "touch", "flatFooted"] }] },
     { id: "power-attack", name: "Power Attack", enabled: true, effects: [{ kind: "modifier", target: "attack.melee", value: -2, bonusType: "untyped" }, { kind: "modifier", target: "damage.melee", value: 6, bonusType: "untyped" }] },
   ],
 };
@@ -52,6 +52,27 @@ describe("character dependency graph", () => {
     expect(after.saves.fortitude.value).toBe(before.saves.fortitude.value + 2);
     expect(after.maxHp.value).toBe(before.maxHp.value + 2);
   });
+  it("applies the Constitution modifier once per explicit hit die", () => {
+    const threeHitDice = { ...fixture, hitDiceCount: 3 };
+    const before = new RulesEngine(threeHitDice).derive();
+    const changed = { ...threeHitDice, baseAbilities: { ...threeHitDice.baseAbilities, con: 18 } };
+    const after = new RulesEngine(changed).derive();
+    expect(before.maxHp.value).toBe(56);
+    expect(after.maxHp.value).toBe(62);
+    expect(after.maxHp.value - before.maxHp.value).toBe(6);
+    expect(after.maxHp.contributions.find((item) => item.source === "ability.con.modifier")?.label).toBe("3× CON modifier");
+  });
+  it("derives current HP from damage taken when Constitution changes max HP", () => {
+    const character = { ...fixture, temporaryHp: 7 };
+    const before = new RulesEngine(character).derive();
+    const raging = { ...character, features: character.features.map((feature) => feature.id === "rage" ? { ...feature, enabled: true } : feature) };
+    const after = new RulesEngine(raging).derive();
+    expect(before.currentHp).toBe(47);
+    expect(before.temporaryHp).toBe(7);
+    expect(after.currentHp).toBe(49);
+    expect(after.damageTaken).toBe(5);
+    expect(after.temporaryHp).toBe(7);
+  });
   it("applies Heroism only to its declared targets", () => {
     const without = new RulesEngine({ ...fixture, features: fixture.features.map((feature) => feature.id === "heroism" ? { ...feature, enabled: false } : feature) }).derive();
     const withHeroism = new RulesEngine(fixture).derive();
@@ -63,26 +84,23 @@ describe("character dependency graph", () => {
     expect(after.ac.value).toBe(before.ac.value - 2); expect(after.saves.will.value).toBe(before.saves.will.value); expect(after.maxHp.value).toBe(before.maxHp.value + 2);
   });
   it("replaces an intrinsic baseline with Set without double counting the authored base", () => {
-    const setFeature = { id: "manual-strength", name: "Manual strength baseline", enabled: true, effects: [{ kind: "set", target: "ability.str", value: 18, source: { id: "manual-strength", label: "Manual strength baseline" } }] } satisfies CharacterInput["features"][number];
-    const raging = { ...fixture, baseAbilities: { ...fixture.baseAbilities, str: 10 }, features: [...fixture.features.map((feature) => feature.id === "rage" ? { ...feature, enabled: true } : feature), setFeature] };
+    const replacementFeature = { id: "manual-strength", name: "Manual strength baseline", enabled: true, effects: [{ kind: "replaceBase", target: "ability.str", value: 18, source: { id: "manual-strength", label: "Manual strength baseline" } }] } satisfies CharacterInput["features"][number];
+    const raging = { ...fixture, baseAbilities: { ...fixture.baseAbilities, str: 10 }, features: [...fixture.features.map((feature) => feature.id === "rage" ? { ...feature, enabled: true } : feature), replacementFeature] };
     const derived = new RulesEngine(raging).derive();
     expect(derived.abilities.str.score.value).toBe(22); // Set 18 + Rage 4, not authored 10 + Set 18 + Rage 4.
     expect(derived.attacks[0]?.attack.value).toBe(13);
     expect(derived.abilities.str.score.contributions.map((item) => item.source)).toContain("manual-strength");
     expect(derived.abilities.str.score.contributions.map((item) => item.source)).not.toContain("base-ability");
   });
-  it("uses the last enabled Set for save, HP and speed baselines while preserving dependencies", () => {
-    const setEffects: Effect[] = [
-      { kind: "set", target: "save.fortitude", value: 10, source: { id: "save-baseline", label: "Save baseline" } },
-      { kind: "set", target: "hp", value: 40, source: { id: "hp-baseline", label: "HP baseline" } },
-      { kind: "set", target: "speed.land", value: 40, source: { id: "speed-baseline", label: "Speed baseline" } },
-      { kind: "set", target: "speed.land", value: 35, source: { id: "later-speed-baseline", label: "Later speed baseline" } },
+  it("rejects competing active baseline replacements instead of using feature order", () => {
+    const replacementEffects: Effect[] = [
+      { kind: "replaceBase", target: "save.fortitude", value: 10, source: { id: "save-baseline", label: "Save baseline" } },
+      { kind: "replaceBase", target: "hp", value: 40, source: { id: "hp-baseline", label: "HP baseline" } },
+      { kind: "replaceBase", target: "speed.land", value: 40, source: { id: "speed-baseline", label: "Speed baseline" } },
+      { kind: "replaceBase", target: "speed.land", value: 35, source: { id: "later-speed-baseline", label: "Later speed baseline" } },
     ];
-    const character = { ...fixture, features: [{ id: "baselines", name: "Authored baselines", enabled: true, effects: setEffects }] };
-    const derived = new RulesEngine(character).derive();
-    expect(derived.saves.fortitude.value).toBe(12); // Set 10 + CON modifier 2.
-    expect(derived.maxHp.value).toBe(42); // Set 40 + CON modifier 2.
-    expect(derived.movement.value).toBe(35); // The later Set wins; the original 30 and earlier 40 do not sum.
+    const character = { ...fixture, features: [{ id: "baselines", name: "Authored baselines", enabled: true, effects: replacementEffects }] };
+    expect(() => new RulesEngine(character).derive()).toThrow("Ambiguous active baseline replacements for speed.land");
   });
   it("keeps active grants as future capabilities and omits disabled grants", () => {
     const character: CharacterInput = {
@@ -101,7 +119,7 @@ describe("character dependency graph", () => {
       baseAbilities: { ...fixture.baseAbilities, dex: 14 },
       features: [{ id: "defenses", name: "Defenses", enabled: true, effects: [
         { kind: "modifier", target: "ac", value: 5, bonusType: "armor", appliesTo: ["normal", "flatFooted"], source: { id: "armor", label: "Armor" } },
-        { kind: "set", target: "ac.natural", value: 4, source: { id: "natural", label: "Natural armor baseline" } },
+        { kind: "replaceBase", target: "ac.natural", value: 4, source: { id: "natural", label: "Natural armor baseline" } },
         { kind: "modifier", target: "ac", value: 2, bonusType: "deflection", appliesTo: ["normal", "touch", "flatFooted"], source: { id: "deflection", label: "Deflection" } },
         { kind: "modifier", target: "ac", value: 1, bonusType: "dodge", appliesTo: ["normal", "touch"], source: { id: "dodge", label: "Dodge" } },
         { kind: "modifier", target: "ac", value: 4, bonusType: "untyped", appliesTo: ["normal"], source: { id: "normal-only", label: "Normal-only untyped effect" } },

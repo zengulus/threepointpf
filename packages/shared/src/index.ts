@@ -38,9 +38,11 @@ export class SupabaseCharacterRepository implements CharacterRepository {
       base_bab: character.baseBab,
       base_saves: character.baseSaves,
       base_hp_before_con: character.baseHpBeforeConstitution,
+      hit_dice_count: character.hitDiceCount,
       skill_ranks: character.skillRanks,
       skill_configuration: character.skills ?? {},
-      current_hp: character.currentHp,
+      damage_taken: character.damageTaken,
+      temporary_hp: character.temporaryHp,
       base_land_speed: character.baseLandSpeed ?? 30,
     });
     if (characterError) throw characterError;
@@ -68,8 +70,8 @@ export class SupabaseCharacterRepository implements CharacterRepository {
     if (attackError) throw attackError;
     return parseCharacterInput({
       id: row.id, campaignId: row.campaign_id ?? undefined, name: row.name, baseAbilities: row.base_abilities, baseBab: row.base_bab,
-      baseSaves: row.base_saves, baseHpBeforeConstitution: row.base_hp_before_con, skillRanks: row.skill_ranks, skills: row.skill_configuration,
-      currentHp: row.current_hp, baseLandSpeed: row.base_land_speed, features: (featureRows ?? []).map((item: any) => ({ id: item.id, definitionId: item.definition_id ?? undefined, name: item.name, description: item.description ?? undefined, enabled: item.enabled, effects: item.effects })),
+      baseSaves: row.base_saves, baseHpBeforeConstitution: row.base_hp_before_con, hitDiceCount: row.hit_dice_count, skillRanks: row.skill_ranks, skills: row.skill_configuration,
+      damageTaken: row.damage_taken, temporaryHp: row.temporary_hp, baseLandSpeed: row.base_land_speed, features: (featureRows ?? []).map((item: any) => ({ id: item.id, definitionId: item.definition_id ?? undefined, name: item.name, description: item.description ?? undefined, enabled: item.enabled, effects: item.effects })),
       attacks: (attackRows ?? []).map((item: any) => item.definition),
     });
   }

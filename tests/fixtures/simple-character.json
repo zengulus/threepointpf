@@ -6,7 +6,9 @@
   "baseBab": 6,
   "baseSaves": { "fortitude": 5, "reflex": 2, "will": 2 },
   "baseHpBeforeConstitution": 50,
-  "currentHp": 47,
+  "hitDiceCount": 1,
+  "damageTaken": 5,
+  "temporaryHp": 0,
   "baseLandSpeed": 30,
   "skillRanks": { "acrobatics": 2, "perception": 3 },
   "skills": {
@@ -29,7 +31,7 @@
   "features": [
     { "id": "weapon-focus", "name": "Weapon Focus", "enabled": true, "effects": [{ "kind": "modifier", "target": "attack.melee", "value": 1, "bonusType": "untyped" }] },
     { "id": "heroism", "name": "Heroism", "enabled": true, "effects": [{ "kind": "modifier", "target": "attack.melee", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "save.fortitude", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "save.reflex", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "save.will", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "initiative", "value": 2, "bonusType": "morale" }] },
-    { "id": "rage", "name": "Rage", "enabled": false, "effects": [{ "kind": "modifier", "target": "ability.str", "value": 4, "bonusType": "morale" }, { "kind": "modifier", "target": "ability.con", "value": 4, "bonusType": "morale" }, { "kind": "modifier", "target": "save.will", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "ac", "value": -2, "bonusType": "untyped" }] },
+    { "id": "rage", "name": "Rage", "enabled": false, "effects": [{ "kind": "modifier", "target": "ability.str", "value": 4, "bonusType": "morale" }, { "kind": "modifier", "target": "ability.con", "value": 4, "bonusType": "morale" }, { "kind": "modifier", "target": "save.will", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "ac", "value": -2, "bonusType": "untyped", "appliesTo": ["normal", "touch", "flatFooted"] }] },
     { "id": "power-attack", "name": "Power Attack", "enabled": true, "effects": [{ "kind": "modifier", "target": "attack.melee", "value": -2, "bonusType": "untyped" }, { "kind": "modifier", "target": "damage.melee", "value": 6, "bonusType": "untyped" }] }
   ]
 }
