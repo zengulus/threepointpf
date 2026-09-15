@@ -1,0 +1,35 @@
+{
+  "id": "human-martial",
+  "campaignId": "demo-campaign",
+  "name": "Nathan's Character",
+  "baseAbilities": { "str": 18, "dex": 14, "con": 14, "int": 10, "wis": 12, "cha": 8 },
+  "baseBab": 6,
+  "baseSaves": { "fortitude": 5, "reflex": 2, "will": 2 },
+  "baseHp": 50,
+  "currentHp": 47,
+  "baseLandSpeed": 30,
+  "skillRanks": { "acrobatics": 2, "perception": 3 },
+  "skills": {
+    "acrobatics": { "governingAbility": "dex", "classSkill": true },
+    "perception": { "governingAbility": "wis" }
+  },
+  "attacks": [
+    {
+      "id": "greatsword",
+      "name": "Greatsword",
+      "attackAbility": "str",
+      "damageAbility": "str",
+      "damageAbilityMultiplier": 1.5,
+      "baseDamage": { "count": 2, "sides": 6 },
+      "weaponBonus": 0,
+      "attackTags": ["melee", "two-handed"],
+      "mode": "melee"
+    }
+  ],
+  "features": [
+    { "id": "weapon-focus", "name": "Weapon Focus", "enabled": true, "effects": [{ "kind": "modifier", "target": "attack.melee", "value": 1, "bonusType": "untyped" }] },
+    { "id": "heroism", "name": "Heroism", "enabled": true, "effects": [{ "kind": "modifier", "target": "attack.melee", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "save.fortitude", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "save.reflex", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "save.will", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "initiative", "value": 2, "bonusType": "morale" }] },
+    { "id": "rage", "name": "Rage", "enabled": false, "effects": [{ "kind": "modifier", "target": "ability.str", "value": 4, "bonusType": "morale" }, { "kind": "modifier", "target": "ability.con", "value": 4, "bonusType": "morale" }, { "kind": "modifier", "target": "save.will", "value": 2, "bonusType": "morale" }, { "kind": "modifier", "target": "ac", "value": -2, "bonusType": "untyped" }] },
+    { "id": "power-attack", "name": "Power Attack", "enabled": true, "effects": [{ "kind": "modifier", "target": "attack.melee", "value": -2, "bonusType": "untyped" }, { "kind": "modifier", "target": "damage.melee", "value": 6, "bonusType": "untyped" }] }
+  ]
+}

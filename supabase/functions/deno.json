@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "zod": "npm:zod@3.24.1",
+    "@threepointpf/dice": "../../packages/dice/src/index.ts",
+    "@threepointpf/rules-core": "../../packages/rules-core/src/index.ts",
+    "@threepointpf/rules-schema": "../../packages/rules-schema/src/index.ts"
+  }
+}

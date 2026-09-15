@@ -1,0 +1,11 @@
+{
+  "name": "@threepointpf/rules-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": { "@threepointpf/dice": "workspace:*", "@threepointpf/rules-schema": "workspace:*" }
+}

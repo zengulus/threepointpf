@@ -1,0 +1,241 @@
+import { z } from "zod";
+
+export const abilityIds = ["str", "dex", "con", "int", "wis", "cha"] as const;
+export type AbilityId = (typeof abilityIds)[number];
+export type AbilityScores = Record<AbilityId, number>;
+
+export const saveIds = ["fortitude", "reflex", "will"] as const;
+export type SaveId = (typeof saveIds)[number];
+
+export const skillIds = [
+  "acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy",
+  "disable-device", "disguise", "escape-artist", "fly", "handle-animal",
+  "heal", "intimidate", "knowledge-arcana", "knowledge-dungeoneering",
+  "knowledge-engineering", "knowledge-geography", "knowledge-history",
+  "knowledge-local", "knowledge-nature", "knowledge-nobility", "knowledge-planes",
+  "knowledge-religion", "linguistics", "perception", "perform", "profession",
+  "ride", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "survival",
+  "swim", "use-magic-device",
+] as const;
+export type SkillId = (typeof skillIds)[number] | (string & {});
+
+export const abilityIdSchema = z.enum(abilityIds);
+export const saveIdSchema = z.enum(saveIds);
+export const skillIdSchema = z.string().min(1);
+
+export const bonusTypes = [
+  "untyped", "dodge", "circumstance", "armor", "shield", "naturalArmor",
+  "enhancement", "deflection", "resistance", "competence", "insight", "luck",
+  "morale", "sacred", "profane", "size", "racial", "alchemical", "penalty",
+] as const;
+export type BonusType = (typeof bonusTypes)[number];
+
+export type TargetId =
+  | `ability.${AbilityId}`
+  | `save.${SaveId}`
+  | "ac"
+  | "ac.natural"
+  | "hp"
+  | "initiative"
+  | "cmb"
+  | "cmd"
+  | "attack.melee"
+  | "damage.melee"
+  | "attack.ranged"
+  | "damage.ranged"
+  | "casterLevel"
+  | "size.relative"
+  | "speed.land"
+  | "speed.fly"
+  | "speed.swim"
+  | "speed.climb"
+  | "speed.burrow"
+  | "skill.all"
+  | `skill.${string}`;
+
+export const targetRegistry = {
+  abilities: abilityIds.map((id) => `ability.${id}`),
+  saves: saveIds.map((id) => `save.${id}`),
+  derived: ["ac", "ac.natural", "hp", "initiative", "cmb", "cmd", "casterLevel", "size.relative"],
+  combat: ["attack.melee", "damage.melee", "attack.ranged", "damage.ranged"],
+  movement: ["speed.land", "speed.fly", "speed.swim", "speed.climb", "speed.burrow"],
+  skills: ["skill.all"],
+} as const;
+const staticTargetIds = new Set<string>(Object.values(targetRegistry).flat());
+export function isTargetId(value: string): value is TargetId {
+  return staticTargetIds.has(value) || value.startsWith("skill.") && value.length > 6;
+}
+
+export interface SourceReference {
+  id: string;
+  label: string;
+}
+
+export interface ModifierEffect {
+  kind: "modifier";
+  target: TargetId;
+  value: number;
+  bonusType: BonusType;
+  source?: SourceReference;
+}
+
+export interface SetEffect {
+  kind: "set";
+  target: TargetId;
+  value: number;
+  source?: SourceReference;
+}
+
+export interface GrantEffect {
+  kind: "grant";
+  target: TargetId;
+  grant: string;
+  source?: SourceReference;
+}
+
+export type Effect = ModifierEffect | GrantEffect | SetEffect;
+export type EffectDefinition = Effect;
+
+export interface FeatureDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  effects: EffectDefinition[];
+}
+
+export interface FeatureInstance {
+  id: string;
+  definitionId?: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  effects: EffectDefinition[];
+}
+
+export interface SkillConfiguration {
+  governingAbility: AbilityId;
+  classSkill?: boolean;
+  miscellaneous?: number;
+  armorAndSize?: number;
+}
+
+export interface DiceExpression {
+  count: number;
+  sides: number;
+}
+
+export interface AttackDefinition {
+  id: string;
+  name: string;
+  attackAbility: AbilityId;
+  damageAbility?: AbilityId;
+  damageAbilityMultiplier?: number;
+  baseDamage: DiceExpression;
+  weaponBonus?: number;
+  attackTags?: string[];
+  mode?: "melee" | "ranged";
+}
+
+export interface CharacterInput {
+  id: string;
+  campaignId?: string;
+  name: string;
+  baseAbilities: AbilityScores;
+  baseBab: number;
+  baseSaves: Record<SaveId, number>;
+  baseHp: number;
+  skillRanks: Record<string, number>;
+  skills?: Record<string, SkillConfiguration>;
+  attacks: AttackDefinition[];
+  features: FeatureInstance[];
+  currentHp: number;
+  baseLandSpeed?: number;
+}
+
+export const diceExpressionSchema = z.object({ count: z.number().int().positive(), sides: z.number().int().positive() });
+export const sourceReferenceSchema = z.object({ id: z.string().min(1), label: z.string().min(1) });
+export const targetIdSchema = z.string().min(1).refine(isTargetId, "Unknown target id") as z.ZodType<TargetId>;
+export const effectSchema: z.ZodType<Effect> = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("modifier"), target: targetIdSchema, value: z.number(), bonusType: z.enum(bonusTypes), source: sourceReferenceSchema.optional() }),
+  z.object({ kind: z.literal("set"), target: targetIdSchema, value: z.number(), source: sourceReferenceSchema.optional() }),
+  z.object({ kind: z.literal("grant"), target: targetIdSchema, grant: z.string().min(1), source: sourceReferenceSchema.optional() }),
+]);
+export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
+  id: z.string().min(1), definitionId: z.string().optional(), name: z.string().min(1), description: z.string().optional(),
+  enabled: z.boolean(), effects: z.array(effectSchema),
+});
+export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
+  id: z.string().min(1), name: z.string().min(1), attackAbility: abilityIdSchema,
+  damageAbility: abilityIdSchema.optional(), damageAbilityMultiplier: z.number().optional(), baseDamage: diceExpressionSchema,
+  weaponBonus: z.number().optional(), attackTags: z.array(z.string()).optional(), mode: z.enum(["melee", "ranged"]).optional(),
+});
+export const characterInputSchema: z.ZodType<CharacterInput> = z.object({
+  id: z.string().min(1), campaignId: z.string().optional(), name: z.string().min(1),
+  baseAbilities: z.object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() }), baseBab: z.number(),
+  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }), baseHp: z.number(),
+  skillRanks: z.record(z.number()), skills: z.record(z.object({ governingAbility: abilityIdSchema, classSkill: z.boolean().optional(), miscellaneous: z.number().optional(), armorAndSize: z.number().optional() })).optional(),
+  attacks: z.array(attackDefinitionSchema), features: z.array(featureInstanceSchema), currentHp: z.number(), baseLandSpeed: z.number().optional(),
+});
+
+export function parseCharacterInput(value: unknown): CharacterInput {
+  return characterInputSchema.parse(value);
+}
+
+export interface Contribution {
+  target: TargetId;
+  value: number;
+  label: string;
+  source: string;
+  bonusType?: BonusType;
+}
+
+export interface EvaluationResult {
+  target: TargetId;
+  value: number;
+  contributions: Contribution[];
+}
+
+export interface DamageEvaluation {
+  formula: string;
+  dice: DiceExpression;
+  modifier: number;
+  contributions: Contribution[];
+}
+
+export interface DerivedSkill {
+  id: SkillId;
+  label: string;
+  total: EvaluationResult;
+  ranks: number;
+  governingAbility: AbilityId;
+  classSkill: boolean;
+}
+
+export interface DerivedAttack {
+  definition: AttackDefinition;
+  attack: EvaluationResult;
+  damage: DamageEvaluation;
+}
+
+export interface DerivedCharacter {
+  input: CharacterInput;
+  abilities: Record<AbilityId, { score: EvaluationResult; modifier: EvaluationResult }>;
+  hp: EvaluationResult;
+  saves: Record<SaveId, EvaluationResult>;
+  ac: EvaluationResult;
+  touchAc: EvaluationResult;
+  flatFootedAc: EvaluationResult;
+  initiative: EvaluationResult;
+  cmb: EvaluationResult;
+  cmd: EvaluationResult;
+  skills: Record<string, DerivedSkill>;
+  movement: EvaluationResult;
+  attacks: DerivedAttack[];
+}
+
+export const targetLabels: Record<string, string> = {
+  "ability.str": "Strength", "ability.dex": "Dexterity", "ability.con": "Constitution", "ability.int": "Intelligence", "ability.wis": "Wisdom", "ability.cha": "Charisma",
+  "save.fortitude": "Fortitude", "save.reflex": "Reflex", "save.will": "Will", ac: "Armor Class", "ac.natural": "Natural Armor", hp: "Hit points", initiative: "Initiative",
+  cmb: "CMB", cmd: "CMD", "attack.melee": "Melee attack", "damage.melee": "Melee damage", "attack.ranged": "Ranged attack", "damage.ranged": "Ranged damage",
+  casterLevel: "Caster level", "size.relative": "Relative size", "speed.land": "Land speed", "speed.fly": "Fly speed", "speed.swim": "Swim speed", "speed.climb": "Climb speed", "speed.burrow": "Burrow speed", "skill.all": "All skills",
+};
