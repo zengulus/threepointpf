@@ -1,0 +1,12 @@
+{
+  "plan": {
+    "id": "attack:human-martial:greatsword",
+    "characterId": "human-martial",
+    "label": "Greatsword attack",
+    "dice": [{ "sides": 20, "count": 1 }],
+    "modifier": 11,
+    "metadata": { "kind": "attack", "target": "attack.melee", "attackId": "greatsword" }
+  },
+  "faces": [17],
+  "expected": { "total": 28, "modifier": 11 }
+}

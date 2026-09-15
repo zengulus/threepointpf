@@ -24,7 +24,15 @@ The workbook's formulas reduce each typed category as the highest positive value
 
 Skills combine ranks, governing ability modifier, optional class-skill bonus, miscellaneous and armor/size adjustments, then global/specific skill effects. No class skill is inferred from a class in v0; it is authored in `CharacterInput.skills`.
 
-The workbook carries land/fly/swim/burrow/climb effects and condition multipliers. v0 implements additive movement targets, with room for multiplier/set operations later. Attack entries are modeled as data: mode, attack ability, optional damage ability/multiplier, dice, weapon bonus and tags. The rules engine derives attack modifiers and damage modifiers, rather than recreating spreadsheet attack columns.
+The workbook carries land/fly/swim/burrow/climb effects and condition multipliers. v0 implements additive movement targets plus a uniform replacement operation for an intrinsic speed baseline; multipliers and caps remain future work. Attack entries are modeled as data: mode, attack ability, optional damage ability/multiplier, dice, weapon bonus and classification-only tags. The rules engine derives attack modifiers and damage modifiers, rather than recreating spreadsheet attack columns.
+
+## Replacement, grants and defense contexts
+
+`SetEffect` replaces the intrinsic/base scalar for its target; the last enabled Set wins, and dependent ability modifiers or ordinary contributions still apply. It is used consistently for ability scores, base saves, AC base, HP before Constitution, BAB-backed attack baselines, skill ranks, movement and other scalar targets. It does not add the old base a second time.
+
+`GrantEffect` is retained as a non-numeric future capability. Active grants are exposed with source provenance, but no current v0 total consumes them.
+
+AC applicability is explicit through `appliesTo: normal | touch | flatFooted` on AC modifiers. Bonus type does not imply AC context. Omitted applicability means a general AC effect; `ac.natural` is a distinct natural-armor target with a zero baseline that contributes to normal and flat-footed AC, never touch AC. `baseHpBeforeConstitution` is the authored hit-point baseline, while `maxHp` is derived and `currentHp` is persisted damage state.
 
 ## Deliberate discrepancies
 

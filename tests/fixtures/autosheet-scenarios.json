@@ -1,0 +1,51 @@
+[
+  {
+    "id": "plain-base",
+    "workbookReference": "Main Sheet base abilities, BAB, saves, HP and attack rows",
+    "enabledFeatures": [],
+    "expected": {
+      "ac": 12,
+      "touchAc": 12,
+      "flatFootedAc": 10,
+      "fortitude": 7,
+      "reflex": 4,
+      "will": 3,
+      "initiative": 2,
+      "cmb": 10,
+      "cmd": 22,
+      "maxHp": 52,
+      "meleeAttack": 10,
+      "meleeDamageModifier": 6
+    }
+  },
+  {
+    "id": "heroism",
+    "workbookReference": "Main Sheet Effect Table / morale target columns",
+    "effects": ["+2 morale to melee attack, Fortitude, Reflex, Will and initiative"],
+    "expected": { "ac": 12, "fortitude": 9, "reflex": 6, "will": 5, "initiative": 4, "meleeAttack": 12, "meleeDamageModifier": 6 }
+  },
+  {
+    "id": "haste",
+    "workbookReference": "Main Sheet Effect Table / dodge, attack, Reflex and movement targets",
+    "effects": ["+1 attack", "+1 dodge AC", "+1 Reflex", "+30 land speed"],
+    "expected": { "ac": 13, "touchAc": 13, "flatFootedAc": 10, "reflex": 5, "meleeAttack": 11, "landSpeed": 60 }
+  },
+  {
+    "id": "power-attack",
+    "workbookReference": "Main Sheet combat quick toggle / attack and damage targets",
+    "effects": ["-2 melee attack", "+6 melee damage"],
+    "expected": { "meleeAttack": 8, "meleeDamageModifier": 12 }
+  },
+  {
+    "id": "rage-equivalent",
+    "workbookReference": "Main Sheet conditions / ability, save, AC and HP targets",
+    "effects": ["+4 morale Strength", "+4 morale Constitution", "+2 morale Will", "-2 AC"],
+    "expected": { "strength": 22, "constitution": 18, "ac": 10, "touchAc": 10, "flatFootedAc": 8, "fortitude": 9, "will": 5, "maxHp": 54, "meleeAttack": 12, "meleeDamageModifier": 15 }
+  },
+  {
+    "id": "same-type-reduction",
+    "workbookReference": "Main Sheet Effect Table typed reduction formulas",
+    "effects": ["+2 morale", "+4 morale", "-1 morale"],
+    "expected": { "typedNet": 3, "retainedPositive": 4, "retainedPenalty": -1 }
+  }
+]

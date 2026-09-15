@@ -5,7 +5,7 @@
   "baseAbilities": { "str": 18, "dex": 14, "con": 14, "int": 10, "wis": 12, "cha": 8 },
   "baseBab": 6,
   "baseSaves": { "fortitude": 5, "reflex": 2, "will": 2 },
-  "baseHp": 50,
+  "baseHpBeforeConstitution": 50,
   "currentHp": 47,
   "baseLandSpeed": 30,
   "skillRanks": { "acrobatics": 2, "perception": 3 },
@@ -22,7 +22,7 @@
       "damageAbilityMultiplier": 1.5,
       "baseDamage": { "count": 2, "sides": 6 },
       "weaponBonus": 0,
-      "attackTags": ["melee", "two-handed"],
+      "attackTags": ["weapon.melee", "weapon.two-handed"],
       "mode": "melee"
     }
   ],

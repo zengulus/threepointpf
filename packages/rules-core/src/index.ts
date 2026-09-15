@@ -11,6 +11,8 @@ import {
   type DamageEvaluation,
   type Effect,
   type EvaluationResult,
+  type DefenseContext,
+  type GrantedCapability,
   type SaveId,
   saveIds,
   type SkillConfiguration,
@@ -79,8 +81,8 @@ function sum(contributions: Contribution[]): number {
   return contributions.reduce((total, item) => total + item.value, 0);
 }
 
-function sourceContribution(target: TargetId, value: number, source: string, label: string, bonusType?: BonusType): Contribution {
-  return { target, value, source, label, ...(bonusType ? { bonusType } : {}) };
+function sourceContribution(target: TargetId, value: number, source: string, label: string, bonusType?: BonusType, extras: Pick<Contribution, "appliesTo" | "children" | "note"> = {}): Contribution {
+  return { target, value, source, label, ...(bonusType ? { bonusType } : {}), ...extras };
 }
 
 function labelForTarget(target: TargetId): string {
@@ -106,7 +108,7 @@ function featureEffects(character: CharacterInput): Effect[] {
 }
 
 function effectContribution(effect: Extract<Effect, { kind: "modifier" }>, target: TargetId): Contribution {
-  return sourceContribution(target, effect.value, effect.source?.id ?? "effect", effect.source?.label ?? "Effect", effect.bonusType);
+  return sourceContribution(target, effect.value, effect.source?.id ?? "effect", effect.source?.label ?? "Effect", effect.bonusType, { appliesTo: effect.appliesTo });
 }
 
 function base(target: TargetId, value: number, source: string, label: string): Contribution {
@@ -122,32 +124,29 @@ export class RulesEngine {
     this.effects = featureEffects(character);
   }
 
-  private directEffects(target: TargetId): Contribution[] {
+  private directModifiers(target: TargetId): Contribution[] {
     const matching: Contribution[] = [];
-    const sets: Contribution[] = [];
     for (const effect of this.effects) {
       if (effect.target !== target) continue;
       if (effect.kind === "modifier") matching.push(effectContribution(effect, target));
-      if (effect.kind === "set") sets.push(base(target, effect.value, effect.source?.id ?? "effect", effect.source?.label ?? "Set value"));
-    }
-    if (sets.length > 0) {
-      // A set effect is an authored override; the most recently declared enabled set wins.
-      return [...sets.slice(-1), ...matching];
     }
     return matching;
   }
 
-  private result(target: TargetId, contributions: Contribution[]): EvaluationResult {
+  /** A set replaces the intrinsic/base scalar for its target; dependencies and modifiers still apply. */
+  private replacement(target: TargetId, fallback: number, source: string, label: string): Contribution {
+    const set = [...this.effects].reverse().find((effect): effect is Extract<Effect, { kind: "set" }> => effect.kind === "set" && effect.target === target);
+    return set ? base(target, set.value, set.source?.id ?? "effect", set.source?.label ?? "Set value") : base(target, fallback, source, label);
+  }
+
+  private result(target: TargetId, contributions: Contribution[], context?: DefenseContext): EvaluationResult {
     const reduced = reduceContributions(contributions);
-    return { target, value: sum(reduced), contributions: reduced };
+    return { target, value: sum(reduced), contributions: reduced, ...(context ? { context } : {}) };
   }
 
   abilityScore(id: AbilityId): EvaluationResult {
     const target = `ability.${id}` as TargetId;
-    const contributions = this.directEffects(target);
-    if (!contributions.some((item) => item.source === "base-ability")) {
-      contributions.unshift(base(target, this.character.baseAbilities[id], "base-ability", `Base ${id.toUpperCase()}`));
-    }
+    const contributions = [this.replacement(target, this.character.baseAbilities[id], "base-ability", `Base ${id.toUpperCase()}`), ...this.directModifiers(target)];
     const raw = this.result(target, contributions);
     if (raw.value >= 0) return raw;
     const floor = base(target, -raw.value, "rules-core.ability-floor", "Ability score minimum");
@@ -158,48 +157,57 @@ export class RulesEngine {
     const score = this.abilityScore(id);
     const target = `ability.${id}` as TargetId;
     const modifier = abilityModifier(score.value);
+    const scoreNode = sourceContribution(target, score.value, `ability.${id}.score`, `${id.toUpperCase()} score`, undefined, { children: score.contributions });
     return {
       target,
       value: modifier,
-      contributions: [base(target, modifier, `ability.${id}.modifier`, `${id.toUpperCase()} modifier`)],
+      contributions: [sourceContribution(target, modifier, `ability.${id}.modifier`, `${id.toUpperCase()} modifier`, undefined, { note: "floor((score - 10) / 2)", children: [scoreNode] })],
     };
   }
 
   private abilityContribution(id: AbilityId, target: TargetId): Contribution {
-    return base(target, this.abilityModifier(id).value, `ability.${id}.modifier`, `${id.toUpperCase()} modifier`);
+    const score = this.abilityScore(id);
+    const modifier = abilityModifier(score.value);
+    const scoreNode = sourceContribution(`ability.${id}` as TargetId, score.value, `ability.${id}.score`, `${id.toUpperCase()} score`, undefined, { children: score.contributions });
+    return sourceContribution(target, modifier, `ability.${id}.modifier`, `${id.toUpperCase()} modifier`, undefined, { note: "floor((score - 10) / 2)", children: [scoreNode] });
   }
 
   private save(id: SaveId): EvaluationResult {
     const target = `save.${id}` as TargetId;
     const ability: AbilityId = id === "fortitude" ? "con" : id === "reflex" ? "dex" : "wis";
     const contributions = [
-      base(target, this.character.baseSaves[id], `base-save.${id}`, `Base ${id}`),
+      this.replacement(target, this.character.baseSaves[id], `base-save.${id}`, `Base ${id}`),
       this.abilityContribution(ability, target),
-      ...this.directEffects(target),
+      ...this.directModifiers(target),
     ];
     return this.result(target, contributions);
   }
 
   private ac(kind: "normal" | "touch" | "flat-footed"): EvaluationResult {
     const target = "ac" as TargetId;
-    const contributions: Contribution[] = [base(target, 10, "ac.base", "Base AC")];
+    const contributions: Contribution[] = [this.replacement(target, 10, "ac.base", "Base AC")];
     if (kind !== "flat-footed") contributions.push(this.abilityContribution("dex", target));
-    const direct = [...this.directEffects("ac")];
-    const natural = [...this.directEffects("ac.natural")];
+    const direct = [...this.directModifiers("ac")];
+    const natural = [this.replacement("ac.natural", 0, "ac.natural.base", "Base natural armor"), ...this.directModifiers("ac.natural")];
     if (kind === "touch") {
-      contributions.push(...direct.filter((item) => item.bonusType === "dodge" || item.bonusType === "deflection" || item.bonusType === "circumstance" || item.bonusType === "untyped"));
+      contributions.push(...direct.filter((item) => this.appliesToDefense(item, "touch")));
     } else if (kind === "flat-footed") {
-      contributions.push(...direct.filter((item) => item.bonusType !== "dodge"));
+      contributions.push(...direct.filter((item) => this.appliesToDefense(item, "flatFooted")));
       contributions.push(...natural);
     } else {
       contributions.push(...direct, ...natural);
     }
-    return this.result(target, contributions);
+    return this.result(target, contributions, kind === "flat-footed" ? "flatFooted" : kind);
+  }
+
+  private appliesToDefense(contribution: Contribution, context: DefenseContext): boolean {
+    // Omitted applicability means a general AC effect. It is never inferred from bonusType.
+    return contribution.appliesTo === undefined || contribution.appliesTo.includes(context);
   }
 
   private initiativeResult(): EvaluationResult {
     const target = "initiative" as TargetId;
-    return this.result(target, [this.abilityContribution("dex", target), ...this.directEffects(target), ...this.skillLikeInitiativeEffects(target)]);
+    return this.result(target, [this.replacement(target, 0, "initiative.base", "Base initiative"), this.abilityContribution("dex", target), ...this.directModifiers(target), ...this.skillLikeInitiativeEffects(target)]);
   }
 
   private skillLikeInitiativeEffects(target: TargetId): Contribution[] {
@@ -212,11 +220,11 @@ export class RulesEngine {
 
   private combat(target: "cmb" | "cmd"): EvaluationResult {
     const contributions: Contribution[] = [
-      base(target, target === "cmd" ? 10 : 0, `${target}.base`, target === "cmd" ? "Base CMD" : "Base CMB"),
+      this.replacement(target, target === "cmd" ? 10 : 0, `${target}.base`, target === "cmd" ? "Base CMD" : "Base CMB"),
       base(target, this.character.baseBab, "base-bab", "Base Attack Bonus"),
       this.abilityContribution("str", target),
       ...(target === "cmd" ? [this.abilityContribution("dex", target)] : []),
-      ...this.directEffects(target),
+      ...this.directModifiers(target),
     ];
     return this.result(target, contributions);
   }
@@ -226,13 +234,13 @@ export class RulesEngine {
     const ranks = this.character.skillRanks[id] ?? 0;
     const target = `skill.${id}` as TargetId;
     const contributions = [
-      base(target, ranks, `skill.${id}.ranks`, "Skill ranks"),
+      this.replacement(target, ranks, `skill.${id}.ranks`, "Skill ranks"),
       this.abilityContribution(config.governingAbility, target),
       ...(config.classSkill && ranks > 0 ? [base(target, 3, `skill.${id}.class`, "Class skill")] : []),
       ...(config.miscellaneous ? [base(target, config.miscellaneous, `skill.${id}.misc`, "Miscellaneous skill bonus")] : []),
       ...(config.armorAndSize ? [base(target, config.armorAndSize, `skill.${id}.armor-size`, "Armor/size adjustment")] : []),
-      ...this.directEffects("skill.all"),
-      ...this.directEffects(target),
+      ...this.directModifiers("skill.all"),
+      ...this.directModifiers(target),
     ];
     const total = this.result(target, contributions);
     return { id: id as SkillId, label: skillLabel(id), total, ranks, governingAbility: config.governingAbility, classSkill: Boolean(config.classSkill) };
@@ -240,28 +248,28 @@ export class RulesEngine {
 
   private movementResult(): EvaluationResult {
     const target = "speed.land" as TargetId;
-    return this.result(target, [base(target, this.character.baseLandSpeed ?? 30, "base-speed.land", "Base land speed"), ...this.directEffects(target)]);
+    return this.result(target, [this.replacement(target, this.character.baseLandSpeed ?? 30, "base-speed.land", "Base land speed"), ...this.directModifiers(target)]);
   }
 
   private hpResult(): EvaluationResult {
-    return this.result("hp", [base("hp", this.character.baseHp, "base-hp", "Base hit points"), this.abilityContribution("con", "hp")]);
+    return this.result("hp", [this.replacement("hp", this.character.baseHpBeforeConstitution, "base-hp-before-con", "HP before Constitution"), this.abilityContribution("con", "hp")]);
   }
 
   private attackFor(definition: AttackDefinition): DerivedAttack {
-    const mode = definition.mode ?? (definition.attackTags?.includes("ranged") ? "ranged" : "melee");
+    const mode = definition.mode ?? (definition.attackTags?.includes("weapon.ranged") ? "ranged" : "melee");
     const target = `attack.${mode}` as TargetId;
     const attackContributions = [
-      base(target, this.character.baseBab, "base-bab", "Base Attack Bonus"),
+      this.replacement(target, this.character.baseBab, "base-bab", "Base Attack Bonus"),
       this.abilityContribution(definition.attackAbility, target),
       ...(definition.weaponBonus ? [base(target, definition.weaponBonus, `weapon.${definition.id}`, "Weapon bonus")] : []),
-      ...this.directEffects(target),
+      ...this.directModifiers(target),
     ];
     const attack = this.result(target, attackContributions);
     const damageTarget = `damage.${mode}` as TargetId;
     const multiplier = definition.damageAbilityMultiplier ?? 1;
     const damageContributions = definition.damageAbility
-      ? [base(damageTarget, Math.floor(this.abilityModifier(definition.damageAbility).value * multiplier), `ability.${definition.damageAbility}.damage`, `${definition.damageAbility.toUpperCase()} damage (${multiplier}×)`), ...this.directEffects(damageTarget)]
-      : [...this.directEffects(damageTarget)];
+      ? [this.replacement(damageTarget, 0, "damage.base", "Base damage modifier"), sourceContribution(damageTarget, Math.floor(this.abilityModifier(definition.damageAbility).value * multiplier), `ability.${definition.damageAbility}.damage`, `${definition.damageAbility.toUpperCase()} damage (${multiplier}×)`, undefined, { children: [sourceContribution(`ability.${definition.damageAbility}` as TargetId, this.abilityScore(definition.damageAbility).value, `${"ability." + definition.damageAbility}.score`, `${definition.damageAbility.toUpperCase()} score`, undefined, { children: this.abilityScore(definition.damageAbility).contributions })] }), ...this.directModifiers(damageTarget)]
+      : [this.replacement(damageTarget, 0, "damage.base", "Base damage modifier"), ...this.directModifiers(damageTarget)];
     const reducedDamage = reduceContributions(damageContributions);
     const modifier = sum(reducedDamage);
     const damage: DamageEvaluation = {
@@ -282,8 +290,13 @@ export class RulesEngine {
     if (target === "cmb" || target === "cmd") return this.combat(target);
     if (target.startsWith("skill.")) return this.skillResult(target.slice(6)).total;
     if (target === "speed.land") return this.movementResult();
-    const direct = this.directEffects(target);
-    return this.result(target, direct.length ? direct : [base(target, 0, `${target}.base`, labelForTarget(target))]);
+    const direct = this.directModifiers(target);
+    return this.result(target, [this.replacement(target, 0, `${target}.base`, labelForTarget(target)), ...direct]);
+  }
+
+  /** Grants are intentionally non-numeric in v0: they expose capabilities for future consumers. */
+  grants(): GrantedCapability[] {
+    return this.effects.flatMap((effect) => effect.kind === "grant" ? [{ target: effect.target, grant: effect.grant, source: effect.source ?? { id: "effect", label: "Effect" } }] : []);
   }
 
   derive(): DerivedCharacter {
@@ -297,8 +310,9 @@ export class RulesEngine {
     for (const id of skillKeys) skills[id] = this.skillResult(id);
     return {
       input: this.character,
+      grants: this.grants(),
       abilities,
-      hp: this.hpResult(),
+      maxHp: this.hpResult(),
       saves,
       ac: this.ac("normal"),
       touchAc: this.ac("touch"),

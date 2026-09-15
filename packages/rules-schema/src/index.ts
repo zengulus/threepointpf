@@ -53,6 +53,15 @@ export type TargetId =
   | "skill.all"
   | `skill.${string}`;
 
+export type DefenseContext = "normal" | "touch" | "flatFooted";
+
+export type AttackTag =
+  | "weapon.melee"
+  | "weapon.ranged"
+  | "weapon.two-handed"
+  | "weapon.off-hand"
+  | "natural.attack";
+
 export const targetRegistry = {
   abilities: abilityIds.map((id) => `ability.${id}`),
   saves: saveIds.map((id) => `save.${id}`),
@@ -76,6 +85,8 @@ export interface ModifierEffect {
   target: TargetId;
   value: number;
   bonusType: BonusType;
+  /** AC applicability is explicit and independent of bonus type. Only used for target `ac`. */
+  appliesTo?: DefenseContext[];
   source?: SourceReference;
 }
 
@@ -132,7 +143,8 @@ export interface AttackDefinition {
   damageAbilityMultiplier?: number;
   baseDamage: DiceExpression;
   weaponBonus?: number;
-  attackTags?: string[];
+  /** Classification only; tags do not carry numeric rules semantics. */
+  attackTags?: AttackTag[];
   mode?: "melee" | "ranged";
 }
 
@@ -143,7 +155,8 @@ export interface CharacterInput {
   baseAbilities: AbilityScores;
   baseBab: number;
   baseSaves: Record<SaveId, number>;
-  baseHp: number;
+  /** Hit points from hit dice/other authored sources before the Constitution modifier is applied. */
+  baseHpBeforeConstitution: number;
   skillRanks: Record<string, number>;
   skills?: Record<string, SkillConfiguration>;
   attacks: AttackDefinition[];
@@ -156,7 +169,7 @@ export const diceExpressionSchema = z.object({ count: z.number().int().positive(
 export const sourceReferenceSchema = z.object({ id: z.string().min(1), label: z.string().min(1) });
 export const targetIdSchema = z.string().min(1).refine(isTargetId, "Unknown target id") as z.ZodType<TargetId>;
 export const effectSchema: z.ZodType<Effect> = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("modifier"), target: targetIdSchema, value: z.number(), bonusType: z.enum(bonusTypes), source: sourceReferenceSchema.optional() }),
+  z.object({ kind: z.literal("modifier"), target: targetIdSchema, value: z.number(), bonusType: z.enum(bonusTypes), appliesTo: z.array(z.enum(["normal", "touch", "flatFooted"])).optional(), source: sourceReferenceSchema.optional() }),
   z.object({ kind: z.literal("set"), target: targetIdSchema, value: z.number(), source: sourceReferenceSchema.optional() }),
   z.object({ kind: z.literal("grant"), target: targetIdSchema, grant: z.string().min(1), source: sourceReferenceSchema.optional() }),
 ]);
@@ -167,12 +180,12 @@ export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
 export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   id: z.string().min(1), name: z.string().min(1), attackAbility: abilityIdSchema,
   damageAbility: abilityIdSchema.optional(), damageAbilityMultiplier: z.number().optional(), baseDamage: diceExpressionSchema,
-  weaponBonus: z.number().optional(), attackTags: z.array(z.string()).optional(), mode: z.enum(["melee", "ranged"]).optional(),
+  weaponBonus: z.number().optional(), attackTags: z.array(z.enum(["weapon.melee", "weapon.ranged", "weapon.two-handed", "weapon.off-hand", "natural.attack"])).optional(), mode: z.enum(["melee", "ranged"]).optional(),
 });
 export const characterInputSchema: z.ZodType<CharacterInput> = z.object({
   id: z.string().min(1), campaignId: z.string().optional(), name: z.string().min(1),
   baseAbilities: z.object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() }), baseBab: z.number(),
-  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }), baseHp: z.number(),
+  baseSaves: z.object({ fortitude: z.number(), reflex: z.number(), will: z.number() }), baseHpBeforeConstitution: z.number(),
   skillRanks: z.record(z.number()), skills: z.record(z.object({ governingAbility: abilityIdSchema, classSkill: z.boolean().optional(), miscellaneous: z.number().optional(), armorAndSize: z.number().optional() })).optional(),
   attacks: z.array(attackDefinitionSchema), features: z.array(featureInstanceSchema), currentHp: z.number(), baseLandSpeed: z.number().optional(),
 });
@@ -187,12 +200,17 @@ export interface Contribution {
   label: string;
   source: string;
   bonusType?: BonusType;
+  appliesTo?: DefenseContext[];
+  /** Nested evidence for a derived contribution, such as STR modifier ← STR score ← Rage. */
+  children?: Contribution[];
+  note?: string;
 }
 
 export interface EvaluationResult {
   target: TargetId;
   value: number;
   contributions: Contribution[];
+  context?: DefenseContext;
 }
 
 export interface DamageEvaluation {
@@ -219,8 +237,9 @@ export interface DerivedAttack {
 
 export interface DerivedCharacter {
   input: CharacterInput;
+  grants: GrantedCapability[];
   abilities: Record<AbilityId, { score: EvaluationResult; modifier: EvaluationResult }>;
-  hp: EvaluationResult;
+  maxHp: EvaluationResult;
   saves: Record<SaveId, EvaluationResult>;
   ac: EvaluationResult;
   touchAc: EvaluationResult;
@@ -231,6 +250,12 @@ export interface DerivedCharacter {
   skills: Record<string, DerivedSkill>;
   movement: EvaluationResult;
   attacks: DerivedAttack[];
+}
+
+export interface GrantedCapability {
+  target: TargetId;
+  grant: string;
+  source: SourceReference;
 }
 
 export const targetLabels: Record<string, string> = {

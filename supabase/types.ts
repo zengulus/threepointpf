@@ -3,8 +3,8 @@ export interface Database {
     Tables: {
       campaigns: { Row: { id: string; name: string; created_at: string }; Insert: { id?: string; name: string }; Update: Partial<{ name: string }> };
       characters: {
-        Row: { id: string; campaign_id: string; name: string; base_abilities: unknown; base_bab: number; base_saves: unknown; base_hp: number; skill_ranks: unknown; skill_configuration: unknown; current_hp: number; base_land_speed: number; created_at: string; updated_at: string };
-        Insert: Partial<Database["public"]["Tables"]["characters"]["Row"]> & Pick<Database["public"]["Tables"]["characters"]["Row"], "id" | "campaign_id" | "name" | "base_abilities" | "base_bab" | "base_saves" | "base_hp" | "current_hp">;
+        Row: { id: string; campaign_id: string; name: string; base_abilities: unknown; base_bab: number; base_saves: unknown; base_hp_before_con: number; skill_ranks: unknown; skill_configuration: unknown; current_hp: number; base_land_speed: number; created_at: string; updated_at: string };
+        Insert: Partial<Database["public"]["Tables"]["characters"]["Row"]> & Pick<Database["public"]["Tables"]["characters"]["Row"], "id" | "campaign_id" | "name" | "base_abilities" | "base_bab" | "base_saves" | "base_hp_before_con" | "current_hp">;
         Update: Partial<Database["public"]["Tables"]["characters"]["Row"]>;
       };
       character_features: { Row: { character_id: string; id: string; definition_id: string | null; name: string; description: string | null; enabled: boolean; effects: unknown }; Insert: Omit<Database["public"]["Tables"]["character_features"]["Row"], "definition_id" | "description"> & { definition_id?: string | null; description?: string | null }; Update: Partial<Database["public"]["Tables"]["character_features"]["Row"]> };
