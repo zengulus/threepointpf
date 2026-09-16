@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "check:edge": "npx --yes deno@2.3.0 check --config supabase/functions/deno.json supabase/functions/character-state/index.ts supabase/functions/roll-plan/index.ts supabase/functions/resolve-roll/index.ts",
     "dev": "corepack pnpm --filter @threepointpf/web dev"
   },
   "devDependencies": {

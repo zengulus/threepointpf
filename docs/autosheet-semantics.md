@@ -8,7 +8,7 @@ The main sheet separates base ability scores from temporary effects, base BAB/sa
 
 `inputs → enabled feature effects → typed contributions → reducers → derived values`.
 
-Manual BAB and saves remain supported for legacy mode. The first declarative advancement layer now supplies those baselines, HD count/sides, and optional skill-point metadata from a deliberately tiny seed rather than importing the workbook's class charts wholesale.
+Manual BAB and saves remain supported for legacy mode. Advancement content is now separate from rule semantics: `packages/rules-data` validates the usable Fighter (row 10), Rogue (row 19), and Wizard (row 26) chassis facts from `Class Charts` A:H, including HD, BAB multiplier, save columns, skills/level, and source provenance. The spell references in the Wizard row are deliberately not imported.
 
 ## Effect Table semantics
 
@@ -28,9 +28,13 @@ The workbook carries land/fly/swim/burrow/climb effects and condition multiplier
 
 ## Replacement, grants and defense contexts
 
-`replaceBase` replaces the intrinsic/base scalar for its target; competing active replacements are rejected, so feature-array order is not precedence. Dependent ability modifiers or ordinary contributions still apply. It is used consistently for ability scores, base saves, AC base, HP before Constitution, BAB-backed attack baselines, skill ranks, movement and other scalar targets. It does not add the old base a second time.
+`replaceBase` replaces the intrinsic/base scalar for its target; competing active replacements are rejected, so feature-array order is not precedence. Dependent ability modifiers or ordinary contributions still apply. It is used consistently for ability scores, base saves, AC base, HP before Constitution, `combat.bab`, skill ranks, movement and other scalar targets. It does not add the old base a second time.
 
-Advancement is an ordered array of slots, each containing named tracks with one progression entry for that slot. Progression definitions supply HD sides, full/three-quarters/half/quarter BAB, good/poor save progressions, and optional skill points. BAB and saves select complete track totals; HD selects one best die per slot. These are explicit aggregation rules, not a general best-value reducer. Only the small Fighter/Wizard/Rogue seed is present, and HP-from-HD remains future work.
+For compatibility with prior saved sheets, an existing `replaceBase` on `attack.melee` or `attack.ranged` remains a per-mode replacement of that attack’s old BAB-backed baseline. New shared BAB overrides should target `combat.bab`; ordinary attacks, CMB, and CMD consume that fact once.
+
+Advancement is an ordered array of slots, each containing named tracks with one progression entry for that slot. A progression’s level belongs to the character, not a particular track: entries are visited in slot then track order, and each cumulative-level delta is credited to the track that occupies that entry. This matters when Fighter (or any progression) moves between tracks: its second occurrence receives the level-2 delta rather than restarting at level 1. BAB and saves still select complete track totals; HD selects one best die per slot. These are explicit aggregation rules, not a generic best-value reducer. `combat.bab` then owns the selected BAB baseline and is consumed once by attacks, CMB, and CMD.
+
+Progression-level queries retain every slot/track increment as provenance. Catalog feature labels, when supplied, are surfaced as metadata-only unlocks; no spellcasting, feat, or unmodelled feature mechanics are inferred from the workbook.
 
 `GrantEffect` is retained as a non-numeric future capability. Active grants are exposed with source provenance, but no current v0 total consumes them.
 

@@ -1,20 +1,26 @@
-import { saveIds, type AdvancementSlot, type BabProgression, type ProgressionDefinition, type SaveId, type SaveProgression } from "@threepointpf/rules-schema";
+import {
+  saveIds,
+  type AdvancementSlot,
+  type BabProgression,
+  type ProgressionCatalog,
+  type ProgressionDefinition,
+  type SaveId,
+  type SaveProgression,
+} from "@threepointpf/rules-schema";
 
-/** Tiny structural seed only; this is intentionally not the Pathfinder class corpus. */
-export const progressionDefinitions: Record<string, ProgressionDefinition> = {
-  fighter: {
-    id: "fighter", name: "Fighter", hitDieSides: 10, babProgression: "full",
-    saveProgressions: { fortitude: "good", reflex: "poor", will: "poor" }, skillPointsPerLevel: 2,
-  },
-  wizard: {
-    id: "wizard", name: "Wizard", hitDieSides: 6, babProgression: "half",
-    saveProgressions: { fortitude: "poor", reflex: "poor", will: "good" }, skillPointsPerLevel: 2,
-  },
-  rogue: {
-    id: "rogue", name: "Rogue", hitDieSides: 8, babProgression: "threeQuarters",
-    saveProgressions: { fortitude: "poor", reflex: "good", will: "poor" }, skillPointsPerLevel: 8,
-  },
-};
+export interface ProgressionIncrement {
+  slotId: string;
+  trackId: string;
+  progressionId: string;
+  /** Level in this progression before this ordered slot/track entry. */
+  previousLevel: number;
+  /** Character-global level in this progression after this entry. */
+  level: number;
+  bab: number;
+  saves: Record<SaveId, number>;
+  hitDieSides: number;
+  skillPoints: number;
+}
 
 export interface TrackAdvancementResult {
   id: string;
@@ -22,6 +28,26 @@ export interface TrackAdvancementResult {
   saves: Record<SaveId, number>;
   hitDieSides: number[];
   skillPoints: number;
+  /** Every global progression increment credited to this complete track. */
+  increments: ProgressionIncrement[];
+}
+
+export interface ProgressionLevelResult {
+  id: string;
+  name: string;
+  level: number;
+  /** Ordered evidence showing where each character-global level was earned. */
+  increments: ProgressionIncrement[];
+}
+
+export interface AdvancementFeatureGrant {
+  id: string;
+  name: string;
+  progressionId: string;
+  level: number;
+  slotId: string;
+  trackId: string;
+  description?: string;
 }
 
 export interface SlotHitDie {
@@ -35,10 +61,17 @@ export interface AdvancementEvaluation {
   tracks: TrackAdvancementResult[];
   babTrack: TrackAdvancementResult;
   saveTracks: Record<SaveId, TrackAdvancementResult>;
+  progressionLevels: ProgressionLevelResult[];
+  features: AdvancementFeatureGrant[];
   hitDiceCount: number;
   hitDieSides: number[];
   hitDieSources: SlotHitDie[];
   skillPoints: number;
+}
+
+interface AdvancementValues {
+  bab: number;
+  saves: Record<SaveId, number>;
 }
 
 function babAt(progression: BabProgression, level: number): number {
@@ -57,45 +90,113 @@ function emptySaves(): Record<SaveId, number> {
   return { fortitude: 0, reflex: 0, will: 0 };
 }
 
+function valuesAt(definition: ProgressionDefinition, level: number): AdvancementValues {
+  if (level === 0) return { bab: 0, saves: emptySaves() };
+  const chartEntry = definition.chart?.find((entry) => entry.level === level);
+  if (definition.chart && !chartEntry) throw new Error(`Progression ${definition.id} has no chart row for global level ${level}`);
+  if (chartEntry) return { bab: chartEntry.bab, saves: { ...chartEntry.saves } };
+  const saves = emptySaves();
+  for (const saveId of saveIds) saves[saveId] = saveAt(definition.saveProgressions[saveId], level);
+  return { bab: babAt(definition.babProgression, level), saves };
+}
+
 function bestTrack(tracks: TrackAdvancementResult[], property: (track: TrackAdvancementResult) => number): TrackAdvancementResult {
   const first = tracks[0];
   if (!first) throw new Error("Advancement requires at least one track");
   return tracks.slice(1).reduce((best, candidate) => property(candidate) > property(best) ? candidate : best, first);
 }
 
+function assertSlotTopology(slots: AdvancementSlot[]): void {
+  const first = slots[0];
+  if (!first) throw new Error("Advancement requires at least one slot");
+  const slotIds = new Set<string>();
+  const expectedTrackIds = first.tracks.map((track) => track.id);
+  if (expectedTrackIds.length === 0) throw new Error(`Advancement slot ${first.id} requires at least one track`);
+  for (const slot of slots) {
+    if (slotIds.has(slot.id)) throw new Error(`Duplicate advancement slot id ${slot.id}`);
+    slotIds.add(slot.id);
+    const seen = new Set<string>();
+    for (const track of slot.tracks) {
+      if (seen.has(track.id)) throw new Error(`Duplicate advancement track id ${track.id} in slot ${slot.id}`);
+      seen.add(track.id);
+    }
+    if (slot.tracks.length !== expectedTrackIds.length || slot.tracks.some((track, index) => track.id !== expectedTrackIds[index])) {
+      throw new Error("Each advancement slot must use the same ordered track ids");
+    }
+  }
+}
+
 /**
- * Evaluates ordered advancement slots. BAB and each save choose one complete
- * track total. Hit dice choose one die per slot, using the best die type in
- * that slot; no property shares a generic gestalt reducer.
+ * Evaluates ordered advancement slots using an injected content catalog.
+ *
+ * Progression level is character-global: if Fighter occurs on two different
+ * tracks, the second ordered occurrence earns Fighter level 2. The resulting
+ * BAB/save delta is nevertheless credited to the track occupying that slot.
+ * A slot's track-array order is therefore the deterministic order when the
+ * same progression occurs more than once in a single slot.
  */
-export function evaluateAdvancement(slots: AdvancementSlot[], catalog: Record<string, ProgressionDefinition> = progressionDefinitions): AdvancementEvaluation {
-  if (slots.length === 0) throw new Error("Advancement requires at least one slot");
+export function evaluateAdvancement(slots: AdvancementSlot[], catalog: ProgressionCatalog): AdvancementEvaluation {
+  assertSlotTopology(slots);
   const byTrack = new Map<string, TrackAdvancementResult>();
-  const progressionLevels = new Map<string, Map<string, number>>();
+  const globalProgressionLevels = new Map<string, ProgressionLevelResult>();
   const hitDieSources: SlotHitDie[] = [];
   const slotSkillPoints: number[] = [];
+  const featureGrants: AdvancementFeatureGrant[] = [];
 
   for (const slot of slots) {
     const slotCandidates: Array<{ trackId: string; definition: ProgressionDefinition }> = [];
-    const seenTrackIds = new Set<string>();
     for (const track of slot.tracks) {
-      if (seenTrackIds.has(track.id)) throw new Error(`Duplicate advancement track id ${track.id} in slot ${slot.id}`);
-      seenTrackIds.add(track.id);
       const definition = catalog[track.entry.progressionId];
       if (!definition) throw new Error(`Unknown progression definition ${track.entry.progressionId}`);
       slotCandidates.push({ trackId: track.id, definition });
 
-      const result = byTrack.get(track.id) ?? { id: track.id, bab: 0, saves: emptySaves(), hitDieSides: [], skillPoints: 0 };
-      const levels = progressionLevels.get(track.id) ?? new Map<string, number>();
-      const previousLevel = levels.get(definition.id) ?? 0;
-      const currentLevel = previousLevel + 1;
-      result.bab += babAt(definition.babProgression, currentLevel) - babAt(definition.babProgression, previousLevel);
-      for (const saveId of saveIds) result.saves[saveId] += saveAt(definition.saveProgressions[saveId], currentLevel) - saveAt(definition.saveProgressions[saveId], previousLevel);
+      const progression = globalProgressionLevels.get(definition.id) ?? {
+        id: definition.id,
+        name: definition.name,
+        level: 0,
+        increments: [],
+      };
+      const previousLevel = progression.level;
+      const level = previousLevel + 1;
+      const previousValues = valuesAt(definition, previousLevel);
+      const currentValues = valuesAt(definition, level);
+      const saves = emptySaves();
+      for (const saveId of saveIds) saves[saveId] = currentValues.saves[saveId] - previousValues.saves[saveId];
+      const increment: ProgressionIncrement = {
+        slotId: slot.id,
+        trackId: track.id,
+        progressionId: definition.id,
+        previousLevel,
+        level,
+        bab: currentValues.bab - previousValues.bab,
+        saves,
+        hitDieSides: definition.hitDieSides,
+        skillPoints: definition.skillPointsPerLevel ?? 0,
+      };
+      progression.level = level;
+      progression.increments.push(increment);
+      globalProgressionLevels.set(definition.id, progression);
+
+      const result = byTrack.get(track.id) ?? { id: track.id, bab: 0, saves: emptySaves(), hitDieSides: [], skillPoints: 0, increments: [] };
+      result.bab += increment.bab;
+      for (const saveId of saveIds) result.saves[saveId] += increment.saves[saveId];
       result.hitDieSides.push(definition.hitDieSides);
-      result.skillPoints += definition.skillPointsPerLevel ?? 0;
-      levels.set(definition.id, currentLevel);
-      progressionLevels.set(track.id, levels);
+      result.skillPoints += increment.skillPoints;
+      result.increments.push(increment);
       byTrack.set(track.id, result);
+
+      for (const feature of definition.features?.filter((item) => item.level === level) ?? []) {
+        // Metadata is exposed as an unlock; it never invents a numeric rule effect.
+        featureGrants.push({
+          id: feature.id,
+          name: feature.name,
+          progressionId: definition.id,
+          level,
+          slotId: slot.id,
+          trackId: track.id,
+          ...(feature.description ? { description: feature.description } : {}),
+        });
+      }
     }
 
     const bestHitDie = slotCandidates.reduce((best, candidate) => candidate.definition.hitDieSides > best.definition.hitDieSides ? candidate : best);
@@ -112,9 +213,16 @@ export function evaluateAdvancement(slots: AdvancementSlot[], catalog: Record<st
     tracks,
     babTrack,
     saveTracks,
+    progressionLevels: [...globalProgressionLevels.values()],
+    features: featureGrants,
     hitDiceCount: slots.length,
     hitDieSides: hitDieSources.map((source) => source.sides),
     hitDieSources,
     skillPoints: slotSkillPoints.reduce((total, value) => total + value, 0),
   };
+}
+
+/** Finds one character-global progression level record in an advancement evaluation. */
+export function progressionLevel(evaluation: AdvancementEvaluation, progressionId: string): ProgressionLevelResult | undefined {
+  return evaluation.progressionLevels.find((item) => item.id === progressionId);
 }

@@ -1,6 +1,7 @@
 import { resolveRollPlan } from "@threepointpf/dice";
-import { RulesEngine } from "@threepointpf/rules-core";
-import { resolveRollRequestSchema, type ResolveRollRequest } from "../../../packages/shared/src/index.ts";
+import { progressionCatalog } from "@threepointpf/rules-data";
+import { saveIds } from "@threepointpf/rules-schema";
+import { createCharacterRollPlan, resolveRollRequestSchema, type ResolveRollRequest } from "../../../packages/shared/src/index.ts";
 import { createClient } from "@supabase/supabase-js";
 import { bearer, json, options } from "../_shared/http.ts";
 import { loadCharacter } from "../_shared/load-character.ts";
@@ -11,11 +12,13 @@ Deno.serve(async (request) => {
     const token = bearer(request); if (!token) return json({ error: "Authorization required" }, 401);
     const body = resolveRollRequestSchema.parse(await request.json()) as ResolveRollRequest;
     const character = await loadCharacter(body.plan.characterId, token);
-    const engine = new RulesEngine(character);
     const metadata = body.plan.metadata;
-    const serverPlan = metadata?.kind === "save" && metadata.target.startsWith("save.")
-      ? engine.createSaveRollPlan(metadata.target.slice(5) as "fortitude" | "reflex" | "will")
-      : metadata?.kind === "attack" && metadata.attackId ? engine.createAttackRollPlan(metadata.attackId) : null;
+    const saveId = metadata?.kind === "save"
+      ? saveIds.find((id) => metadata.target === `save.${id}`)
+      : undefined;
+    const serverPlan = saveId
+      ? createCharacterRollPlan(character, { characterId: character.id, kind: "save", saveId }, progressionCatalog)
+      : metadata?.kind === "attack" && metadata.attackId ? createCharacterRollPlan(character, { characterId: character.id, kind: "attack", attackId: metadata.attackId }, progressionCatalog) : null;
     if (!serverPlan) return json({ error: "Unsupported roll plan" }, 400);
     const resolved = resolveRollPlan(serverPlan, body.faces);
     const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: `Bearer ${token}` } } });

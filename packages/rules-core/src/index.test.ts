@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AdvancementSlot, CharacterInput, Contribution, Effect } from "@threepointpf/rules-schema";
+import type { AdvancementSlot, CharacterInput, Contribution, Effect, ProgressionCatalog } from "@threepointpf/rules-schema";
 import { RulesEngine, abilityModifier, evaluate, reduceContributions } from "./index.js";
 
 const fixture: CharacterInput = {
@@ -15,6 +15,27 @@ const fixture: CharacterInput = {
     { id: "power-attack", name: "Power Attack", enabled: true, effects: [{ kind: "modifier", target: "attack.melee", value: -2, bonusType: "untyped" }, { kind: "modifier", target: "damage.melee", value: 6, bonusType: "untyped" }] },
   ],
 };
+
+/** Test-only content proves rules-core does not carry a built-in class corpus. */
+const testProgressionCatalog: ProgressionCatalog = {
+  fighter: {
+    id: "fighter", name: "Fighter", hitDieSides: 10, babProgression: "full",
+    saveProgressions: { fortitude: "good", reflex: "poor", will: "poor" }, skillPointsPerLevel: 2,
+    features: [{ id: "fighter.bravery", name: "Bravery", level: 2 }],
+  },
+  wizard: {
+    id: "wizard", name: "Wizard", hitDieSides: 6, babProgression: "half",
+    saveProgressions: { fortitude: "poor", reflex: "poor", will: "good" }, skillPointsPerLevel: 2,
+  },
+  rogue: {
+    id: "rogue", name: "Rogue", hitDieSides: 8, babProgression: "threeQuarters",
+    saveProgressions: { fortitude: "poor", reflex: "good", will: "poor" }, skillPointsPerLevel: 8,
+  },
+};
+
+function advancementEngine(character: CharacterInput): RulesEngine {
+  return new RulesEngine(character, { progressionCatalog: testProgressionCatalog });
+}
 
 function advancementSlots(trackEntries: Record<string, string[]>): AdvancementSlot[] {
   const slotCount = Math.max(...Object.values(trackEntries).map((entries) => entries.length));
@@ -167,6 +188,39 @@ describe("character dependency graph", () => {
   it("uses the same evaluated modifier for roll plans", () => {
     const engine = new RulesEngine(fixture); expect(engine.createSaveRollPlan("fortitude").modifier).toBe(engine.derive().saves.fortitude.value); expect(engine.createAttackRollPlan("greatsword").modifier).toBe(engine.derive().attacks[0]!.attack.value);
   });
+  it("derives combat.bab once and has attacks, CMB, and CMD consume that fact exactly once", () => {
+    const character: CharacterInput = {
+      ...fixture,
+      features: [...fixture.features, { id: "bab-boost", name: "BAB boost", enabled: true, effects: [{ kind: "modifier", target: "combat.bab", value: 1, bonusType: "untyped" }] }],
+    };
+    const engine = new RulesEngine(character);
+    const derived = engine.derive();
+    expect(derived.bab.value).toBe(7);
+    expect(evaluate("combat.bab", character).value).toBe(7);
+    expect(derived.attacks[0]?.attack.value).toBe(12);
+    expect(derived.cmb.value).toBe(11);
+    expect(derived.cmd.value).toBe(23);
+    expect(engine.bab()).toBe(derived.bab);
+    for (const consumer of [derived.attacks[0]!.attack, derived.cmb, derived.cmd]) {
+      const bab = consumer.contributions.filter((item) => item.source === "combat.bab");
+      expect(bab).toHaveLength(1);
+      expect(bab[0]?.value).toBe(derived.bab.value);
+      expect(bab[0]?.children).toBe(derived.bab.contributions);
+      expect(bab[0]?.children?.reduce((total, item) => total + item.value, 0)).toBe(derived.bab.value);
+    }
+  });
+  it("preserves legacy attack-target baseline replacements as an explicit combat.bab override", () => {
+    const character: CharacterInput = {
+      ...fixture,
+      features: [{ id: "legacy-attack-baseline", name: "Legacy attack baseline", enabled: true, effects: [{ kind: "replaceBase", target: "attack.melee", value: 9 }] }],
+    };
+    const derived = new RulesEngine(character).derive();
+    expect(derived.bab.value).toBe(6);
+    expect(derived.attacks[0]?.attack.value).toBe(13); // replacement 9 + STR 4, not replacement 9 + BAB 6 + STR 4.
+    const baseline = derived.attacks[0]?.attack.contributions[0];
+    expect(baseline?.note).toContain("overrides combat.bab");
+    expect(baseline?.children?.filter((item) => item.source === "combat.bab")).toHaveLength(1);
+  });
   it("produces provenance which sums to every displayed total", () => {
     const derived = new RulesEngine(fixture).derive();
     for (const value of [derived.ac, derived.touchAc, derived.flatFootedAc, derived.initiative, derived.cmb, derived.cmd, ...Object.values(derived.saves), ...Object.values(derived.skills).map((skill) => skill.total), ...derived.attacks.map((attack) => attack.attack)]) expect(value.contributions.reduce((n, item) => n + item.value, 0)).toBe(value.value);
@@ -183,28 +237,89 @@ describe("character dependency graph", () => {
 });
 
 describe("declarative advancement", () => {
+  it("requires a caller-injected progression catalog instead of carrying class content in rules-core", () => {
+    expect(() => new RulesEngine(advancementCharacter({ main: ["fighter"] })).derive()).toThrow("Advancement requires an injected progression catalog");
+  });
+
   it("derives an ordinary Fighter track and exposes its baseline provenance", () => {
-    const derived = new RulesEngine(advancementCharacter({ martial: ["fighter", "fighter", "fighter"] })).derive();
+    const derived = advancementEngine(advancementCharacter({ martial: ["fighter", "fighter", "fighter"] })).derive();
     expect(derived.advancement).toMatchObject({ slotCount: 3, trackIds: ["martial"], hitDiceCount: 3, hitDieSides: [10, 10, 10], skillPoints: 6 });
     expect(derived.attacks[0]?.attack.value).toBe(3);
     expect(derived.saves.fortitude.value).toBe(5); // good Fort +3, CON +2
     expect(derived.saves.reflex.value).toBe(3); // poor Reflex +1, DEX +2
     expect(derived.maxHp.value).toBe(36); // manual HP baseline 30 + CON +2 × 3 HD
-    const bab = derived.attacks[0]?.attack.contributions.find((item) => item.source === "advancement.track.martial.bab");
+    const bab = derived.bab.contributions.find((item) => item.source === "advancement.track.martial.bab");
     expect(bab?.value).toBe(3);
     expect(bab?.note).toContain("complete advancement-track");
   });
 
   it("supports multiclass progression on one track", () => {
-    const derived = new RulesEngine(advancementCharacter({ main: ["fighter", "fighter", "rogue"] })).derive();
+    const derived = advancementEngine(advancementCharacter({ main: ["fighter", "fighter", "rogue"] })).derive();
     expect(derived.attacks[0]?.attack.value).toBe(2); // Fighter +2; Rogue level 1 adds 0 BAB.
     expect(derived.saves.fortitude.value).toBe(5); // Fighter good Fort +3 plus CON +2.
     expect(derived.saves.reflex.value).toBe(4); // Rogue level 1 good Reflex +2 plus DEX +2.
     expect(derived.advancement?.hitDieSides).toEqual([10, 10, 8]);
   });
 
+  it("uses character-global progression levels while crediting each increment to the track occupying its slot", () => {
+    const character = advancementCharacter({ first: ["fighter", "wizard"], second: ["wizard", "fighter"] });
+    const engine = advancementEngine(character);
+    const derived = engine.derive();
+    // Fighter level 2 and Wizard level 2 are earned across tracks, not reset on their second track.
+    expect(derived.bab.value).toBe(2); // first track = Fighter +1 plus Wizard's global level-2 +1.
+    expect(derived.attacks[0]?.attack.value).toBe(2);
+    const fighter = engine.progressionLevel("fighter");
+    expect(fighter.value).toBe(2);
+    expect(fighter.contributions.map((item) => item.source)).toEqual([
+      "advancement.slot.level-1.track.first.progression.fighter.level.1",
+      "advancement.slot.level-2.track.second.progression.fighter.level.2",
+    ]);
+    expect(fighter.contributions[1]?.note).toContain("track second");
+    expect(derived.advancement?.progressionLevels.fighter).toEqual(fighter);
+    const selectedBab = derived.bab.contributions.find((item) => item.source === "advancement.track.first.bab");
+    const firstTrack = selectedBab?.children?.find((item) => item.source === "advancement.track.first.bab");
+    expect(firstTrack?.children?.map((item) => item.value)).toEqual([1, 1]);
+    const secondTrack = selectedBab?.children?.find((item) => item.source === "advancement.track.second.bab");
+    expect(secondTrack?.children?.map((item) => item.value)).toEqual([0, 1]);
+  });
+
+  it("uses stable track-array order when the same progression occupies multiple tracks in one slot", () => {
+    const engine = advancementEngine(advancementCharacter({ first: ["fighter"], second: ["fighter"] }));
+    const derived = engine.derive();
+    const fighter = engine.progressionLevel("fighter");
+    expect(fighter.contributions.map((item) => item.source)).toEqual([
+      "advancement.slot.level-1.track.first.progression.fighter.level.1",
+      "advancement.slot.level-1.track.second.progression.fighter.level.2",
+    ]);
+    // Global Fighter L1's +2 Fort belongs to the first track; L2's +1 belongs to second.
+    expect(derived.bab.value).toBe(1);
+    expect(derived.saves.fortitude.value).toBe(4); // selected first-track Fort +2, CON +2.
+    expect(derived.advancement?.features).toMatchObject([{ id: "fighter.bravery", level: 2, slotId: "level-1", trackId: "second" }]);
+    expect(engine.progressionFeatures("fighter")[0]?.provenance.note).toContain("track second");
+  });
+
+  it("uses validated cumulative chart rows when a catalog supplies non-generic chassis values", () => {
+    const chartCatalog: ProgressionCatalog = {
+      charted: {
+        id: "charted", name: "Charted", hitDieSides: 8, babProgression: "quarter",
+        saveProgressions: { fortitude: "poor", reflex: "poor", will: "poor" },
+        chart: [
+          { level: 1, bab: 0, saves: { fortitude: 1, reflex: 0, will: 0 } },
+          { level: 2, bab: 2, saves: { fortitude: 3, reflex: 1, will: 0 } },
+        ],
+      },
+    };
+    const engine = new RulesEngine(advancementCharacter({ first: ["charted"], second: ["charted"] }), { progressionCatalog: chartCatalog });
+    const derived = engine.derive();
+    // L2's non-generic +2 BAB and +2 Fort increments belong to the second track.
+    expect(derived.bab.value).toBe(2);
+    expect(derived.saves.fortitude.value).toBe(4);
+    const selected = derived.bab.contributions[0]?.children?.find((item) => item.source === "advancement.track.second.bab");
+    expect(selected?.children?.[0]?.value).toBe(2);
+  });
+
   it("uses explicit gestalt aggregation rules across two tracks", () => {
-    const derived = new RulesEngine(advancementCharacter({ martial: ["fighter", "fighter", "fighter"], arcane: ["wizard", "wizard", "wizard"] })).derive();
+    const derived = advancementEngine(advancementCharacter({ martial: ["fighter", "fighter", "fighter"], arcane: ["wizard", "wizard", "wizard"] })).derive();
     expect(derived.attacks[0]?.attack.value).toBe(3); // Best complete BAB track: Fighter 3, not a per-slot sum.
     expect(derived.saves.fortitude.value).toBe(5); // Fighter good Fort +3 + CON 2.
     expect(derived.saves.will.value).toBe(3); // Wizard good Will +3 + WIS 0.
@@ -214,18 +329,32 @@ describe("declarative advancement", () => {
 
   it("does not maximize BAB independently per slot", () => {
     const staggeredGestaltFixture = advancementCharacter({ first: ["fighter", "wizard", "wizard", "wizard"], second: ["wizard", "fighter", "fighter", "fighter"] });
-    const derived = new RulesEngine(staggeredGestaltFixture).derive();
-    expect(derived.attacks[0]?.attack.value).toBe(3); // Track totals are 2 and 3; per-slot maximization would incorrectly produce 4.
-    const bab = derived.attacks[0]?.attack.contributions.find((item) => item.source.includes(".bab"));
-    expect(bab?.source).toBe("advancement.track.second.bab");
-    expect(bab?.children?.map((item) => item.value)).toEqual([2, 3]);
+    const derived = advancementEngine(staggeredGestaltFixture).derive();
+    expect(derived.attacks[0]?.attack.value).toBe(3); // Global class levels make both complete tracks total +3; per-slot maximization would incorrectly produce 4.
+    const bab = derived.bab.contributions.find((item) => item.source.includes(".bab"));
+    expect(bab?.source).toBe("advancement.track.first.bab"); // Stable first-track tie breaker.
+    expect(bab?.children?.map((item) => item.value)).toEqual([3, 3]);
   });
 
   it("supports an arbitrary three-track representation without a gestalt special case", () => {
-    const derived = new RulesEngine(advancementCharacter({ martial: ["fighter", "fighter"], arcane: ["wizard", "wizard"], scout: ["rogue", "rogue"] })).derive();
+    const derived = advancementEngine(advancementCharacter({ martial: ["fighter", "fighter"], arcane: ["wizard", "wizard"], scout: ["rogue", "rogue"] })).derive();
     expect(derived.advancement?.trackIds).toEqual(["martial", "arcane", "scout"]);
     expect(derived.attacks[0]?.attack.value).toBe(2);
     expect(derived.advancement?.hitDieSides).toEqual([10, 10]);
+  });
+
+  it("aggregates whole tracks across four tracks without an N-stalt special case", () => {
+    const derived = advancementEngine(advancementCharacter({
+      first: ["fighter", "wizard"],
+      second: ["wizard", "fighter"],
+      third: ["rogue", "rogue"],
+      fourth: ["fighter", "fighter"],
+    })).derive();
+    expect(derived.advancement?.trackIds).toEqual(["first", "second", "third", "fourth"]);
+    expect(derived.advancement?.slotCount).toBe(2);
+    expect(derived.bab.value).toBe(2); // complete first/fourth tracks tie; no per-slot or per-track sum.
+    expect(derived.bab.contributions.find((item) => item.source.includes(".bab"))?.source).toBe("advancement.track.first.bab");
+    expect(derived.advancement?.hitDiceCount).toBe(2);
   });
 
   it("keeps feature effects and roll plans on the same advancement-derived baseline", () => {
@@ -234,7 +363,7 @@ describe("declarative advancement", () => {
       { kind: "modifier", target: "attack.melee", value: 1, bonusType: "untyped" },
       { kind: "modifier", target: "save.fortitude", value: 2, bonusType: "morale" },
     ] }];
-    const engine = new RulesEngine(character);
+    const engine = advancementEngine(character);
     const derived = engine.derive();
     expect(derived.attacks[0]?.attack.value).toBe(3); // BAB 2 + STR 0 + feature 1
     expect(derived.saves.fortitude.value).toBe(7); // Fighter good Fort 3 + CON 2 + feature 2

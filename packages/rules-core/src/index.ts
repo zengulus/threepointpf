@@ -12,7 +12,9 @@ import {
   type Effect,
   type EvaluationResult,
   type DefenseContext,
+  type DerivedProgressionFeature,
   type GrantedCapability,
+  type ProgressionCatalog,
   type SaveId,
   saveIds,
   type SkillConfiguration,
@@ -21,7 +23,12 @@ import {
   targetLabels,
 } from "@threepointpf/rules-schema";
 import type { RollPlan } from "@threepointpf/dice";
-import { evaluateAdvancement, progressionDefinitions, type AdvancementEvaluation } from "./advancement.js";
+import { evaluateAdvancement, type AdvancementEvaluation } from "./advancement.js";
+
+/** Concrete progression content belongs to a caller-owned catalog, never rules-core. */
+export interface RulesEngineOptions {
+  progressionCatalog?: ProgressionCatalog;
+}
 
 const defaultSkillAbilities: Record<string, AbilityId> = {
   acrobatics: "dex", appraise: "int", bluff: "cha", climb: "str", craft: "int", diplomacy: "cha",
@@ -123,11 +130,18 @@ export class RulesEngine {
   readonly character: CharacterInput;
   private readonly effects: Effect[];
   private readonly advancement?: AdvancementEvaluation;
+  private readonly progressionCatalog?: ProgressionCatalog;
+  /** `combat.bab` is a shared derived fact, not a fresh baseline per consumer. */
+  private babEvaluation?: EvaluationResult;
 
-  constructor(character: CharacterInput) {
+  constructor(character: CharacterInput, options: RulesEngineOptions = {}) {
     this.character = character;
     this.effects = featureEffects(character);
-    this.advancement = character.advancementSlots?.length ? evaluateAdvancement(character.advancementSlots, progressionDefinitions) : undefined;
+    this.progressionCatalog = options.progressionCatalog;
+    if (character.advancementSlots?.length) {
+      if (!this.progressionCatalog) throw new Error("Advancement requires an injected progression catalog");
+      this.advancement = evaluateAdvancement(character.advancementSlots, this.progressionCatalog);
+    }
     const replacementTargets = new Set<TargetId>();
     for (const effect of this.effects) {
       if (effect.kind !== "replaceBase") continue;
@@ -145,23 +159,104 @@ export class RulesEngine {
     return matching;
   }
 
+  private trackIncrementEvidence(target: TargetId, track: AdvancementEvaluation["tracks"][number], property: "bab" | SaveId): Contribution[] {
+    return track.increments.map((increment) => {
+      const definition = this.progressionCatalog?.[increment.progressionId];
+      const value = property === "bab" ? increment.bab : increment.saves[property];
+      const suffix = property === "bab" ? "bab" : `save.${property}`;
+      return sourceContribution(
+        target,
+        value,
+        `advancement.slot.${increment.slotId}.track.${increment.trackId}.progression.${increment.progressionId}.${suffix}`,
+        `${definition?.name ?? increment.progressionId} ${property === "bab" ? "BAB" : property} at level ${increment.level}`,
+        undefined,
+        { note: `Character-global ${definition?.name ?? increment.progressionId} level ${increment.previousLevel} → ${increment.level}; credited to track ${increment.trackId}` },
+      );
+    });
+  }
+
   private trackEvidence(target: TargetId, property: "bab" | SaveId, selected: string): Contribution[] {
     if (!this.advancement) return [];
     return this.advancement.tracks.map((track) => {
       const value = property === "bab" ? track.bab : track.saves[property];
-      return sourceContribution(target, value, `advancement.track.${track.id}.${property}`, `Track ${track.id} ${property === "bab" ? "BAB" : property}`, undefined, { note: track.id === selected ? "Selected complete-track total" : "Complete-track candidate" });
+      const sourceProperty = property === "bab" ? "bab" : `save.${property}`;
+      return sourceContribution(target, value, `advancement.track.${track.id}.${sourceProperty}`, `Track ${track.id} ${property === "bab" ? "BAB" : property}`, undefined, {
+        note: track.id === selected ? "Selected complete-track total" : "Complete-track candidate",
+        children: this.trackIncrementEvidence(target, track, property),
+      });
     });
   }
 
-  private baseBabContribution(target: TargetId): Contribution {
-    if (!this.advancement) return base(target, this.character.baseBab ?? 0, "base-bab", "Base Attack Bonus");
+  /** First-class BAB fact. Its contribution tree is shared by every BAB consumer. */
+  bab(): EvaluationResult {
+    if (this.babEvaluation) return this.babEvaluation;
+    const target = "combat.bab" as TargetId;
+    if (!this.advancement) {
+      const result = this.result(target, [this.replacement(target, this.character.baseBab ?? 0, "base-bab", "Base Attack Bonus"), ...this.directModifiers(target)]);
+      this.babEvaluation = result;
+      return result;
+    }
     const selected = this.advancement.babTrack;
-    if (this.effects.some((effect) => effect.kind === "replaceBase" && effect.target === target)) return this.replacement(target, selected.bab, `advancement.track.${selected.id}.bab`, `Track ${selected.id} BAB`);
-    return sourceContribution(target, selected.bab, `advancement.track.${selected.id}.bab`, `Track ${selected.id} BAB`, undefined, { children: this.trackEvidence(target, "bab", selected.id), note: "Best complete advancement-track total" });
+    const fallback = sourceContribution(target, selected.bab, `advancement.track.${selected.id}.bab`, `Track ${selected.id} BAB`, undefined, {
+      children: this.trackEvidence(target, "bab", selected.id),
+      note: "Best complete advancement-track total",
+    });
+    const replacement = this.effects.some((effect) => effect.kind === "replaceBase" && effect.target === target)
+      ? this.replacement(target, selected.bab, `advancement.track.${selected.id}.bab`, `Track ${selected.id} BAB`)
+      : fallback;
+    const result = this.result(target, [replacement, ...this.directModifiers(target)]);
+    this.babEvaluation = result;
+    return result;
+  }
+
+  /** Copy the already-evaluated BAB fact into a consuming target exactly once. */
+  private babContribution(target: TargetId): Contribution {
+    const bab = this.bab();
+    return sourceContribution(target, bab.value, "combat.bab", "Base Attack Bonus", undefined, {
+      children: bab.contributions,
+      note: "Consumed from the first-class combat.bab fact",
+    });
+  }
+
+  /** Query a character-global progression level with every slot/track origin retained. */
+  progressionLevel(progressionId: string): EvaluationResult {
+    const definition = this.progressionCatalog?.[progressionId];
+    if (!definition) throw new Error(`Unknown progression definition ${progressionId}`);
+    const target = `progression.${progressionId}.level` as TargetId;
+    const progression = this.advancement?.progressionLevels.find((item) => item.id === progressionId);
+    if (!progression) return this.result(target, [base(target, 0, `progression.${progressionId}.level`, `${definition.name} level`)]);
+    return this.result(target, progression.increments.map((increment) => sourceContribution(
+      target,
+      1,
+      `advancement.slot.${increment.slotId}.track.${increment.trackId}.progression.${progressionId}.level.${increment.level}`,
+      `${definition.name} level ${increment.level}`,
+      undefined,
+      { note: `Character-global level ${increment.level}, earned in slot ${increment.slotId} on track ${increment.trackId}` },
+    )));
+  }
+
+  /** Metadata-only class-chart feature unlocks; no unmodelled mechanics are inferred. */
+  progressionFeatures(progressionId?: string): DerivedProgressionFeature[] {
+    return (this.advancement?.features ?? [])
+      .filter((feature) => !progressionId || feature.progressionId === progressionId)
+      .map((feature) => {
+        const target = `progression.${feature.progressionId}.level` as TargetId;
+        return {
+          ...feature,
+          provenance: sourceContribution(
+            target,
+            1,
+            `advancement.slot.${feature.slotId}.track.${feature.trackId}.progression.${feature.progressionId}.feature.${feature.id}`,
+            `${feature.name} (${feature.progressionId} ${feature.level})`,
+            undefined,
+            { note: `Unlocked at character-global ${feature.progressionId} level ${feature.level}; credited to track ${feature.trackId}` },
+          ),
+        };
+      });
   }
 
   private baseSaveContribution(id: SaveId, target: TargetId): Contribution {
-    if (!this.advancement) return base(target, this.character.baseSaves?.[id] ?? 0, `base-save.${id}`, `Base ${id}`);
+    if (!this.advancement) return this.replacement(target, this.character.baseSaves?.[id] ?? 0, `base-save.${id}`, `Base ${id}`);
     const selected = this.advancement.saveTracks[id];
     if (this.effects.some((effect) => effect.kind === "replaceBase" && effect.target === target)) return this.replacement(target, selected.saves[id], `advancement.track.${selected.id}.save.${id}`, `Track ${selected.id} ${id}`);
     return sourceContribution(target, selected.saves[id], `advancement.track.${selected.id}.save.${id}`, `Track ${selected.id} ${id}`, undefined, { children: this.trackEvidence(target, id, selected.id), note: "Best complete advancement-track total" });
@@ -176,10 +271,14 @@ export class RulesEngine {
   }
 
   /** A replaceBase effect replaces the intrinsic/base scalar; dependencies and modifiers still apply. */
-  private replacement(target: TargetId, fallback: number, source: string, label: string): Contribution {
+  private replacementEffect(target: TargetId): Extract<Effect, { kind: "replaceBase" }> | undefined {
     const replacements = this.effects.filter((effect): effect is Extract<Effect, { kind: "replaceBase" }> => effect.kind === "replaceBase" && effect.target === target);
     if (replacements.length > 1) throw new Error(`Ambiguous active baseline replacements for ${target}`);
-    const replacement = replacements[0];
+    return replacements[0];
+  }
+
+  private replacement(target: TargetId, fallback: number, source: string, label: string): Contribution {
+    const replacement = this.replacementEffect(target);
     return replacement ? base(target, replacement.value, replacement.source?.id ?? "effect", replacement.source?.label ?? "Baseline replacement") : base(target, fallback, source, label);
   }
 
@@ -265,7 +364,7 @@ export class RulesEngine {
   private combat(target: "cmb" | "cmd"): EvaluationResult {
     const contributions: Contribution[] = [
       this.replacement(target, target === "cmd" ? 10 : 0, `${target}.base`, target === "cmd" ? "Base CMD" : "Base CMB"),
-      this.baseBabContribution(target),
+      this.babContribution(target),
       this.abilityContribution("str", target),
       ...(target === "cmd" ? [this.abilityContribution("dex", target)] : []),
       ...this.directModifiers(target),
@@ -310,8 +409,18 @@ export class RulesEngine {
   private attackFor(definition: AttackDefinition): DerivedAttack {
     const mode = definition.mode ?? (definition.attackTags?.includes("weapon.ranged") ? "ranged" : "melee");
     const target = `attack.${mode}` as TargetId;
+    const attackReplacement = this.replacementEffect(target);
+    // Pre-combat.bab saves used replaceBase(attack.*) as a replacement for the
+    // whole BAB-backed attack baseline. Retain that authored meaning rather
+    // than silently turning old data into an additive bonus.
+    const attackBaseline = attackReplacement
+      ? [sourceContribution(target, attackReplacement.value, attackReplacement.source?.id ?? "effect", attackReplacement.source?.label ?? "Baseline replacement", undefined, {
+        note: "Legacy attack baseline replacement overrides combat.bab for this attack mode",
+        children: [this.babContribution(target)],
+      })]
+      : [this.replacement(target, 0, `${target}.base`, labelForTarget(target)), this.babContribution(target)];
     const attackContributions = [
-      this.advancement ? this.baseBabContribution(target) : this.replacement(target, this.character.baseBab ?? 0, "base-bab", "Base Attack Bonus"),
+      ...attackBaseline,
       this.abilityContribution(definition.attackAbility, target),
       ...(definition.weaponBonus ? [base(target, definition.weaponBonus, `weapon.${definition.id}`, "Weapon bonus")] : []),
       ...this.directModifiers(target),
@@ -336,6 +445,8 @@ export class RulesEngine {
   evaluate(target: TargetId): EvaluationResult {
     if (target.startsWith("ability.")) return this.abilityScore(target.slice(8) as AbilityId);
     if (target.startsWith("save.")) return this.save(target.slice(5) as SaveId);
+    if (target === "combat.bab") return this.bab();
+    if (target.startsWith("progression.") && target.endsWith(".level")) return this.progressionLevel(target.slice("progression.".length, -".level".length));
     if (target === "ac") return this.ac("normal");
     if (target === "hp") return this.hpResult();
     if (target === "initiative") return this.initiativeResult();
@@ -367,6 +478,8 @@ export class RulesEngine {
       hitDiceCount: this.advancement.hitDiceCount,
       hitDieSides: this.advancement.hitDieSides,
       skillPoints: this.advancement.skillPoints,
+      progressionLevels: Object.fromEntries(this.advancement.progressionLevels.map((progression) => [progression.id, this.progressionLevel(progression.id)])),
+      features: this.progressionFeatures(),
     } : undefined;
     return {
       input: this.character,
@@ -377,6 +490,7 @@ export class RulesEngine {
       currentHp: maxHp.value - this.character.damageTaken,
       damageTaken: this.character.damageTaken,
       temporaryHp: this.character.temporaryHp,
+      bab: this.bab(),
       saves,
       ac: this.ac("normal"),
       touchAc: this.ac("touch"),
@@ -403,14 +517,14 @@ export class RulesEngine {
   }
 }
 
-export function evaluateCharacter(character: CharacterInput): DerivedCharacter {
-  return new RulesEngine(character).derive();
+export function evaluateCharacter(character: CharacterInput, options?: RulesEngineOptions): DerivedCharacter {
+  return new RulesEngine(character, options).derive();
 }
 
-export function evaluate(target: TargetId, character: CharacterInput): EvaluationResult {
-  return new RulesEngine(character).evaluate(target);
+export function evaluate(target: TargetId, character: CharacterInput, options?: RulesEngineOptions): EvaluationResult {
+  return new RulesEngine(character, options).evaluate(target);
 }
 
-export type { CharacterInput, TargetId, Contribution, EvaluationResult, DerivedCharacter, DerivedAttack, DamageEvaluation } from "@threepointpf/rules-schema";
-export { evaluateAdvancement, progressionDefinitions } from "./advancement.js";
-export type { AdvancementEvaluation, SlotHitDie, TrackAdvancementResult } from "./advancement.js";
+export type { CharacterInput, TargetId, Contribution, EvaluationResult, DerivedCharacter, DerivedAttack, DamageEvaluation, ProgressionCatalog, DerivedProgressionFeature } from "@threepointpf/rules-schema";
+export { evaluateAdvancement, progressionLevel } from "./advancement.js";
+export type { AdvancementEvaluation, SlotHitDie, TrackAdvancementResult, ProgressionIncrement, ProgressionLevelResult, AdvancementFeatureGrant } from "./advancement.js";

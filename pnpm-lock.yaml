@@ -190,6 +190,9 @@ importers:
       '@threepointpf/rules-core':
         specifier: workspace:*
         version: link:../../packages/rules-core
+      '@threepointpf/rules-data':
+        specifier: workspace:*
+        version: link:../../packages/rules-data
       '@threepointpf/rules-schema':
         specifier: workspace:*
         version: link:../../packages/rules-schema
@@ -223,6 +226,12 @@ importers:
       '@threepointpf/dice':
         specifier: workspace:*
         version: link:../dice
+      '@threepointpf/rules-schema':
+        specifier: workspace:*
+        version: link:../rules-schema
+
+  packages/rules-data:
+    dependencies:
       '@threepointpf/rules-schema':
         specifier: workspace:*
         version: link:../rules-schema

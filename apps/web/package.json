@@ -8,6 +8,7 @@
     "@supabase/supabase-js": "^2.49.1",
     "@threepointpf/dice": "workspace:*",
     "@threepointpf/rules-core": "workspace:*",
+    "@threepointpf/rules-data": "workspace:*",
     "@threepointpf/rules-schema": "workspace:*",
     "@threepointpf/shared": "workspace:*",
     "@vitejs/plugin-react": "^4.3.4",

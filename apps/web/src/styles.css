@@ -91,5 +91,27 @@ button { cursor: pointer; }
 .mini-fields select { flex: 1; }
 .side-note { border-left: 2px solid #df754f; padding: 6px 0 6px 16px; }
 .side-note p { color: #8996a4; font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+.advancement-panel { overflow: hidden; }
+.advancement-copy { color: #98a5b2; font-size: 12px; line-height: 1.55; margin: -5px 0 16px; }
+.advancement-grid-wrap { overflow-x: auto; border: 1px solid #2d3948; border-radius: 5px; }
+.advancement-grid { border-collapse: collapse; min-width: 100%; width: max-content; }
+.advancement-grid th, .advancement-grid td { border-bottom: 1px solid #293440; padding: 9px 10px; text-align: left; }
+.advancement-grid thead th { background: #121a23; color: #aab4c0; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.advancement-grid tbody th { color: #d4dbe2; font-size: 12px; font-weight: 600; }
+.advancement-grid select { background: #101720; border: 1px solid #344252; border-radius: 4px; color: #e4e8eb; min-width: 150px; padding: 7px 8px; }
+.table-action { background: transparent; border: 0; color: #bf8060; float: right; font-size: 16px; line-height: 10px; margin-left: 10px; padding: 0; }
+.table-action:disabled { color: #53606e; cursor: not-allowed; }
+.advancement-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.advancement-actions .button:disabled { color: #5c6874; cursor: not-allowed; }
+.progression-levels { display: grid; gap: 9px; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); }
+.progression-level { background: #121a23; border: 1px solid #2b3847; border-radius: 6px; color: #d7dfe6; display: grid; gap: 6px; padding: 12px; text-align: left; }
+.progression-level:hover { border-color: #e18a5b; }
+.progression-level span { color: #aab5c0; font-size: 12px; }
+.progression-level strong { color: #f4bc7d; font-size: 18px; }
+.progression-level small { font-size: 9px; letter-spacing: .04em; text-transform: none; }
+.progression-features { border-top: 1px solid #293440; display: grid; gap: 7px; margin-top: 16px; padding-top: 14px; }
+.progression-features div { align-items: baseline; display: flex; gap: 9px; }
+.progression-features b { color: #dfe5e9; font-size: 12px; }
+.progression-features small { letter-spacing: 0; text-transform: none; }
 @media (max-width: 950px) { .layout { grid-template-columns: 1fr; } .breakdown { position: static; } .side-column { grid-row: 1; } }
 @media (max-width: 640px) { .app-shell { padding: 18px 14px 40px; } .topbar, .hero { align-items: flex-start; flex-direction: column; } .top-actions { flex-wrap: wrap; } .hero { padding-top: 32px; } .hero-meta { width: 100%; } .ability-grid { grid-template-columns: repeat(3, 1fr); } .stats-grid { grid-template-columns: repeat(2, 1fr); } .inline-fields, .save-inputs { flex-wrap: wrap; } .field { min-width: calc(50% - 10px); } .skills-grid { grid-template-columns: 1fr; } .add-row { flex-wrap: wrap; } }

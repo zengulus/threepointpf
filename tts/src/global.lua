@@ -6,6 +6,7 @@ API_TOKEN = "" -- A short-lived user/campaign token; never put a Supabase servic
 CHARACTER_ID = "human-martial"
 PANEL_ID = "threepf-panel"
 PLAYER_CHARACTERS = {} -- steam_id -> character id; populate through bindPlayer below.
+CHARACTER_ATTACK_IDS = {} -- character id -> authoritative displayed attack id
 pendingPlan = nil
 pendingDie = nil
 settledFrames = 0
@@ -31,8 +32,9 @@ function characterForPlayer(player)
 end
 
 function fetchCharacterState(characterId)
-    WebRequest.get(API_BASE .. "/character-state?characterId=" .. (characterId or CHARACTER_ID), function(request)
-        if request.is_error then
+    local requestedCharacterId = characterId or CHARACTER_ID
+    WebRequest.custom(API_BASE .. "/character-state?characterId=" .. requestedCharacterId, "GET", true, "", authHeaders(), function(request)
+        if request.is_error or request.response_code < 200 or request.response_code >= 300 then
             UI.setAttribute(PANEL_ID .. "-status", "text", "State unavailable")
             return
         end
@@ -42,15 +44,20 @@ function fetchCharacterState(characterId)
             local temporary = (state.temporaryHp or 0) > 0 and ("  +" .. tostring(state.temporaryHp) .. " temp") or ""
             UI.setAttribute(PANEL_ID .. "-hp", "text", "HP  " .. tostring(state.currentHp) .. " / " .. tostring(state.maxHp) .. temporary)
             UI.setAttribute(PANEL_ID .. "-ac", "text", "AC  " .. tostring(state.ac))
+            UI.setAttribute(PANEL_ID .. "-bab", "text", "BAB " .. signed(state.bab or 0))
             UI.setAttribute(PANEL_ID .. "-fort", "text", "Fort  " .. signed(state.saves.fortitude))
             UI.setAttribute(PANEL_ID .. "-ref", "text", "Ref   " .. signed(state.saves.reflex))
             UI.setAttribute(PANEL_ID .. "-will", "text", "Will  " .. signed(state.saves.will))
             if state.attacks and state.attacks[1] then
+                CHARACTER_ATTACK_IDS[requestedCharacterId] = state.attacks[1].id
                 UI.setAttribute(PANEL_ID .. "-attack", "text", state.attacks[1].name .. "  " .. signed(state.attacks[1].modifier))
                 UI.setAttribute("greatsword", "active", "true")
+            else
+                CHARACTER_ATTACK_IDS[requestedCharacterId] = nil
+                UI.setAttribute("greatsword", "active", "false")
             end
         end
-    end, authHeaders())
+    end)
 end
 
 function signed(value)
@@ -63,19 +70,27 @@ function rollSave(player, value, id)
 end
 
 function rollAttack(player, value, id)
-    requestPlan({ kind = "attack", attackId = id }, value, characterForPlayer(player))
+    -- The static UI button id is not a character attack id. The server remains
+    -- rules authority, but TTS must request the actual first attack it displayed.
+    local characterId = characterForPlayer(player)
+    local attackId = CHARACTER_ATTACK_IDS[characterId]
+    if not attackId then
+        displayResult("Attack unavailable; wait for character state")
+        return
+    end
+    requestPlan({ kind = "attack", attackId = attackId }, value, characterId)
 end
 
 function requestPlan(request, label, characterId)
     local body = { characterId = characterId or CHARACTER_ID, kind = request.kind, saveId = request.saveId, attackId = request.attackId }
-    WebRequest.post(API_BASE .. "/roll-plan", function(response)
-        if response.is_error then displayResult(label .. ": plan unavailable") return end
+    WebRequest.custom(API_BASE .. "/roll-plan", "POST", true, JSON.encode(body), authHeaders(), function(response)
+        if response.is_error or response.response_code < 200 or response.response_code >= 300 then displayResult(label .. ": plan unavailable") return end
         local ok, decoded = pcall(JSON.decode, response.text)
         if not ok or not decoded or not decoded.plan then displayResult(label .. ": invalid plan") return end
         pendingPlan = decoded.plan
         pendingPlan.displayLabel = label
         spawnPhysicalDice()
-    end, JSON.encode(body), authHeaders())
+    end)
 end
 
 function spawnPhysicalDice()
@@ -110,15 +125,15 @@ function onUpdate()
 end
 
 function submitRawFace(face, label)
-    WebRequest.post(API_BASE .. "/resolve-roll", function(response)
-        if response.is_error then displayResult(label .. ": resolve unavailable") return end
+    WebRequest.custom(API_BASE .. "/resolve-roll", "POST", true, JSON.encode({ plan = pendingPlan, faces = { face } }), authHeaders(), function(response)
+        if response.is_error or response.response_code < 200 or response.response_code >= 300 then displayResult(label .. ": resolve unavailable") return end
         local ok, decoded = pcall(JSON.decode, response.text)
         if ok and decoded and decoded.resolved then
             displayResult(label .. ": " .. tostring(decoded.resolved.total))
         else
             displayResult(label .. ": invalid result")
         end
-    end, JSON.encode({ plan = pendingPlan, faces = { face } }), authHeaders())
+    end)
 end
 
 function displayResult(text)
@@ -133,7 +148,7 @@ UI_XML = [[
 <Panel id="threepf-panel" width="560" height="520" position="0 0 -0.2" color="#171c24" padding="24 24 24 24" visibility="Player1|Player2|Player3|Player4|Player5|Player6|Player7|Player8">
     <VerticalLayout spacing="10">
         <Text id="threepf-panel-name" text="CHARACTER" fontSize="30" alignment="MiddleCenter" />
-        <HorizontalLayout spacing="24"><Text id="threepf-panel-hp" text="HP  -- / --" /><Text id="threepf-panel-ac" text="AC  --" /></HorizontalLayout>
+        <HorizontalLayout spacing="24"><Text id="threepf-panel-hp" text="HP  -- / --" /><Text id="threepf-panel-ac" text="AC  --" /><Text id="threepf-panel-bab" text="BAB --" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-fort" text="Fort  --" /><Button text="ROLL" onClick="rollSave" id="fortitude" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-ref" text="Ref   --" /><Button text="ROLL" onClick="rollSave" id="reflex" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-will" text="Will  --" /><Button text="ROLL" onClick="rollSave" id="will" /></HorizontalLayout>

@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/rules-schema" },
+    { "path": "packages/rules-data" },
     { "path": "packages/dice" },
     { "path": "packages/rules-core" },
     { "path": "packages/shared" },

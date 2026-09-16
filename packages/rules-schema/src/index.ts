@@ -33,6 +33,7 @@ export type BonusType = (typeof bonusTypes)[number];
 export type TargetId =
   | `ability.${AbilityId}`
   | `save.${SaveId}`
+  | "combat.bab"
   | "ac"
   | "ac.natural"
   | "hp"
@@ -51,7 +52,12 @@ export type TargetId =
   | "speed.climb"
   | "speed.burrow"
   | "skill.all"
-  | `skill.${string}`;
+  | `skill.${string}`
+  /** A character-global level in a named progression, such as progression.fighter.level. */
+  | `progression.${string}.level`;
+
+/** Progression levels are derived queries and cannot be authored as effects. */
+export type EffectTargetId = Exclude<TargetId, `progression.${string}.level`>;
 
 export type DefenseContext = "normal" | "touch" | "flatFooted";
 
@@ -66,13 +72,16 @@ export const targetRegistry = {
   abilities: abilityIds.map((id) => `ability.${id}`),
   saves: saveIds.map((id) => `save.${id}`),
   derived: ["ac", "ac.natural", "hp", "initiative", "cmb", "cmd", "casterLevel", "size.relative"],
+  combatFacts: ["combat.bab"],
   combat: ["attack.melee", "damage.melee", "attack.ranged", "damage.ranged"],
   movement: ["speed.land", "speed.fly", "speed.swim", "speed.climb", "speed.burrow"],
   skills: ["skill.all"],
 } as const;
 const staticTargetIds = new Set<string>(Object.values(targetRegistry).flat());
 export function isTargetId(value: string): value is TargetId {
-  return staticTargetIds.has(value) || value.startsWith("skill.") && value.length > 6;
+  return staticTargetIds.has(value)
+    || value.startsWith("skill.") && value.length > 6
+    || value.startsWith("progression.") && value.endsWith(".level") && value.length > "progression..level".length;
 }
 
 export interface SourceReference {
@@ -92,7 +101,7 @@ export interface AcModifierEffect {
 
 export interface NonAcModifierEffect {
   kind: "modifier";
-  target: Exclude<TargetId, "ac">;
+  target: Exclude<EffectTargetId, "ac">;
   value: number;
   bonusType: BonusType;
   source?: SourceReference;
@@ -102,14 +111,14 @@ export type ModifierEffect = AcModifierEffect | NonAcModifierEffect;
 
 export interface ReplaceBaseEffect {
   kind: "replaceBase";
-  target: TargetId;
+  target: EffectTargetId;
   value: number;
   source?: SourceReference;
 }
 
 export interface GrantEffect {
   kind: "grant";
-  target: TargetId;
+  target: EffectTargetId;
   grant: string;
   source?: SourceReference;
 }
@@ -163,7 +172,38 @@ export type BabProgression = (typeof babProgressions)[number];
 export const saveProgressions = ["good", "poor"] as const;
 export type SaveProgression = (typeof saveProgressions)[number];
 
-/** A deliberately small class-like progression definition; it is not a class corpus. */
+/** A named feature granted by a progression at a global progression level.
+ *
+ * This is deliberately metadata, not a request to infer feat, spellcasting, or
+ * feature mechanics. Numeric effects remain explicit `FeatureInstance` input.
+ */
+export interface ProgressionFeatureDefinition {
+  id: string;
+  name: string;
+  level: number;
+  description?: string;
+}
+
+/** A source reference for imported progression content. */
+export interface ProgressionSourceMetadata {
+  document: string;
+  sheet: string;
+  category?: string;
+  row?: number;
+  range?: string;
+}
+
+/** Optional explicit cumulative values from a source class chart. */
+export interface ProgressionChartLevel {
+  level: number;
+  bab: number;
+  saves: Record<SaveId, number>;
+}
+
+/**
+ * Content consumed by the progression evaluator. The evaluator owns level
+ * ordering and aggregation; class/catalog packages own the facts below.
+ */
 export interface ProgressionDefinition {
   id: string;
   name: string;
@@ -171,7 +211,15 @@ export interface ProgressionDefinition {
   babProgression: BabProgression;
   saveProgressions: Record<SaveId, SaveProgression>;
   skillPointsPerLevel?: number;
+  classSkills?: string[];
+  features?: ProgressionFeatureDefinition[];
+  /** When present, the evaluator uses these cumulative values instead of the generic chassis formula. */
+  chart?: ProgressionChartLevel[];
+  source?: ProgressionSourceMetadata;
 }
+
+/** A data-owned catalog injected into the pure rules evaluator. */
+export type ProgressionCatalog = Record<string, ProgressionDefinition>;
 
 /** One progression choice occupying one level on one advancement track. */
 export interface AdvancementEntry {
@@ -219,14 +267,16 @@ export interface CharacterInput {
 export const diceExpressionSchema = z.object({ count: z.number().int().positive(), sides: z.number().int().positive() });
 export const sourceReferenceSchema = z.object({ id: z.string().min(1), label: z.string().min(1) });
 export const targetIdSchema = z.string().min(1).refine(isTargetId, "Unknown target id") as z.ZodType<TargetId>;
+/** Progression levels are inspectable derived facts, never authorable effect targets. */
+const effectTargetIdSchema = targetIdSchema.refine((target) => !target.startsWith("progression."), "Progression level targets are query-only") as z.ZodType<EffectTargetId>;
 const defenseContextSchema = z.enum(["normal", "touch", "flatFooted"]);
 const acModifierSchema = z.object({ kind: z.literal("modifier"), target: z.literal("ac"), value: z.number(), bonusType: z.enum(bonusTypes), appliesTo: z.array(defenseContextSchema).min(1), source: sourceReferenceSchema.optional() });
-const nonAcModifierSchema = z.object({ kind: z.literal("modifier"), target: targetIdSchema.refine((target) => target !== "ac", "AC modifiers require appliesTo"), value: z.number(), bonusType: z.enum(bonusTypes), source: sourceReferenceSchema.optional() });
+const nonAcModifierSchema = z.object({ kind: z.literal("modifier"), target: effectTargetIdSchema.refine((target) => target !== "ac", "AC modifiers require appliesTo"), value: z.number(), bonusType: z.enum(bonusTypes), source: sourceReferenceSchema.optional() });
 export const effectSchema: z.ZodType<Effect> = z.union([
   acModifierSchema,
   nonAcModifierSchema,
-  z.object({ kind: z.literal("replaceBase"), target: targetIdSchema, value: z.number(), source: sourceReferenceSchema.optional() }),
-  z.object({ kind: z.literal("grant"), target: targetIdSchema, grant: z.string().min(1), source: sourceReferenceSchema.optional() }),
+  z.object({ kind: z.literal("replaceBase"), target: effectTargetIdSchema, value: z.number(), source: sourceReferenceSchema.optional() }),
+  z.object({ kind: z.literal("grant"), target: effectTargetIdSchema, grant: z.string().min(1), source: sourceReferenceSchema.optional() }),
 ]) as z.ZodType<Effect>;
 export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
   id: z.string().min(1), definitionId: z.string().optional(), name: z.string().min(1), description: z.string().optional(),
@@ -237,12 +287,51 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   damageAbility: abilityIdSchema.optional(), damageAbilityMultiplier: z.number().optional(), baseDamage: diceExpressionSchema,
   weaponBonus: z.number().optional(), attackTags: z.array(z.enum(["weapon.melee", "weapon.ranged", "weapon.two-handed", "weapon.off-hand", "natural.attack"])).optional(), mode: z.enum(["melee", "ranged"]).optional(),
 });
+export const progressionFeatureDefinitionSchema: z.ZodType<ProgressionFeatureDefinition> = z.object({
+  id: z.string().min(1), name: z.string().min(1), level: z.number().int().positive(), description: z.string().min(1).optional(),
+});
+export const progressionSourceMetadataSchema: z.ZodType<ProgressionSourceMetadata> = z.object({
+  document: z.string().min(1), sheet: z.string().min(1), category: z.string().min(1).optional(), row: z.number().int().positive().optional(), range: z.string().min(1).optional(),
+});
+export const progressionChartLevelSchema: z.ZodType<ProgressionChartLevel> = z.object({
+  level: z.number().int().positive(), bab: z.number().int().nonnegative(),
+  saves: z.object({ fortitude: z.number().int().nonnegative(), reflex: z.number().int().nonnegative(), will: z.number().int().nonnegative() }),
+});
 export const progressionDefinitionSchema: z.ZodType<ProgressionDefinition> = z.object({
   id: z.string().min(1), name: z.string().min(1), hitDieSides: z.number().int().positive(),
   babProgression: z.enum(babProgressions),
   saveProgressions: z.object({ fortitude: z.enum(saveProgressions), reflex: z.enum(saveProgressions), will: z.enum(saveProgressions) }),
-  skillPointsPerLevel: z.number().nonnegative().optional(),
-});
+  skillPointsPerLevel: z.number().int().nonnegative().optional(),
+  classSkills: z.array(skillIdSchema).optional(), features: z.array(progressionFeatureDefinitionSchema).optional(), chart: z.array(progressionChartLevelSchema).min(1).optional(), source: progressionSourceMetadataSchema.optional(),
+}).superRefine((definition, context) => {
+  const chartLevels = new Set<number>();
+  for (const [index, level] of (definition.chart ?? []).entries()) {
+    if (chartLevels.has(level.level)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["chart", index, "level"], message: `Duplicate chart level ${level.level}` });
+    chartLevels.add(level.level);
+  }
+  const orderedChart = [...(definition.chart ?? [])].sort((a, b) => a.level - b.level);
+  for (const [index, level] of orderedChart.entries()) {
+    if (level.level !== index + 1) context.addIssue({ code: z.ZodIssueCode.custom, path: ["chart"], message: "Chart levels must be contiguous starting at 1" });
+    const previous = orderedChart[index - 1];
+    if (previous && (level.bab < previous.bab || saveIds.some((saveId) => level.saves[saveId] < previous.saves[saveId]))) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["chart", index], message: "Cumulative chart values cannot decrease" });
+    }
+  }
+  const featureIds = new Set<string>();
+  for (const [index, feature] of (definition.features ?? []).entries()) {
+    if (featureIds.has(feature.id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["features", index, "id"], message: `Duplicate progression feature id ${feature.id}` });
+    featureIds.add(feature.id);
+  }
+}) as z.ZodType<ProgressionDefinition>;
+export const progressionCatalogSchema: z.ZodType<ProgressionCatalog> = z.record(progressionDefinitionSchema).superRefine((catalog, context) => {
+  for (const [id, definition] of Object.entries(catalog)) {
+    if (definition.id !== id) context.addIssue({ code: z.ZodIssueCode.custom, path: [id, "id"], message: `Catalog key ${id} must match progression id ${definition.id}` });
+  }
+}) as z.ZodType<ProgressionCatalog>;
+
+export function parseProgressionCatalog(value: unknown): ProgressionCatalog {
+  return progressionCatalogSchema.parse(value);
+}
 export const advancementEntrySchema: z.ZodType<AdvancementEntry> = z.object({ progressionId: z.string().min(1) });
 export const advancementTrackSchema: z.ZodType<AdvancementTrack> = z.object({ id: z.string().min(1), entry: advancementEntrySchema });
 export const advancementSlotSchema: z.ZodType<AdvancementSlot> = z.object({ id: z.string().min(1), tracks: z.array(advancementTrackSchema).min(1) }).superRefine((slot, context) => {
@@ -252,7 +341,18 @@ export const advancementSlotSchema: z.ZodType<AdvancementSlot> = z.object({ id: 
     ids.add(track.id);
   }
 });
-export const advancementSlotsSchema = z.array(advancementSlotSchema).min(1);
+export const advancementSlotsSchema = z.array(advancementSlotSchema).min(1).superRefine((slots, context) => {
+  const slotIds = new Set<string>();
+  const expectedTrackIds = slots[0]?.tracks.map((track) => track.id) ?? [];
+  for (const [slotIndex, slot] of slots.entries()) {
+    if (slotIds.has(slot.id)) context.addIssue({ code: z.ZodIssueCode.custom, path: [slotIndex, "id"], message: `Duplicate advancement slot id ${slot.id}` });
+    slotIds.add(slot.id);
+    const actualTrackIds = slot.tracks.map((track) => track.id);
+    if (actualTrackIds.length !== expectedTrackIds.length || actualTrackIds.some((trackId, index) => trackId !== expectedTrackIds[index])) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [slotIndex, "tracks"], message: "Each advancement slot must use the same ordered track ids" });
+    }
+  }
+});
 export const characterInputSchema: z.ZodType<CharacterInput> = z.object({
   id: z.string().min(1), campaignId: z.string().optional(), name: z.string().min(1),
   baseAbilities: z.object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() }), baseBab: z.number().optional(),
@@ -264,6 +364,9 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z.object({
   if (!advancementMode && character.baseBab === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["baseBab"], message: "baseBab is required in manual mode" });
   if (!advancementMode && character.baseSaves === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["baseSaves"], message: "baseSaves is required in manual mode" });
   if (!advancementMode && character.hitDiceCount === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["hitDiceCount"], message: "hitDiceCount is required in manual mode" });
+  if (advancementMode && character.baseBab !== undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["baseBab"], message: "baseBab must be omitted in advancement mode" });
+  if (advancementMode && character.baseSaves !== undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["baseSaves"], message: "baseSaves must be omitted in advancement mode" });
+  if (advancementMode && character.hitDiceCount !== undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ["hitDiceCount"], message: "hitDiceCount must be omitted in advancement mode" });
   const replacements = new Map<string, number>();
   for (const feature of character.features) {
     if (!feature.enabled) continue;
@@ -322,6 +425,21 @@ export interface AdvancementSummary {
   /** Best available die type per ordered slot; HP-from-HD remains a later layer. */
   hitDieSides: number[];
   skillPoints: number;
+  /** Character-global levels, with slot/track provenance for every earned level. */
+  progressionLevels: Record<string, EvaluationResult>;
+  /** Metadata-only class-chart features unlocked by those progression levels. */
+  features: DerivedProgressionFeature[];
+}
+
+export interface DerivedProgressionFeature {
+  id: string;
+  name: string;
+  progressionId: string;
+  level: number;
+  slotId: string;
+  trackId: string;
+  description?: string;
+  provenance: Contribution;
 }
 
 export interface DerivedAttack {
@@ -340,6 +458,8 @@ export interface DerivedCharacter {
   currentHp: number;
   damageTaken: number;
   temporaryHp: number;
+  /** First-class BAB fact; attacks, CMB, and CMD consume this exact evaluation. */
+  bab: EvaluationResult;
   saves: Record<SaveId, EvaluationResult>;
   ac: EvaluationResult;
   touchAc: EvaluationResult;
@@ -361,6 +481,6 @@ export interface GrantedCapability {
 export const targetLabels: Record<string, string> = {
   "ability.str": "Strength", "ability.dex": "Dexterity", "ability.con": "Constitution", "ability.int": "Intelligence", "ability.wis": "Wisdom", "ability.cha": "Charisma",
   "save.fortitude": "Fortitude", "save.reflex": "Reflex", "save.will": "Will", ac: "Armor Class", "ac.natural": "Natural Armor", hp: "Hit points", initiative: "Initiative",
-  cmb: "CMB", cmd: "CMD", "attack.melee": "Melee attack", "damage.melee": "Melee damage", "attack.ranged": "Ranged attack", "damage.ranged": "Ranged damage",
+  "combat.bab": "Base Attack Bonus", cmb: "CMB", cmd: "CMD", "attack.melee": "Melee attack", "damage.melee": "Melee damage", "attack.ranged": "Ranged attack", "damage.ranged": "Ranged damage",
   casterLevel: "Caster level", "size.relative": "Relative size", "speed.land": "Land speed", "speed.fly": "Fly speed", "speed.swim": "Swim speed", "speed.climb": "Climb speed", "speed.burrow": "Burrow speed", "skill.all": "All skills",
 };
