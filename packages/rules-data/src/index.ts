@@ -1,54 +1,80 @@
 import {
   parseProgressionCatalog,
+  parseSkillCatalog,
+  experienceCatalogSchema,
+  type ProgressionAliasMap,
   type ProgressionCatalog,
   type ProgressionDefinition,
+  type SkillCatalog,
+  type SkillDefinition,
 } from "@threepointpf/rules-schema";
+import {
+  attackFromProfile,
+  attackProfileCatalog,
+  autosheetEquipmentCatalog,
+  equipmentCatalog,
+  featureCatalog,
+} from "./content.js";
+import { generatedAutosheetProgressionCatalog } from "./generated/autosheet-progressions.js";
+import { generatedAutosheetSkillCatalog } from "./generated/autosheet-skills.js";
+import { generatedAutosheetExperienceCatalog } from "./generated/autosheet-experience.js";
 
 /**
- * Chassis facts transcribed from `INGEST THIS - Pathfinder Autosheet
- * (v6.2.1).xlsx`, `Class Charts`, columns A:H.  The source sheet has no
- * usable class-feature rows, and its spell columns intentionally stay out of
- * this non-spellcasting advancement catalog.
+ * Validated PF1e chassis data generated from the supplied Autosheet workbook.
+ * Rules-core receives this catalog from its caller and never imports it.
  */
-const autosheetBaseClassRows = {
-  fighter: {
-    id: "fighter",
-    name: "Fighter",
-    hitDieSides: 10,
-    babProgression: "full",
-    saveProgressions: { fortitude: "good", reflex: "poor", will: "poor" },
-    skillPointsPerLevel: 2,
-    source: { document: "Pathfinder Autosheet v6.2.1", sheet: "Class Charts", category: "Base", row: 10, range: "A10:H10" },
-  },
-  rogue: {
-    id: "rogue",
-    name: "Rogue",
-    hitDieSides: 8,
-    babProgression: "threeQuarters",
-    saveProgressions: { fortitude: "poor", reflex: "good", will: "poor" },
-    skillPointsPerLevel: 8,
-    source: { document: "Pathfinder Autosheet v6.2.1", sheet: "Class Charts", category: "Base", row: 19, range: "A19:H19" },
-  },
-  wizard: {
-    id: "wizard",
-    name: "Wizard",
-    hitDieSides: 6,
-    babProgression: "half",
-    saveProgressions: { fortitude: "poor", reflex: "poor", will: "good" },
-    skillPointsPerLevel: 2,
-    source: { document: "Pathfinder Autosheet v6.2.1", sheet: "Class Charts", category: "Base", row: 26, range: "A26:H26" },
-  },
-} satisfies ProgressionCatalog;
-
-/**
- * Validated content boundary. Rules-core imports no class corpus; callers
- * deliberately pass this catalog (or a campaign-specific one) to the engine.
- */
-export const autosheetProgressionCatalog: ProgressionCatalog = parseProgressionCatalog(autosheetBaseClassRows);
+export const autosheetProgressionCatalog: ProgressionCatalog =
+  parseProgressionCatalog(generatedAutosheetProgressionCatalog);
 
 /** Default catalog for the PF1e Autosheet-backed application boundary. */
 export const progressionCatalog = autosheetProgressionCatalog;
 
-export function progressionOptions(catalog: ProgressionCatalog = progressionCatalog): ProgressionDefinition[] {
+/**
+ * Historical short ids accepted by application persistence and normalized to
+ * the source-qualified ids in `progressionCatalog`.
+ */
+export const progressionAliases: ProgressionAliasMap = Object.fromEntries(
+  Object.values(progressionCatalog).flatMap((definition) =>
+    (definition.aliases ?? []).map((alias) => [alias, definition.id] as const),
+  ),
+);
+
+/** Validated skill facts imported alongside class-skill membership. */
+export const autosheetSkillCatalog: SkillCatalog = parseSkillCatalog(
+  generatedAutosheetSkillCatalog,
+);
+
+export const skillCatalog = autosheetSkillCatalog;
+export const experienceCatalog = experienceCatalogSchema.parse(
+  generatedAutosheetExperienceCatalog,
+);
+
+/** The application-level composition root; rules semantics remain catalog-free. */
+export const rulesCatalogs = {
+  progressionCatalog,
+  skillCatalog,
+  featureCatalog,
+  equipmentCatalog,
+  attackProfileCatalog,
+  experienceCatalog,
+};
+
+export function progressionOptions(
+  catalog: ProgressionCatalog = progressionCatalog,
+): ProgressionDefinition[] {
   return Object.values(catalog);
 }
+
+export function skillOptions(
+  catalog: SkillCatalog = skillCatalog,
+): SkillDefinition[] {
+  return Object.values(catalog);
+}
+
+export {
+  attackFromProfile,
+  attackProfileCatalog,
+  autosheetEquipmentCatalog,
+  equipmentCatalog,
+  featureCatalog,
+};

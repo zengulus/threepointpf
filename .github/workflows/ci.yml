@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install
+        run: corepack pnpm install --frozen-lockfile
+      - name: Unit and integration tests
+        run: corepack pnpm test
+      - name: Build
+        run: corepack pnpm build
+      - name: Generated rules are fresh
+        run: corepack pnpm rules:check-autosheet
+      - name: Edge typecheck
+        run: corepack pnpm check:edge
+      - name: Install Chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
+      - name: Browser smoke test
+        run: corepack pnpm test:e2e

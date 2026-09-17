@@ -1,5 +1,5 @@
 import { resolveRollPlan } from "@threepointpf/dice";
-import { progressionCatalog } from "@threepointpf/rules-data";
+import { rulesCatalogs } from "@threepointpf/rules-data";
 import { saveIds } from "@threepointpf/rules-schema";
 import { createCharacterRollPlan, resolveRollRequestSchema, type ResolveRollRequest } from "../../../packages/shared/src/index.ts";
 import { createClient } from "@supabase/supabase-js";
@@ -11,14 +11,14 @@ Deno.serve(async (request) => {
   try {
     const token = bearer(request); if (!token) return json({ error: "Authorization required" }, 401);
     const body = resolveRollRequestSchema.parse(await request.json()) as ResolveRollRequest;
-    const character = await loadCharacter(body.plan.characterId, token);
+    const character = await loadCharacter(body.plan.characterId, token, rulesCatalogs);
     const metadata = body.plan.metadata;
     const saveId = metadata?.kind === "save"
       ? saveIds.find((id) => metadata.target === `save.${id}`)
       : undefined;
     const serverPlan = saveId
-      ? createCharacterRollPlan(character, { characterId: character.id, kind: "save", saveId }, progressionCatalog)
-      : metadata?.kind === "attack" && metadata.attackId ? createCharacterRollPlan(character, { characterId: character.id, kind: "attack", attackId: metadata.attackId }, progressionCatalog) : null;
+      ? createCharacterRollPlan(character, { characterId: character.id, kind: "save", saveId }, rulesCatalogs)
+      : metadata?.kind === "attack" && metadata.attackId ? createCharacterRollPlan(character, { characterId: character.id, kind: "attack", attackId: metadata.attackId, attackIndex: metadata.attackIndex ?? 0 }, rulesCatalogs) : null;
     if (!serverPlan) return json({ error: "Unsupported roll plan" }, 400);
     const resolved = resolveRollPlan(serverPlan, body.faces);
     const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: `Bearer ${token}` } } });

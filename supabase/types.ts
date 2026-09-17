@@ -3,7 +3,7 @@ export interface Database {
     Tables: {
       campaigns: { Row: { id: string; name: string; created_at: string }; Insert: { id?: string; name: string }; Update: Partial<{ name: string }> };
       characters: {
-        Row: { id: string; campaign_id: string; name: string; base_abilities: unknown; base_bab: number | null; base_saves: unknown | null; base_hp_before_con: number; hit_dice_count: number | null; advancement_slots: unknown; skill_ranks: unknown; skill_configuration: unknown; damage_taken: number; temporary_hp: number; base_land_speed: number; created_at: string; updated_at: string };
+        Row: { id: string; campaign_id: string; name: string; base_abilities: unknown; base_bab: number | null; base_saves: unknown | null; base_hp_before_con: number; hit_dice_count: number | null; advancement_slots: unknown; skill_ranks: unknown; skill_configuration: unknown; damage_taken: number; temporary_hp: number; base_land_speed: number; authored_state: unknown | null; created_at: string; updated_at: string };
         Insert: Partial<Database["public"]["Tables"]["characters"]["Row"]> & Pick<Database["public"]["Tables"]["characters"]["Row"], "id" | "campaign_id" | "name" | "base_abilities" | "base_hp_before_con" | "damage_taken" | "temporary_hp">;
         Update: Partial<Database["public"]["Tables"]["characters"]["Row"]>;
       };

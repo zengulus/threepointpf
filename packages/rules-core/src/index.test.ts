@@ -18,18 +18,22 @@ const fixture: CharacterInput = {
 
 /** Test-only content proves rules-core does not carry a built-in class corpus. */
 const testProgressionCatalog: ProgressionCatalog = {
-  fighter: {
-    id: "fighter", name: "Fighter", hitDieSides: 10, babProgression: "full",
+  "pf1e.test.fighter": {
+    id: "pf1e.test.fighter", aliases: ["fighter"], name: "Fighter", hitDieSides: 10, babProgression: "full",
     saveProgressions: { fortitude: "good", reflex: "poor", will: "poor" }, skillPointsPerLevel: 2,
     features: [{ id: "fighter.bravery", name: "Bravery", level: 2 }],
   },
-  wizard: {
-    id: "wizard", name: "Wizard", hitDieSides: 6, babProgression: "half",
+  "pf1e.test.wizard": {
+    id: "pf1e.test.wizard", aliases: ["wizard"], name: "Wizard", hitDieSides: 6, babProgression: "half",
     saveProgressions: { fortitude: "poor", reflex: "poor", will: "good" }, skillPointsPerLevel: 2,
   },
-  rogue: {
-    id: "rogue", name: "Rogue", hitDieSides: 8, babProgression: "threeQuarters",
+  "pf1e.test.rogue": {
+    id: "pf1e.test.rogue", aliases: ["rogue"], name: "Rogue", hitDieSides: 8, babProgression: "threeQuarters",
     saveProgressions: { fortitude: "poor", reflex: "good", will: "poor" }, skillPointsPerLevel: 8,
+  },
+  "homebrew.test.guard": {
+    id: "homebrew.test.guard", aliases: ["guard"], name: "Guard", hitDieSides: 10, babProgression: "full",
+    saveProgressions: { fortitude: "good", reflex: "poor", will: "poor" },
   },
 };
 
@@ -271,11 +275,11 @@ describe("declarative advancement", () => {
     const fighter = engine.progressionLevel("fighter");
     expect(fighter.value).toBe(2);
     expect(fighter.contributions.map((item) => item.source)).toEqual([
-      "advancement.slot.level-1.track.first.progression.fighter.level.1",
-      "advancement.slot.level-2.track.second.progression.fighter.level.2",
+      "advancement.slot.level-1.track.first.progression.pf1e.test.fighter.level.1",
+      "advancement.slot.level-2.track.second.progression.pf1e.test.fighter.level.2",
     ]);
     expect(fighter.contributions[1]?.note).toContain("track second");
-    expect(derived.advancement?.progressionLevels.fighter).toEqual(fighter);
+    expect(derived.advancement?.progressionLevels["pf1e.test.fighter"]).toEqual(fighter);
     const selectedBab = derived.bab.contributions.find((item) => item.source === "advancement.track.first.bab");
     const firstTrack = selectedBab?.children?.find((item) => item.source === "advancement.track.first.bab");
     expect(firstTrack?.children?.map((item) => item.value)).toEqual([1, 1]);
@@ -283,25 +287,19 @@ describe("declarative advancement", () => {
     expect(secondTrack?.children?.map((item) => item.value)).toEqual([0, 1]);
   });
 
-  it("uses stable track-array order when the same progression occupies multiple tracks in one slot", () => {
-    const engine = advancementEngine(advancementCharacter({ first: ["fighter"], second: ["fighter"] }));
-    const derived = engine.derive();
-    const fighter = engine.progressionLevel("fighter");
-    expect(fighter.contributions.map((item) => item.source)).toEqual([
-      "advancement.slot.level-1.track.first.progression.fighter.level.1",
-      "advancement.slot.level-1.track.second.progression.fighter.level.2",
-    ]);
-    // Global Fighter L1's +2 Fort belongs to the first track; L2's +1 belongs to second.
-    expect(derived.bab.value).toBe(1);
-    expect(derived.saves.fortitude.value).toBe(4); // selected first-track Fort +2, CON +2.
-    expect(derived.advancement?.features).toMatchObject([{ id: "fighter.bravery", level: 2, slotId: "level-1", trackId: "second" }]);
+  it("rejects a progression repeated in one slot including alias/canonical collisions", () => {
+    expect(() => advancementEngine(advancementCharacter({ first: ["fighter"], second: ["fighter"] }))).toThrow(/Duplicate progression/);
+    expect(() => advancementEngine(advancementCharacter({ first: ["fighter"], second: ["pf1e.test.fighter"] }))).toThrow(/Duplicate progression/);
+    const engine = advancementEngine(advancementCharacter({ first: ["fighter", "wizard"], second: ["wizard", "fighter"] }));
+    expect(engine.derive().advancement?.features).toMatchObject([{ id: "fighter.bravery", level: 2, slotId: "level-2", trackId: "second" }]);
     expect(engine.progressionFeatures("fighter")[0]?.provenance.note).toContain("track second");
   });
 
   it("uses validated cumulative chart rows when a catalog supplies non-generic chassis values", () => {
     const chartCatalog: ProgressionCatalog = {
-      charted: {
-        id: "charted", name: "Charted", hitDieSides: 8, babProgression: "quarter",
+      ...testProgressionCatalog,
+      "homebrew.test.charted": {
+        id: "homebrew.test.charted", aliases: ["charted"], name: "Charted", hitDieSides: 8, babProgression: "quarter",
         saveProgressions: { fortitude: "poor", reflex: "poor", will: "poor" },
         chart: [
           { level: 1, bab: 0, saves: { fortitude: 1, reflex: 0, will: 0 } },
@@ -309,13 +307,13 @@ describe("declarative advancement", () => {
         ],
       },
     };
-    const engine = new RulesEngine(advancementCharacter({ first: ["charted"], second: ["charted"] }), { progressionCatalog: chartCatalog });
+    const engine = new RulesEngine(advancementCharacter({ first: ["charted", "wizard"], second: ["wizard", "charted"] }), { progressionCatalog: chartCatalog });
     const derived = engine.derive();
     // L2's non-generic +2 BAB and +2 Fort increments belong to the second track.
     expect(derived.bab.value).toBe(2);
     expect(derived.saves.fortitude.value).toBe(4);
     const selected = derived.bab.contributions[0]?.children?.find((item) => item.source === "advancement.track.second.bab");
-    expect(selected?.children?.[0]?.value).toBe(2);
+    expect(selected?.children?.[1]?.value).toBe(2);
   });
 
   it("uses explicit gestalt aggregation rules across two tracks", () => {
@@ -348,7 +346,7 @@ describe("declarative advancement", () => {
       first: ["fighter", "wizard"],
       second: ["wizard", "fighter"],
       third: ["rogue", "rogue"],
-      fourth: ["fighter", "fighter"],
+      fourth: ["guard", "guard"],
     })).derive();
     expect(derived.advancement?.trackIds).toEqual(["first", "second", "third", "fourth"]);
     expect(derived.advancement?.slotCount).toBe(2);

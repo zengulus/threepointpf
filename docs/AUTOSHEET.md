@@ -1,0 +1,47 @@
+# Autosheet coverage and next frontier
+
+## Source boundary
+
+Input: `INGEST THIS - Pathfinder Autosheet (v6.2.1).xlsx`, SHA-256 `bf1fe035fe70688b0c7406308252a6c10013d2ce3220c7f21241fb55233d71b8`.
+
+`scripts/import-autosheet.mjs` validates with the current local schema, without depending on stale build output. It reads cached values and never evaluates workbook expressions. Generated source-only `.js` bridges support Deno alongside package builds. `--check` compares every expected byte and fails on missing/stale files.
+
+The report inventories all eight sheets (including hidden sheets), imported rows, normalizations/warnings, unsupported regions, and failures. A malformed known layout fails import before replacing output. The workbook is a versioned source snapshot, not an authority for silently resolving PF1e/3.5/third-party differences.
+
+## Imported and operational
+
+- **Class Charts, rows 3–295:** all 259 parseable chassis rows, including source-qualified base/hybrid/occult/NPC/monster/prestige/third-party/FFd20 content. The 89 prestige charts have explicit cumulative rows and maximum levels. Formula semantics remain in the engine, not class-name switches.
+- **Class Skills, rows 1–278:** 257 scoped joins, 42 skill definitions, training and armor-check metadata. Joining uses section plus normalized name. Three prose-only skill metadata supplements are marked in the report. Consolidated-skill columns are not mixed into classic skills.
+- **Formula References, rows 149–206:** 45 physical armor/shield chassis. Penalty magnitudes become negative contributions; blank Max Dex is unlimited, zero is a cap. Column I is weight category, never pounds. Spell-failure chance is metadata only. Medium/heavy armor reduces land speed; armor/shield effects respect AC contexts.
+- **Formula References, C/F/I/L/X/AA45:61:** 60 ability-based attack profiles covering ordinary, two-handed, off-hand, ranged, thrown/composite, finesse/agile, single and natural attacks, including STR/DEX/WIS variants. A closed label grammar emits declarative ability, multiplier, mode, tag, iteration and Haste-eligibility fields. Secondary natural attacks default to −5; explicit attack adjustment supports separately qualified alternatives. Prerequisites in descriptions are not granted automatically.
+- **Formula References, rows 114–134:** slow/medium/fast XP charts for levels 1–20. Level-one dashes become zero. Exact thresholds and one-point-below boundaries are tested for every track. XP never edits advancement or invents epic thresholds.
+- **Formula References, rows 28–34:** five optional age-category ability adjustments, exclusive within one data-defined group. These are not racial age thresholds or the Young Creature template.
+- **Main Sheet, rows 101–106 / Formula References conditions:** reviewed Power Attack, Combat Expertise, Deadly Aim, Heroism, Haste, Rapid Shot, Entangled, fatigue/exhaustion, fear, sickness and other straightforward conditions use ordinary Feature/Effect data. Severity groups and duplicate-definition handling prevent accidental stacking. Grants expose nonnumeric restrictions as visible reminders.
+- **Size:** all nine categories, relative shifts, clamping, nonlinear AC/attack/CMB/CMD modifiers, Tiny-or-smaller Dexterity CMB, Fly/Stealth adjustments and source chains. Size does not arbitrarily change authored base speed.
+- **PRD supplements:** six starter weapons, a steel shield, three magic items, tower-shield attack penalty and agile-armor Climb exceptions. These are separately sourced; their workbook chassis remain independently inspectable.
+
+Class features are not inferred where the source supplies only a chassis. Custom classes declare level-gated names/notes and explicit effects. Effects unlock at global class level once and disappear when advancement is undone. This supports arbitrary authored classes without inventing a feature/prerequisite corpus.
+
+## Authoring and verification
+
+The UI supports N tracks, catalog selection, copying/editing local classes, cumulative charts, automatic class skills with overrides, custom feature operations, equipment and attack profiles. Custom definitions travel with advancement in one snapshot; they cannot shadow imported IDs or aliases. Missing definitions, conflicting effects and invalid charts are errors.
+
+Haste adds at most the intrinsic speed or 30 feet, before movement multipliers. Absent modes stay absent. Armor reduction is included in the intrinsic land speed used for that cap. Multipliers compose before min/max bounds.
+
+Weapon enhancement participates in typed stacking. Positive Strength multipliers and full negative Strength penalties differ intentionally. Per-weapon full attacks expose BAB iteratives and eligible extras; indices travel through authoritative server recomputation. A resource safeguard rejects sequences over 256 rolls explicitly, without silently truncating them.
+
+Tests cover aliases/duplicates, cross-track continuation, complete-track aggregation, twelve-track advancement, chart limits, class-skill union, custom effects unlock/undo, effect order, all sizes, armor/movement, enhancement stacking, condition composition, overflow, XP boundaries, failed/corrupt persistence and browser/TTS plan parity. Browser tests use real forms and saved-state reloads. The checked-in TTS script executes in a dev-only Lua VM with mocked HTTP/UI/physical-die hosts: tests exercise weapon/strike selection, raw-face submission, empty-state refresh and an in-flight roll lock. CI checks builds, freshness and Edge entry points. Real TTS physics and hosted Supabase still require deployment-side smoke testing; these tests are not a live hosted database or TTS session.
+
+## Exact remaining frontier
+
+1. **Missing facts:** Paizo Mystery Cultist and Sentinel lack a matching scoped Class Skills row. Chassis remain available without invented class-skill sets. Use overrides/custom copies; never substitute the unrelated third-party Sentinel.
+2. **HP/skill allocation policy:** HD types/counts and chassis skill points are derived; HP before Constitution and allocated ranks remain authored. Automatic rolled-vs-average HP, first-level maximization, fractional ranks, skill budgets and 3.5 variants require campaign policy. No silent policy was chosen.
+3. **Contextual combat:** combined two-weapon/natural/flurry sequences, one shared Haste extra across weapons, proficiency, touch eligibility, buckler hand use, cover, jump-only penalties, sight/hearing checks, denied Dexterity and action restrictions require a roll/action-context model. Do not concatenate single-weapon sequences into a combined full attack. Grants are reminders, not action enforcement.
+4. **Equipment composition/inventory:** materials, attachments, body slots, containers, carrying capacity/encumbrance and damage resizing need item-specific composition and contextual data. Current equipment is an equipped numeric chassis, not an inventory legality checker. Custom items can author final chassis; equipping a kilt alongside armor does not synthesize a combined suit. Prices/weights are not fabricated from category codes.
+5. **Large class systems:** spellcasting, concentration/caster advancement, psionics, spheres, veilweaving, maneuver training, flurry substitutions, kineticist profiles, feature resources/prerequisites, feats and variant skill systems remain unimplemented. They occupy most of the spell/spheres sheet and contextual formula regions. They need dedicated schemas, not translation of stale instance formulas.
+
+The next design decision is a campaign rules profile and roll-context contract (PF1e vs 3.5/3.PF; how combined actions select eligible effects), followed by spellcasting/feature-resource models. This pass adds neither runtime LLM interpretation nor optimization/feat automation.
+
+## Supplement references
+
+Cell/range provenance stays attached to imported content. Supplemental equipment rules cite [Core PRD equipment](https://legacy.aonprd.com/coreRulebook/equipment.html) and [Ultimate Equipment armor](https://legacy.aonprd.com/ultimateEquipment/armsAndArmor/armor.html); magic-item definitions carry individual PRD links. Workbook-dependent variants are marked as Autosheet content rather than universally official rules.

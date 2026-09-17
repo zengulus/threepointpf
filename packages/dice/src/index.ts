@@ -17,6 +17,7 @@ export interface RollMetadata {
   kind: "save" | "attack" | "skill" | "damage" | "other";
   target: string;
   attackId?: string;
+  attackIndex?: number;
 }
 
 export interface RollPlan {

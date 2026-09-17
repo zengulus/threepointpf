@@ -1,0 +1,6671 @@
+{
+  "schemaVersion": 1,
+  "importer": "scripts/import-autosheet.mjs",
+  "input": {
+    "path": "INGEST THIS - Pathfinder Autosheet (v6.2.1).xlsx",
+    "sha256": "bf1fe035fe70688b0c7406308252a6c10013d2ce3220c7f21241fb55233d71b8",
+    "workbook": {
+      "sheets": [
+        {
+          "name": "Welcome Page",
+          "state": "hidden",
+          "bounds": "B1:Q50",
+          "importStatus": "excluded",
+          "reason": "Workbook cover and instructions, not reusable rule content."
+        },
+        {
+          "name": "Main Sheet",
+          "state": "visible",
+          "bounds": "B1:BQ119",
+          "importStatus": "partial",
+          "reason": "Character-instance cells are not imported. Reviewed quick-toggle semantics are authored in src/content.ts with cell provenance."
+        },
+        {
+          "name": "Equipment",
+          "state": "visible",
+          "bounds": "B1:CT74",
+          "importStatus": "excluded",
+          "reason": "Character inventory layout, not an authoritative equipment corpus."
+        },
+        {
+          "name": "Spells, Spheres and other stuff",
+          "state": "visible",
+          "bounds": "A1:BG147",
+          "importStatus": "excluded",
+          "reason": "Spellcasting and sphere material is outside this advancement import scope."
+        },
+        {
+          "name": "Class Charts",
+          "state": "visible",
+          "bounds": "A1:AR633",
+          "importStatus": "imported",
+          "reason": "Non-spellcasting class chassis rows are imported from the bounded semantic region.",
+          "semanticRows": "3:295"
+        },
+        {
+          "name": "Class Skills",
+          "state": "hidden",
+          "bounds": "A1:BH366",
+          "importStatus": "imported",
+          "reason": "Classic class-skill membership and skill metadata are imported from the bounded semantic region.",
+          "semanticRows": "1:278"
+        },
+        {
+          "name": "Formula References",
+          "state": "visible",
+          "bounds": "A1:AF323",
+          "importStatus": "partial",
+          "reason": "Age adjustments, XP thresholds, ability-based attack profiles and armor/shield chassis are generated. Quick toggles, straightforward conditions and explicit PRD equipment supplements are reviewed declarative content in src/content.ts. Contextual material combinations and remaining spreadsheet formulas are not executed.",
+          "semanticRows": "28:34,45:61,114:134,149:206"
+        },
+        {
+          "name": "Changelog",
+          "state": "hidden",
+          "bounds": "A1:C1006",
+          "importStatus": "excluded",
+          "reason": "Workbook release history, not rules content."
+        }
+      ]
+    }
+  },
+  "summary": {
+    "safelyParseableClassChartRows": 259,
+    "generatedProgressions": 259,
+    "generatedSkillDefinitions": 42,
+    "generatedEquipmentDefinitions": 45,
+    "generatedExperienceTracks": 3,
+    "generatedAgeFeatures": 5,
+    "generatedAttackProfiles": 60,
+    "progressionsWithClassSkills": 257,
+    "explicitPrestigeCharts": 89,
+    "classChartCategories": {
+      "Base": 28,
+      "Hybrid": 10,
+      "Occult": 7,
+      "Monstrous": 15,
+      "Paizo Prestige": 89,
+      "SoP Classes": 12,
+      "SoM Classes": 8,
+      "CotS Classes": 8,
+      "Akashic Classes": 18,
+      "3PP-Martial": 9,
+      "NPC": 5,
+      "3PP-Psionics": 10,
+      "Other": 2,
+      "FFd20": 38
+    },
+    "classSkills": {
+      "joinStrategy": "Class Skills section plus NFKC/case-folded class name; unmatched rows retain chassis without classSkills.",
+      "rowsBySection": {
+        "BASE CLASSES": 28,
+        "NPC CLASSES": 5,
+        "HYBRID CLASSES CLASSES": 10,
+        "OCCULT CLASSES": 7,
+        "MONSTROUS HD": 15,
+        "PRESTIGE CLASSES": 87,
+        "3PP CLASSES": 52,
+        "3PP PSIONICS": 10,
+        "3PP PATH OF WAR": 3,
+        "HOMEBREW AND SHIT": 40
+      },
+      "classicColumns": {
+        "B": "acrobatics",
+        "C": "appraise",
+        "D": "bluff",
+        "E": "climb",
+        "F": "craft",
+        "G": "craft",
+        "H": "diplomacy",
+        "I": "disable-device",
+        "J": "disguise",
+        "K": "escape-artist",
+        "L": "fly",
+        "M": "handle-animal",
+        "N": "heal",
+        "O": "intimidate",
+        "P": "knowledge-arcana",
+        "Q": "knowledge-dungeoneering",
+        "R": "knowledge-engineering",
+        "S": "knowledge-geography",
+        "T": "knowledge-history",
+        "U": "knowledge-local",
+        "V": "knowledge-nature",
+        "W": "knowledge-nobility",
+        "X": "knowledge-planes",
+        "Y": "knowledge-religion",
+        "Z": "linguistics",
+        "AA": "perception",
+        "AB": "perform",
+        "AC": "perform",
+        "AD": "profession",
+        "AE": "profession",
+        "AF": "ride",
+        "AG": "sense-motive",
+        "AH": "sleight-of-hand",
+        "AI": "spellcraft",
+        "AJ": "stealth",
+        "AK": "survival",
+        "AL": "swim",
+        "AM": "use-magic-device",
+        "AP": "artistry",
+        "AQ": "lore",
+        "BG": "autohypnosis",
+        "BH": "knowledge-psionics"
+      },
+      "contextualColumns": {
+        "OCCULT CLASSES": {
+          "AN": "autohypnosis",
+          "AO": "knowledge-psionics"
+        },
+        "3PP CLASSES": {
+          "AN": "autohypnosis",
+          "AO": "knowledge-psionics"
+        },
+        "3PP PSIONICS": {
+          "AN": "autohypnosis",
+          "AO": "knowledge-psionics"
+        },
+        "3PP PATH OF WAR": {
+          "AN": "knowledge-martial"
+        }
+      },
+      "ignoredAlternateConsolidatedColumns": {
+        "AS": "C. Acrobatics",
+        "AT": "C. Athletics",
+        "AU": "C. Finesse",
+        "AV": "C. Influence",
+        "AW": "C. Nature",
+        "AX": "C. Perception",
+        "AY": "C. Performance",
+        "AZ": "C. Religion",
+        "BA": "C. Society",
+        "BB": "C. Spellcraft",
+        "BC": "C. Stealth",
+        "BD": "C. Survival"
+      }
+    },
+    "aliases": {
+      "fighter": "pf1e.paizo.fighter",
+      "rogue": "pf1e.paizo.rogue",
+      "wizard": "pf1e.paizo.wizard"
+    }
+  },
+  "successfulRows": [
+    {
+      "progressionId": "pf1e.paizo.alchemist",
+      "name": "Alchemist",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 3,
+        "range": "A3:H3"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 5,
+        "range": "A5:BH5"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.antipaladin",
+      "name": "Antipaladin",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 4,
+        "range": "A4:H4"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 6,
+        "range": "A6:BH6"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.barbarian",
+      "name": "Barbarian",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 5,
+        "range": "A5:H5"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 7,
+        "range": "A7:BH7"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.bard",
+      "name": "Bard",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 6,
+        "range": "A6:H6"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 8,
+        "range": "A8:BH8"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.cavalier",
+      "name": "Cavalier",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 7,
+        "range": "A7:H7"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 9,
+        "range": "A9:BH9"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.cleric",
+      "name": "Cleric",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 8,
+        "range": "A8:H8"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 10,
+        "range": "A10:BH10"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.druid",
+      "name": "Druid",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 9,
+        "range": "A9:H9"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 11,
+        "range": "A11:BH11"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.fighter",
+      "name": "Fighter",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 10,
+        "range": "A10:H10"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 12,
+        "range": "A12:BH12"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.gunslinger",
+      "name": "Gunslinger",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 11,
+        "range": "A11:H11"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 13,
+        "range": "A13:BH13"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.inquisitor",
+      "name": "Inquisitor",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 12,
+        "range": "A12:H12"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 14,
+        "range": "A14:BH14"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.magus",
+      "name": "Magus",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 13,
+        "range": "A13:H13"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 15,
+        "range": "A15:BH15"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.monk",
+      "name": "Monk",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 14,
+        "range": "A14:H14"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 16,
+        "range": "A16:BH16"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.ninja",
+      "name": "Ninja",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 15,
+        "range": "A15:H15"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 17,
+        "range": "A17:BH17"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.oracle",
+      "name": "Oracle",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 16,
+        "range": "A16:H16"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 18,
+        "range": "A18:BH18"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.paladin",
+      "name": "Paladin",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 17,
+        "range": "A17:H17"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 19,
+        "range": "A19:BH19"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.ranger",
+      "name": "Ranger",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 18,
+        "range": "A18:H18"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 20,
+        "range": "A20:BH20"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.rogue",
+      "name": "Rogue",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 19,
+        "range": "A19:H19"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 21,
+        "range": "A21:BH21"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.samurai",
+      "name": "Samurai",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 20,
+        "range": "A20:H20"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 22,
+        "range": "A22:BH22"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.shifter",
+      "name": "Shifter",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 21,
+        "range": "A21:H21"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 28,
+        "range": "A28:BH28"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.sorcerer",
+      "name": "Sorcerer",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 22,
+        "range": "A22:H22"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 23,
+        "range": "A23:BH23"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.summoner",
+      "name": "Summoner",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 23,
+        "range": "A23:H23"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 24,
+        "range": "A24:BH24"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.vigilante",
+      "name": "Vigilante",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 24,
+        "range": "A24:H24"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 27,
+        "range": "A27:BH27"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.witch",
+      "name": "Witch",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 25,
+        "range": "A25:H25"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 25,
+        "range": "A25:BH25"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.wizard",
+      "name": "Wizard",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 26,
+        "range": "A26:H26"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 26,
+        "range": "A26:BH26"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.barbarian-unchained",
+      "name": "Barbarian (Unchained)",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 27,
+        "range": "A27:H27"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 29,
+        "range": "A29:BH29"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.monk-unchained",
+      "name": "Monk (Unchained)",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 28,
+        "range": "A28:H28"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 30,
+        "range": "A30:BH30"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.rogue-unchained",
+      "name": "Rogue (Unchained)",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 29,
+        "range": "A29:H29"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 31,
+        "range": "A31:BH31"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.summoner-unchained",
+      "name": "Summoner (Unchained)",
+      "category": "Base",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 30,
+        "range": "A30:H30"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 32,
+        "range": "A32:BH32"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.arcanist",
+      "name": "Arcanist",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 35,
+        "range": "A35:H35"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 42,
+        "range": "A42:BH42"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.brawler",
+      "name": "Brawler",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 36,
+        "range": "A36:H36"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 44,
+        "range": "A44:BH44"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.bloodrager",
+      "name": "Bloodrager",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 37,
+        "range": "A37:H37"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 43,
+        "range": "A43:BH43"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.hunter",
+      "name": "Hunter",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 38,
+        "range": "A38:H38"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 45,
+        "range": "A45:BH45"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.investigator",
+      "name": "Investigator",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 39,
+        "range": "A39:H39"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 46,
+        "range": "A46:BH46"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.shaman",
+      "name": "Shaman",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 40,
+        "range": "A40:H40"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 47,
+        "range": "A47:BH47"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.skald",
+      "name": "Skald",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 41,
+        "range": "A41:H41"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 48,
+        "range": "A48:BH48"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.slayer",
+      "name": "Slayer",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 42,
+        "range": "A42:H42"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 49,
+        "range": "A49:BH49"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.swashbuckler",
+      "name": "Swashbuckler",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 43,
+        "range": "A43:H43"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 50,
+        "range": "A50:BH50"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.warpriest",
+      "name": "Warpriest",
+      "category": "Hybrid",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 44,
+        "range": "A44:H44"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 51,
+        "range": "A51:BH51"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.kineticist",
+      "name": "Kineticist",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 49,
+        "range": "A49:H49"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 54,
+        "range": "A54:BH54"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.medium",
+      "name": "Medium",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 50,
+        "range": "A50:H50"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 55,
+        "range": "A55:BH55"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.medium-archmage-heirophant-mode",
+      "name": "Medium (Archmage/Heirophant Mode)",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 51,
+        "range": "A51:H51"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 56,
+        "range": "A56:BH56"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.mesmerist",
+      "name": "Mesmerist",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 52,
+        "range": "A52:H52"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 57,
+        "range": "A57:BH57"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.occultist",
+      "name": "Occultist",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 53,
+        "range": "A53:H53"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 58,
+        "range": "A58:BH58"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.psychic",
+      "name": "Psychic",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 54,
+        "range": "A54:H54"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 59,
+        "range": "A59:BH59"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.spiritualist",
+      "name": "Spiritualist",
+      "category": "Occult",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 55,
+        "range": "A55:H55"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 60,
+        "range": "A60:BH60"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.aberration",
+      "name": "Aberration",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 60,
+        "range": "A60:H60"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 63,
+        "range": "A63:BH63"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.animal",
+      "name": "Animal",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 61,
+        "range": "A61:H61"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 64,
+        "range": "A64:BH64"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.construct",
+      "name": "Construct",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 62,
+        "range": "A62:H62"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 65,
+        "range": "A65:BH65"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.dragon",
+      "name": "Dragon",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 63,
+        "range": "A63:H63"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 66,
+        "range": "A66:BH66"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.fey",
+      "name": "Fey",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 64,
+        "range": "A64:H64"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 67,
+        "range": "A67:BH67"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.humanoid",
+      "name": "Humanoid",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 65,
+        "range": "A65:H65"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 68,
+        "range": "A68:BH68"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.magical-beast",
+      "name": "Magical beast",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 66,
+        "range": "A66:H66"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 69,
+        "range": "A69:BH69"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.monstrous-humanoid",
+      "name": "Monstrous Humanoid",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 67,
+        "range": "A67:H67"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 70,
+        "range": "A70:BH70"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.ooze",
+      "name": "Ooze",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 68,
+        "range": "A68:H68"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 71,
+        "range": "A71:BH71"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.outsider-eidolon-low-fortitude",
+      "name": "Outsider / Eidolon (Low Fortitude)",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 69,
+        "range": "A69:H69"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 72,
+        "range": "A72:BH72"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.outsider-eidolon-low-reflex",
+      "name": "Outsider / Eidolon (Low Reflex)",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 70,
+        "range": "A70:H70"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 73,
+        "range": "A73:BH73"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.outsider-eidolon-low-will",
+      "name": "Outsider / Eidolon (Low Will)",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 71,
+        "range": "A71:H71"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 74,
+        "range": "A74:BH74"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.plant",
+      "name": "Plant",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 72,
+        "range": "A72:H72"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 75,
+        "range": "A75:BH75"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.undead",
+      "name": "Undead",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 73,
+        "range": "A73:H73"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 76,
+        "range": "A76:BH76"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.vermin",
+      "name": "Vermin",
+      "category": "Monstrous",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 74,
+        "range": "A74:H74"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 77,
+        "range": "A77:BH77"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.agent-of-the-grave",
+      "name": "Agent of the Grave",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 79,
+        "range": "A79:L79"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 80,
+        "range": "A80:BH80"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.arcane-archer",
+      "name": "Arcane Archer",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 80,
+        "range": "A80:L80"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 81,
+        "range": "A81:BH81"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.arcane-savant",
+      "name": "Arcane Savant",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 81,
+        "range": "A81:L81"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 82,
+        "range": "A82:BH82"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.arcane-trickster",
+      "name": "Arcane Trickster",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 82,
+        "range": "A82:L82"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 83,
+        "range": "A83:BH83"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.assassin",
+      "name": "Assassin",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 83,
+        "range": "A83:L83"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 84,
+        "range": "A84:BH84"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.battle-herald",
+      "name": "Battle Herald",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 84,
+        "range": "A84:L84"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 85,
+        "range": "A85:BH85"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.bloodmage",
+      "name": "Bloodmage",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 85,
+        "range": "A85:L85"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 86,
+        "range": "A86:BH86"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.brightness-seeker",
+      "name": "Brightness Seeker",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 86,
+        "range": "A86:L86"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 87,
+        "range": "A87:BH87"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.brother-of-the-seal",
+      "name": "Brother of the Seal",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 87,
+        "range": "A87:L87"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 88,
+        "range": "A88:BH88"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.celestial-knight",
+      "name": "Celestial Knight",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 88,
+        "range": "A88:L88"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 89,
+        "range": "A89:BH89"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.champion-of-the-enlightened",
+      "name": "Champion of the Enlightened",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 89,
+        "range": "A89:L89"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 90,
+        "range": "A90:BH90"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.chevalier",
+      "name": "Chevalier",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 90,
+        "range": "A90:L90"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 91,
+        "range": "A91:BH91"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.coastal-pirate",
+      "name": "Coastal Pirate",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 91,
+        "range": "A91:L91"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 92,
+        "range": "A92:BH92"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.collegiate-arcanist",
+      "name": "Collegiate Arcanist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 92,
+        "range": "A92:L92"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 93,
+        "range": "A93:BH93"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.crimson-assassin",
+      "name": "Crimson Assassin",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 93,
+        "range": "A93:L93"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 94,
+        "range": "A94:BH94"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.cyphermage",
+      "name": "Cyphermage",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 94,
+        "range": "A94:L94"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 95,
+        "range": "A95:BH95"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.daivrat",
+      "name": "Daivrat",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 95,
+        "range": "A95:L95"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 96,
+        "range": "A96:BH96"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.dark-delver",
+      "name": "Dark Delver",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 96,
+        "range": "A96:L96"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 97,
+        "range": "A97:BH97"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.darkfire-adept",
+      "name": "Darkfire Adept",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 97,
+        "range": "A97:L97"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 98,
+        "range": "A98:BH98"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.deep-sea-pirate",
+      "name": "Deep Sea Pirate",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 98,
+        "range": "A98:L98"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 99,
+        "range": "A99:BH99"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.demoniac",
+      "name": "Demoniac",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 99,
+        "range": "A99:L99"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 100,
+        "range": "A100:BH100"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.diabolist",
+      "name": "Diabolist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 100,
+        "range": "A100:L100"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 101,
+        "range": "A101:BH101"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.dissident-of-dawn",
+      "name": "Dissident of Dawn",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 101,
+        "range": "A101:L101"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 102,
+        "range": "A102:BH102"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.divine-assessor",
+      "name": "Divine Assessor",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 102,
+        "range": "A102:L102"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 103,
+        "range": "A103:BH103"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.divine-scion",
+      "name": "Divine Scion",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 103,
+        "range": "A103:L103"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 104,
+        "range": "A104:BH104"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.dragon-disciple",
+      "name": "Dragon Disciple",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 104,
+        "range": "A104:L104"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 105,
+        "range": "A105:BH105"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.duelist",
+      "name": "Duelist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 105,
+        "range": "A105:L105"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 106,
+        "range": "A106:BH106"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.eldritch-knight",
+      "name": "Eldritch Knight",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 106,
+        "range": "A106:L106"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 107,
+        "range": "A107:BH107"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.envoy-of-balance",
+      "name": "Envoy of Balance",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 107,
+        "range": "A107:L107"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 108,
+        "range": "A108:BH108"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.evangelist",
+      "name": "Evangelist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 108,
+        "range": "A108:L108"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 109,
+        "range": "A109:BH109"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.exalted",
+      "name": "Exalted",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 109,
+        "range": "A109:L109"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 110,
+        "range": "A110:BH110"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.false-priest",
+      "name": "False Priest",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 110,
+        "range": "A110:L110"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 111,
+        "range": "A111:BH111"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.field-agent",
+      "name": "Field Agent",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 111,
+        "range": "A111:L111"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 112,
+        "range": "A112:BH112"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.furious-guardian",
+      "name": "Furious Guardian",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 112,
+        "range": "A112:L112"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 113,
+        "range": "A113:BH113"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.genie-binder",
+      "name": "Genie Binder",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 113,
+        "range": "A113:L113"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 114,
+        "range": "A114:BH114"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.golden-legionnaire",
+      "name": "Golden Legionnaire",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 114,
+        "range": "A114:L114"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 115,
+        "range": "A115:BH115"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.grand-marshal",
+      "name": "Grand Marshal",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 115,
+        "range": "A115:L115"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 116,
+        "range": "A116:BH116"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.gray-warden",
+      "name": "Gray Warden",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 116,
+        "range": "A116:L116"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 117,
+        "range": "A117:BH117"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.green-faith-acolyte",
+      "name": "Green Faith Acolyte",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 117,
+        "range": "A117:L117"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 118,
+        "range": "A118:BH118"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.group-leader",
+      "name": "Group Leader",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 118,
+        "range": "A118:L118"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 119,
+        "range": "A119:BH119"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.guild-agent",
+      "name": "Guild Agent",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 119,
+        "range": "A119:L119"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 120,
+        "range": "A120:BH120"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.guild-poisoner",
+      "name": "Guild Poisoner",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 120,
+        "range": "A120:L120"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 121,
+        "range": "A121:BH121"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.halfling-opportunist",
+      "name": "Halfling Opportunist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 121,
+        "range": "A121:L121"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 122,
+        "range": "A122:BH122"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.harrower",
+      "name": "Harrower",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 122,
+        "range": "A122:L122"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 123,
+        "range": "A123:BH123"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.hell-knight-commander",
+      "name": "Hell Knight Commander",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 123,
+        "range": "A123:L123"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 124,
+        "range": "A124:BH124"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.hell-knight-enforcer",
+      "name": "Hell Knight Enforcer",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 124,
+        "range": "A124:L124"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 125,
+        "range": "A125:BH125"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.holy-vindicator",
+      "name": "Holy Vindicator",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 125,
+        "range": "A125:L125"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 126,
+        "range": "A126:BH126"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.horizon-walker",
+      "name": "Horizon Walker",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 126,
+        "range": "A126:L126"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 127,
+        "range": "A127:BH127"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.inheritor-s-crusader",
+      "name": "Inheritor's Crusader",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 127,
+        "range": "A127:L127"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 128,
+        "range": "A128:BH128"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.justiciar",
+      "name": "Justiciar",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 128,
+        "range": "A128:L128"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 129,
+        "range": "A129:BH129"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.lantern-bearer",
+      "name": "Lantern Bearer",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 129,
+        "range": "A129:L129"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 130,
+        "range": "A130:BH130"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.liberator",
+      "name": "Liberator",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 130,
+        "range": "A130:L130"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 131,
+        "range": "A131:BH131"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.lion-blade",
+      "name": "Lion Blade",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 131,
+        "range": "A131:L131"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 132,
+        "range": "A132:BH132"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.living-monolith",
+      "name": "Living Monolith",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 132,
+        "range": "A132:L132"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 133,
+        "range": "A133:BH133"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.loremaster",
+      "name": "Loremaster",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 133,
+        "range": "A133:L133"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 134,
+        "range": "A134:BH134"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.low-templar",
+      "name": "Low Templar",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 134,
+        "range": "A134:L134"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 135,
+        "range": "A135:BH135"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.mage-of-the-third-eye",
+      "name": "Mage of the Third Eye",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 135,
+        "range": "A135:L135"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 136,
+        "range": "A136:BH136"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.mammoth-rider",
+      "name": "Mammoth Rider",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 136,
+        "range": "A136:L136"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 137,
+        "range": "A137:BH137"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.master-chymist",
+      "name": "Master Chymist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 137,
+        "range": "A137:L137"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 138,
+        "range": "A138:BH138"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.master-of-storms",
+      "name": "Master of Storms",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 138,
+        "range": "A138:L138"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 139,
+        "range": "A139:BH139"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.master-spy",
+      "name": "Master Spy",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 139,
+        "range": "A139:L139"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 140,
+        "range": "A140:BH140"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.mystery-cultist",
+      "name": "Mystery Cultist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 140,
+        "range": "A140:L140"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.mystic-theurge",
+      "name": "Mystic Theurge",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 141,
+        "range": "A141:L141"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 141,
+        "range": "A141:BH141"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.natural-alchemist",
+      "name": "Natural Alchemist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 142,
+        "range": "A142:L142"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 142,
+        "range": "A142:BH142"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.nature-warden",
+      "name": "Nature Warden",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 143,
+        "range": "A143:L143"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 143,
+        "range": "A143:BH143"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.noble-scion",
+      "name": "Noble Scion",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 144,
+        "range": "A144:L144"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 144,
+        "range": "A144:BH144"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.pain-taster",
+      "name": "Pain Taster",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 145,
+        "range": "A145:L145"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 145,
+        "range": "A145:BH145"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.pathfinder-chronicler",
+      "name": "Pathfinder Chronicler",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 146,
+        "range": "A146:L146"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 146,
+        "range": "A146:BH146"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.pit-fighter",
+      "name": "Pit Fighter",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 147,
+        "range": "A147:L147"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 147,
+        "range": "A147:BH147"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.planes-walker",
+      "name": "Planes Walker",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 148,
+        "range": "A148:L148"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 148,
+        "range": "A148:BH148"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.purity-legion-enforcer",
+      "name": "Purity Legion Enforcer",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 149,
+        "range": "A149:L149"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 149,
+        "range": "A149:BH149"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.rage-prophet",
+      "name": "Rage Prophet",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 150,
+        "range": "A150:L150"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 150,
+        "range": "A150:BH150"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.sanctified-prophet",
+      "name": "Sanctified Prophet",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 151,
+        "range": "A151:L151"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 151,
+        "range": "A151:BH151"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.sentinel",
+      "name": "Sentinel",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 152,
+        "range": "A152:L152"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.shadowdancer",
+      "name": "Shadowdancer",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 153,
+        "range": "A153:L153"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 152,
+        "range": "A152:BH152"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.sleepless-detective",
+      "name": "Sleepless Detective",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 154,
+        "range": "A154:L154"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 153,
+        "range": "A153:BH153"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.soul-warden",
+      "name": "Soul Warden",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 155,
+        "range": "A155:L155"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 154,
+        "range": "A154:BH154"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.souleater",
+      "name": "Souleater",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 156,
+        "range": "A156:L156"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 155,
+        "range": "A155:BH155"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.spherewalker",
+      "name": "Spherewalker",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 157,
+        "range": "A157:L157"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 156,
+        "range": "A156:BH156"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.stalwart-defender",
+      "name": "Stalwart Defender",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 158,
+        "range": "A158:L158"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 157,
+        "range": "A157:BH157"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.steel-falcon",
+      "name": "Steel Falcon",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 159,
+        "range": "A159:L159"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 158,
+        "range": "A158:BH158"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.student-of-war",
+      "name": "Student of War",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 160,
+        "range": "A160:L160"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 159,
+        "range": "A159:BH159"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.sun-seeker",
+      "name": "Sun Seeker",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 161,
+        "range": "A161:L161"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 160,
+        "range": "A160:BH160"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.swordlord",
+      "name": "Swordlord",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 162,
+        "range": "A162:L162"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 161,
+        "range": "A161:BH161"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.tattooed-mystic",
+      "name": "Tattooed Mystic",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 163,
+        "range": "A163:L163"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 162,
+        "range": "A162:BH162"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.technomancer",
+      "name": "Technomancer",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 164,
+        "range": "A164:L164"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 163,
+        "range": "A163:BH163"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.umbral-agent",
+      "name": "Umbral Agent",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 165,
+        "range": "A165:L165"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 164,
+        "range": "A164:BH164"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.veiled-illusionist",
+      "name": "Veiled Illusionist",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 166,
+        "range": "A166:L166"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 165,
+        "range": "A165:BH165"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.winter-witch",
+      "name": "Winter Witch",
+      "category": "Paizo Prestige",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 167,
+        "range": "A167:L167"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 166,
+        "range": "A166:BH166"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.armorist",
+      "name": "Armorist",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 172,
+        "range": "A172:H172"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 169,
+        "range": "A169:BH169"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.elementalist",
+      "name": "Elementalist",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 173,
+        "range": "A173:H173"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 170,
+        "range": "A170:BH170"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.eliciter",
+      "name": "Eliciter",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 174,
+        "range": "A174:H174"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 171,
+        "range": "A171:BH171"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.fey-adept",
+      "name": "Fey Adept",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 175,
+        "range": "A175:H175"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 172,
+        "range": "A172:BH172"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.hedgewitch",
+      "name": "Hedgewitch",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 176,
+        "range": "A176:H176"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 173,
+        "range": "A173:BH173"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.incanter",
+      "name": "Incanter",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 177,
+        "range": "A177:H177"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 174,
+        "range": "A174:BH174"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.mageknight",
+      "name": "Mageknight",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 178,
+        "range": "A178:H178"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 175,
+        "range": "A175:BH175"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.shifter-spheres",
+      "name": "Shifter (Spheres)",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 179,
+        "range": "A179:H179"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 176,
+        "range": "A176:BH176"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.soul-weaver",
+      "name": "Soul Weaver",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 180,
+        "range": "A180:H180"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 177,
+        "range": "A177:BH177"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.symbiat",
+      "name": "Symbiat",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 181,
+        "range": "A181:H181"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 178,
+        "range": "A178:BH178"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.thaumaturge",
+      "name": "Thaumaturge",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 182,
+        "range": "A182:H182"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 179,
+        "range": "A179:BH179"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-power.wraith",
+      "name": "Wraith",
+      "category": "SoP Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 183,
+        "range": "A183:H183"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 180,
+        "range": "A180:BH180"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.armiger",
+      "name": "Armiger",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 184,
+        "range": "A184:H184"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 181,
+        "range": "A181:BH181"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.blacksmith",
+      "name": "Blacksmith",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 185,
+        "range": "A185:H185"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 182,
+        "range": "A182:BH182"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.commander",
+      "name": "Commander",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 186,
+        "range": "A186:H186"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 183,
+        "range": "A183:BH183"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.conscript",
+      "name": "Conscript",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 187,
+        "range": "A187:H187"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 184,
+        "range": "A184:BH184"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.scholar",
+      "name": "Scholar",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 188,
+        "range": "A188:H188"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 185,
+        "range": "A185:BH185"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.sentinel",
+      "name": "Sentinel",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 189,
+        "range": "A189:H189"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 186,
+        "range": "A186:BH186"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.striker",
+      "name": "Striker",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 190,
+        "range": "A190:H190"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 187,
+        "range": "A187:BH187"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.spheres-of-might.technician",
+      "name": "Technician",
+      "category": "SoM Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 191,
+        "range": "A191:H191"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 188,
+        "range": "A188:BH188"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.prodigy",
+      "name": "Prodigy",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 192,
+        "range": "A192:H192"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 189,
+        "range": "A189:BH189"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.sage",
+      "name": "Sage",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 193,
+        "range": "A193:H193"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 190,
+        "range": "A190:BH190"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.troubadour",
+      "name": "Troubadour",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 194,
+        "range": "A194:H194"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 191,
+        "range": "A191:BH191"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.warden",
+      "name": "Warden",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 195,
+        "range": "A195:H195"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 192,
+        "range": "A192:BH192"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.dragoon",
+      "name": "Dragoon",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 196,
+        "range": "A196:H196"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 193,
+        "range": "A193:BH193"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.mountebank",
+      "name": "Mountebank",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 197,
+        "range": "A197:H197"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 194,
+        "range": "A194:BH194"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.necros",
+      "name": "Necros",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 198,
+        "range": "A198:H198"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 195,
+        "range": "A195:BH195"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.champions-of-the-spheres.reaper",
+      "name": "Reaper",
+      "category": "CotS Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 199,
+        "range": "A199:H199"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 196,
+        "range": "A196:BH196"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.daevic",
+      "name": "Daevic",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 200,
+        "range": "A200:H200"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 197,
+        "range": "A197:BH197"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.eclipse",
+      "name": "Eclipse",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 201,
+        "range": "A201:H201"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 198,
+        "range": "A198:BH198"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.guru",
+      "name": "Guru",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 202,
+        "range": "A202:H202"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 199,
+        "range": "A199:BH199"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.nexus",
+      "name": "Nexus",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 203,
+        "range": "A203:H203"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 200,
+        "range": "A200:BH200"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.radiant",
+      "name": "Radiant",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 204,
+        "range": "A204:H204"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 201,
+        "range": "A201:BH201"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.rajah",
+      "name": "Rajah",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 205,
+        "range": "A205:H205"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 202,
+        "range": "A202:BH202"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.stormbound",
+      "name": "Stormbound",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 206,
+        "range": "A206:H206"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 203,
+        "range": "A203:BH203"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.vizier",
+      "name": "Vizier",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 207,
+        "range": "A207:H207"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 204,
+        "range": "A204:BH204"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.zodiac",
+      "name": "Zodiac",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 208,
+        "range": "A208:H208"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 205,
+        "range": "A205:BH205"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.martial.harbinger",
+      "name": "Harbinger",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 209,
+        "range": "A209:H209"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 206,
+        "range": "A206:BH206"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.martial.mystic",
+      "name": "Mystic",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 210,
+        "range": "A210:H210"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 207,
+        "range": "A207:BH207"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.martial.zealot",
+      "name": "Zealot",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 211,
+        "range": "A211:H211"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 208,
+        "range": "A208:BH208"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.martial.epilektoi",
+      "name": "Epilektoi",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 212,
+        "range": "A212:H212"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 209,
+        "range": "A209:BH209"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.martial.medic",
+      "name": "Medic",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 213,
+        "range": "A213:H213"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 210,
+        "range": "A210:BH210"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.martial.parasite",
+      "name": "Parasite",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 214,
+        "range": "A214:H214"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 211,
+        "range": "A211:BH211"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.crux",
+      "name": "Crux",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 215,
+        "range": "A215:H215"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 212,
+        "range": "A212:BH212"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.fisherking",
+      "name": "Fisherking",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 216,
+        "range": "A216:H216"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 213,
+        "range": "A213:BH213"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.kheshig",
+      "name": "Kheshig",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 217,
+        "range": "A217:H217"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 214,
+        "range": "A214:BH214"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.huay",
+      "name": "Huay",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 218,
+        "range": "A218:H218"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 215,
+        "range": "A215:BH215"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.helmsman",
+      "name": "Helmsman",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 219,
+        "range": "A219:H219"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 216,
+        "range": "A216:BH216"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.volur",
+      "name": "Volur",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 220,
+        "range": "A220:H220"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 217,
+        "range": "A217:BH217"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.thug",
+      "name": "Thug",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 221,
+        "range": "A221:H221"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 218,
+        "range": "A218:BH218"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.soulforge",
+      "name": "Soulforge",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 222,
+        "range": "A222:H222"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 219,
+        "range": "A219:BH219"
+      }
+    },
+    {
+      "progressionId": "pf1e.3pp.akashic.promethean",
+      "name": "Promethean",
+      "category": "Akashic Classes",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 223,
+        "range": "A223:H223"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 220,
+        "range": "A220:BH220"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.adept",
+      "name": "Adept",
+      "category": "NPC",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 228,
+        "range": "A228:H228"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 35,
+        "range": "A35:BH35"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.aristocrat",
+      "name": "Aristocrat",
+      "category": "NPC",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 229,
+        "range": "A229:H229"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 36,
+        "range": "A36:BH36"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.commoner",
+      "name": "Commoner",
+      "category": "NPC",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 230,
+        "range": "A230:H230"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 37,
+        "range": "A37:BH37"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.expert",
+      "name": "Expert",
+      "category": "NPC",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 231,
+        "range": "A231:H231"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 38,
+        "range": "A38:BH38"
+      }
+    },
+    {
+      "progressionId": "pf1e.paizo.warrior",
+      "name": "Warrior",
+      "category": "NPC",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 232,
+        "range": "A232:H232"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 39,
+        "range": "A39:BH39"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.aegis",
+      "name": "Aegis",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 237,
+        "range": "A237:H237"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 222,
+        "range": "A222:BH222"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.cryptic",
+      "name": "Cryptic",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 238,
+        "range": "A238:H238"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 223,
+        "range": "A223:BH223"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.dread",
+      "name": "Dread",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 239,
+        "range": "A239:H239"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 224,
+        "range": "A224:BH224"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.marksman",
+      "name": "Marksman",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 240,
+        "range": "A240:H240"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 225,
+        "range": "A225:BH225"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.psion",
+      "name": "Psion",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 241,
+        "range": "A241:H241"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 226,
+        "range": "A226:BH226"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.psychic-warrior",
+      "name": "Psychic Warrior",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 242,
+        "range": "A242:H242"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 227,
+        "range": "A227:BH227"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.soulknife",
+      "name": "Soulknife",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 243,
+        "range": "A243:H243"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 228,
+        "range": "A228:BH228"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.tactician",
+      "name": "Tactician",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 244,
+        "range": "A244:H244"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 229,
+        "range": "A229:BH229"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.vitalist",
+      "name": "Vitalist",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 245,
+        "range": "A245:H245"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 230,
+        "range": "A230:BH230"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.psionics.wilder",
+      "name": "Wilder",
+      "category": "3PP-Psionics",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 246,
+        "range": "A246:H246"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 231,
+        "range": "A231:BH231"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.path-of-war.stalker",
+      "name": "Stalker",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 251,
+        "range": "A251:H251"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 234,
+        "range": "A234:BH234"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.path-of-war.warder",
+      "name": "Warder",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 252,
+        "range": "A252:H252"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 235,
+        "range": "A235:BH235"
+      }
+    },
+    {
+      "progressionId": "pf1e.dreamscarred-press.path-of-war.warlord",
+      "name": "Warlord",
+      "category": "3PP-Martial",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 253,
+        "range": "A253:H253"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 236,
+        "range": "A236:BH236"
+      }
+    },
+    {
+      "progressionId": "pf1e.autosheet.avowed",
+      "name": "Avowed",
+      "category": "Other",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 256,
+        "range": "A256:H256"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 239,
+        "range": "A239:BH239"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.archer",
+      "name": "Archer",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 257,
+        "range": "A257:H257"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 240,
+        "range": "A240:BH240"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.bard",
+      "name": "Bard",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 258,
+        "range": "A258:H258"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 241,
+        "range": "A241:BH241"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.beastmaster",
+      "name": "Beastmaster",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 259,
+        "range": "A259:H259"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 242,
+        "range": "A242:BH242"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.black-mage",
+      "name": "Black Mage",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 260,
+        "range": "A260:H260"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 243,
+        "range": "A243:BH243"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.dragoon",
+      "name": "Dragoon",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 261,
+        "range": "A261:H261"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 244,
+        "range": "A244:BH244"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.knight",
+      "name": "Knight",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 262,
+        "range": "A262:H262"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 245,
+        "range": "A245:BH245"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.monk",
+      "name": "Monk",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 263,
+        "range": "A263:H263"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 246,
+        "range": "A246:BH246"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.red-mage",
+      "name": "Red Mage",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 264,
+        "range": "A264:H264"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 247,
+        "range": "A247:BH247"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.thief",
+      "name": "Thief",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 265,
+        "range": "A265:H265"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 248,
+        "range": "A248:BH248"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.warrior",
+      "name": "Warrior",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 266,
+        "range": "A266:H266"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 249,
+        "range": "A249:BH249"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.white-mage",
+      "name": "White Mage",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 267,
+        "range": "A267:H267"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 250,
+        "range": "A250:BH250"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.astrologian",
+      "name": "Astrologian",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 268,
+        "range": "A268:H268"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 251,
+        "range": "A251:BH251"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.berserker",
+      "name": "Berserker",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 269,
+        "range": "A269:H269"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 252,
+        "range": "A252:BH252"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.blue-mage",
+      "name": "Blue Mage",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 270,
+        "range": "A270:H270"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 253,
+        "range": "A253:BH253"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.chemist",
+      "name": "Chemist",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 271,
+        "range": "A271:H271"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 254,
+        "range": "A254:BH254"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.chocobo-knight",
+      "name": "Chocobo Knight",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 272,
+        "range": "A272:H272"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 255,
+        "range": "A255:BH255"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.cleric",
+      "name": "Cleric",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 273,
+        "range": "A273:H273"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 256,
+        "range": "A256:BH256"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.dark-knight",
+      "name": "Dark Knight",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 274,
+        "range": "A274:H274"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 257,
+        "range": "A257:BH257"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.engineer",
+      "name": "Engineer",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 275,
+        "range": "A275:H275"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 258,
+        "range": "A258:BH258"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.gambler",
+      "name": "Gambler",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 276,
+        "range": "A276:H276"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 259,
+        "range": "A259:BH259"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.geomancer",
+      "name": "Geomancer",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 277,
+        "range": "A277:H277"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 260,
+        "range": "A260:BH260"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.gunner",
+      "name": "Gunner",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 278,
+        "range": "A278:H278"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 261,
+        "range": "A261:BH261"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.holy-knight",
+      "name": "Holy Knight",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 279,
+        "range": "A279:H279"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 262,
+        "range": "A262:BH262"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.illusionist",
+      "name": "Illusionist",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 280,
+        "range": "A280:H280"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 263,
+        "range": "A263:BH263"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.medic",
+      "name": "Medic",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 281,
+        "range": "A281:H281"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 264,
+        "range": "A264:BH264"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.necromancer",
+      "name": "Necromancer",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 282,
+        "range": "A282:H282"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 265,
+        "range": "A265:BH265"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.summoner",
+      "name": "Summoner",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 283,
+        "range": "A283:H283"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 266,
+        "range": "A266:BH266"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.time-mage",
+      "name": "Time Mage",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 284,
+        "range": "A284:H284"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 267,
+        "range": "A267:BH267"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.black-belt",
+      "name": "Black Belt",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 285,
+        "range": "A285:H285"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 268,
+        "range": "A268:BH268"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.dancer",
+      "name": "Dancer",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 286,
+        "range": "A286:H286"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 269,
+        "range": "A269:BH269"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.druid",
+      "name": "Druid",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 287,
+        "range": "A287:H287"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 270,
+        "range": "A270:BH270"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.fencer",
+      "name": "Fencer",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 288,
+        "range": "A288:H288"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 271,
+        "range": "A271:BH271"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.gunbreaker",
+      "name": "Gunbreaker",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 289,
+        "range": "A289:H289"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 272,
+        "range": "A272:BH272"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.ninja",
+      "name": "Ninja",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 290,
+        "range": "A290:H290"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 273,
+        "range": "A273:BH273"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.samurai",
+      "name": "Samurai",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 291,
+        "range": "A291:H291"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 274,
+        "range": "A274:BH274"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.scholar",
+      "name": "Scholar",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 292,
+        "range": "A292:H292"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 275,
+        "range": "A275:BH275"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.sword-saint",
+      "name": "Sword Saint",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 293,
+        "range": "A293:H293"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 276,
+        "range": "A276:BH276"
+      }
+    },
+    {
+      "progressionId": "ffd20.autosheet.arithmetician",
+      "name": "Arithmetician",
+      "category": "FFd20",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 294,
+        "range": "A294:H294"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 277,
+        "range": "A277:BH277"
+      }
+    },
+    {
+      "progressionId": "pf1e.autosheet.braggart",
+      "name": "Braggart",
+      "category": "Other",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 295,
+        "range": "A295:H295"
+      },
+      "classSkillsSource": {
+        "sheet": "Class Skills",
+        "row": 278,
+        "range": "A278:BH278"
+      }
+    }
+  ],
+  "equipmentRows": [
+    {
+      "equipmentId": "pf1e.autosheet.clothing",
+      "name": "Clothing",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 153,
+        "range": "A153:I153",
+        "system": "PF1e",
+        "category": "Unarmored / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.armored-kilt",
+      "name": "Armored Kilt",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 156,
+        "range": "A156:I156",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.haramaki",
+      "name": "Haramaki",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 157,
+        "range": "A157:I157",
+        "system": "PF1e",
+        "category": "Light / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.padded-cloth",
+      "name": "Padded Cloth",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 158,
+        "range": "A158:I158",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.quilted-cloth",
+      "name": "Quilted Cloth",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 159,
+        "range": "A159:I159",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.silken-ceremonial-armor",
+      "name": "Silken Ceremonial Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 160,
+        "range": "A160:I160",
+        "system": "PF1e",
+        "category": "Light / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.lamellar-cuirass",
+      "name": "Lamellar Cuirass",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 161,
+        "range": "A161:I161",
+        "system": "PF1e",
+        "category": "Light / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.leather",
+      "name": "Leather",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 162,
+        "range": "A162:I162",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.rosewood-armor",
+      "name": "Rosewood Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 163,
+        "range": "A163:I163",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.hide-shirt",
+      "name": "Hide Shirt",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 164,
+        "range": "A164:I164",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.leaf-armor",
+      "name": "Leaf Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 165,
+        "range": "A165:I165",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.parade-armor",
+      "name": "Parade Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 166,
+        "range": "A166:I166",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.studded-leather",
+      "name": "Studded Leather",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 167,
+        "range": "A167:I167",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.wooden",
+      "name": "Wooden",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 168,
+        "range": "A168:I168",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.chain-shirt",
+      "name": "Chain Shirt",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 169,
+        "range": "A169:I169",
+        "system": "PF1e",
+        "category": "Light / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.leather-lamellar",
+      "name": "Leather Lamellar",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 170,
+        "range": "A170:I170",
+        "system": "PF1e",
+        "category": "Light / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.armored-coat",
+      "name": "Armored Coat",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 172,
+        "range": "A172:I172",
+        "system": "PF1e",
+        "category": "Medium / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.hide",
+      "name": "Hide",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 173,
+        "range": "A173:I173",
+        "system": "PF1e",
+        "category": "Medium / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.do-maru",
+      "name": "Do-Maru",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 174,
+        "range": "A174:I174",
+        "system": "PF1e",
+        "category": "Medium / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.horn-lamellar",
+      "name": "Horn Lamellar",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 175,
+        "range": "A175:I175",
+        "system": "PF1e",
+        "category": "Medium / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.kikko-armor",
+      "name": "Kikko Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 176,
+        "range": "A176:I176",
+        "system": "PF1e",
+        "category": "Medium / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.scale-mail",
+      "name": "Scale Mail",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 177,
+        "range": "A177:I177",
+        "system": "PF1e",
+        "category": "Medium / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.agile-breastplate",
+      "name": "Agile Breastplate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 178,
+        "range": "A178:I178",
+        "system": "PF1e",
+        "category": "Medium / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.breastplate",
+      "name": "Breastplate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 179,
+        "range": "A179:I179",
+        "system": "PF1e",
+        "category": "Medium / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.chainmail",
+      "name": "Chainmail",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 180,
+        "range": "A180:I180",
+        "system": "PF1e",
+        "category": "Medium / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.four-mirror-armor",
+      "name": "Four-Mirror Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 181,
+        "range": "A181:I181",
+        "system": "PF1e",
+        "category": "Medium / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.mountain-pattern-armor",
+      "name": "Mountain Pattern Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 182,
+        "range": "A182:I182",
+        "system": "PF1e",
+        "category": "Medium / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.steel-lamellar",
+      "name": "Steel Lamellar",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 183,
+        "range": "A183:I183",
+        "system": "PF1e",
+        "category": "Medium / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.banded-mail",
+      "name": "Banded Mail",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 186,
+        "range": "A186:I186",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.field-plate",
+      "name": "Field Plate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 187,
+        "range": "A187:I187",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.iron-lamellar",
+      "name": "Iron Lamellar",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 188,
+        "range": "A188:I188",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.kusari-gusoku",
+      "name": "Kusari Gusoku",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 189,
+        "range": "A189:I189",
+        "system": "PF1e",
+        "category": "Heavy / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.splint-mail",
+      "name": "Splint Mail",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 190,
+        "range": "A190:I190",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.tatami-do",
+      "name": "Tatami-Do",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 191,
+        "range": "A191:I191",
+        "system": "PF1e",
+        "category": "Heavy / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.agile-half-plate",
+      "name": "Agile Half-Plate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 192,
+        "range": "A192:I192",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.half-plate",
+      "name": "Half-Plate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 193,
+        "range": "A193:I193",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.o-yoroi",
+      "name": "O-Yoroi",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 194,
+        "range": "A194:I194",
+        "system": "PF1e",
+        "category": "Heavy / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.stone-coat",
+      "name": "Stone Coat",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 195,
+        "range": "A195:I195",
+        "system": "PF1e",
+        "category": "Heavy / Eastern"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.full-plate",
+      "name": "Full Plate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 196,
+        "range": "A196:I196",
+        "system": "PF1e",
+        "category": "Heavy / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.buckler",
+      "name": "Buckler",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 200,
+        "range": "A200:I200",
+        "system": "PF1e",
+        "category": "Buckler / Shield"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.klar",
+      "name": "Klar",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 201,
+        "range": "A201:I201",
+        "system": "PF1e",
+        "category": "Light / Shield"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.madu",
+      "name": "Madu",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 202,
+        "range": "A202:I202",
+        "system": "PF1e",
+        "category": "Light / Shield"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.light-shield",
+      "name": "Light Shield",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 203,
+        "range": "A203:I203",
+        "system": "PF1e",
+        "category": "Light / Shield"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.heavy-shield",
+      "name": "Heavy Shield",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 204,
+        "range": "A204:I204",
+        "system": "PF1e",
+        "category": "Heavy / Shield"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.tower-shield",
+      "name": "Tower Shield",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 206,
+        "range": "A206:I206",
+        "system": "PF1e",
+        "category": "Tower / Shield"
+      }
+    }
+  ],
+  "experienceRows": [
+    {
+      "id": "pf1e.autosheet.experience-slow",
+      "name": "Slow",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "range": "B114:B134",
+        "row": 114,
+        "system": "PF1e",
+        "category": "XP thresholds"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.experience-medium",
+      "name": "Medium",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "range": "C114:C134",
+        "row": 114,
+        "system": "PF1e",
+        "category": "XP thresholds"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.experience-fast",
+      "name": "Fast",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "range": "D114:D134",
+        "row": 114,
+        "system": "PF1e",
+        "category": "XP thresholds"
+      }
+    }
+  ],
+  "ageRows": [
+    {
+      "id": "pf1e.autosheet.age-young",
+      "name": "Age: Young",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "B28:B34",
+        "system": "PF1e",
+        "category": "Age ability adjustments"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.age-adult",
+      "name": "Age: Adult",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "C28:C34",
+        "system": "PF1e",
+        "category": "Age ability adjustments"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.age-middle-age",
+      "name": "Age: Middle Age",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "D28:D34",
+        "system": "PF1e",
+        "category": "Age ability adjustments"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.age-old",
+      "name": "Age: Old",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "E28:E34",
+        "system": "PF1e",
+        "category": "Age ability adjustments"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.age-venerable",
+      "name": "Age: Venerable",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "F28:F34",
+        "system": "PF1e",
+        "category": "Age ability adjustments"
+      }
+    }
+  ],
+  "attackProfileRows": [
+    {
+      "id": "pf1e.autosheet.standard-melee",
+      "name": "melee: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "C45",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.two-handed",
+      "name": "melee: STR / 1.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "C46",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.finesse",
+      "name": "melee: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 49,
+        "range": "C49",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.agile",
+      "name": "melee: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 50,
+        "range": "C50",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.melee-dex-dex-1-5",
+      "name": "melee: DEX / 1.5×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 51,
+        "range": "C51",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.melee-wis-str-1",
+      "name": "melee: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 54,
+        "range": "C54",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.melee-wis-wis-1",
+      "name": "melee: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "C55",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand",
+      "name": "off hand melee: STR / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "F45",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-str-str-1",
+      "name": "off hand melee: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "F46",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-dex-str-0-5",
+      "name": "off hand melee: DEX / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 48,
+        "range": "F48",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-dex-str-1",
+      "name": "off hand melee: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 49,
+        "range": "F49",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-dex-dex-0-5",
+      "name": "off hand melee: DEX / 0.5×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 50,
+        "range": "F50",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-dex-dex-1",
+      "name": "off hand melee: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 51,
+        "range": "F51",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-wis-str-0-5",
+      "name": "off hand melee: WIS / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "F53",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-wis-str-1",
+      "name": "off hand melee: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 54,
+        "range": "F54",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-wis-wis-0-5",
+      "name": "off hand melee: WIS / 0.5×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "F55",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-melee-wis-wis-1",
+      "name": "off hand melee: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 56,
+        "range": "F56",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.ranged",
+      "name": "ranged: DEX / no damage ability",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "I45",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.thrown",
+      "name": "ranged: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "I46",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.ranged-dex-dex-1",
+      "name": "ranged: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 47,
+        "range": "I47",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.ranged-str-str-1",
+      "name": "ranged: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 49,
+        "range": "I49",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.ranged-wis-none-0",
+      "name": "ranged: WIS / no damage ability",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 51,
+        "range": "I51",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.ranged-wis-str-1",
+      "name": "ranged: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 52,
+        "range": "I52",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.ranged-wis-wis-1",
+      "name": "ranged: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "I53",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-dex-none-0",
+      "name": "off hand ranged: DEX / no damage ability",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "L45",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-thrown",
+      "name": "off hand ranged: DEX / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "L46",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-dex-str-1",
+      "name": "off hand ranged: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 47,
+        "range": "L47",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-dex-dex-1",
+      "name": "off hand ranged: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 48,
+        "range": "L48",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-str-str-0-5",
+      "name": "off hand ranged: STR / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 50,
+        "range": "L50",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-wis-none-0",
+      "name": "off hand ranged: WIS / no damage ability",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 52,
+        "range": "L52",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-wis-str-0-5",
+      "name": "off hand ranged: WIS / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "L53",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-wis-str-1",
+      "name": "off hand ranged: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 54,
+        "range": "L54",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-wis-wis-0-5",
+      "name": "off hand ranged: WIS / 0.5×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "L55",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.off-hand-ranged-wis-wis-1",
+      "name": "off hand ranged: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 56,
+        "range": "L56",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-str-str-1",
+      "name": "single melee: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "X45",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-str-str-1-5",
+      "name": "single melee: STR / 1.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "X46",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-dex-str-1",
+      "name": "single melee: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 48,
+        "range": "X48",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-dex-dex-1",
+      "name": "single melee: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 49,
+        "range": "X49",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-dex-dex-1-5",
+      "name": "single melee: DEX / 1.5×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 50,
+        "range": "X50",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-wis-str-1",
+      "name": "single melee: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 52,
+        "range": "X52",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-melee-wis-wis-1",
+      "name": "single melee: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "X53",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-dex-none-0",
+      "name": "single ranged: DEX / no damage ability",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "X55",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-dex-str-1",
+      "name": "single ranged: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 56,
+        "range": "X56",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-dex-dex-1",
+      "name": "single ranged: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 57,
+        "range": "X57",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-str-str-1",
+      "name": "single ranged: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 58,
+        "range": "X58",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-wis-none-0",
+      "name": "single ranged: WIS / no damage ability",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 59,
+        "range": "X59",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-wis-str-1",
+      "name": "single ranged: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 60,
+        "range": "X60",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.single-ranged-wis-wis-1",
+      "name": "single ranged: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 61,
+        "range": "X61",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-single",
+      "name": "natural single: STR / 1.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "AA45",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-primary",
+      "name": "natural primary: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "AA46",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-no-haste",
+      "name": "natural no haste: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 47,
+        "range": "AA47",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-secondary",
+      "name": "natural secondary: STR / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 48,
+        "range": "AA48",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-single-dex-str-1-5",
+      "name": "natural single: DEX / 1.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 50,
+        "range": "AA50",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-primary-dex-str-1",
+      "name": "natural primary: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 51,
+        "range": "AA51",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-no-haste-dex-str-1",
+      "name": "natural no haste: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 52,
+        "range": "AA52",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-secondary-dex-str-0-5",
+      "name": "natural secondary: DEX / 0.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "AA53",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-single-dex-dex-1-5",
+      "name": "natural single: DEX / 1.5×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "AA55",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-primary-dex-dex-1",
+      "name": "natural primary: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 56,
+        "range": "AA56",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-no-haste-dex-dex-1",
+      "name": "natural no haste: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 57,
+        "range": "AA57",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.natural-secondary-dex-dex-0-5",
+      "name": "natural secondary: DEX / 0.5×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 58,
+        "range": "AA58",
+        "system": "PF1e",
+        "category": "Ability-based attack profiles"
+      }
+    }
+  ],
+  "normalizedOrWarnedRows": [
+    {
+      "kind": "legacy-progression-alias",
+      "progressionId": "pf1e.paizo.fighter",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 10,
+        "range": "B10"
+      },
+      "message": "Preserved legacy bare id fighter as an alias to the source-qualified id."
+    },
+    {
+      "kind": "legacy-progression-alias",
+      "progressionId": "pf1e.paizo.rogue",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 19,
+        "range": "B19"
+      },
+      "message": "Preserved legacy bare id rogue as an alias to the source-qualified id."
+    },
+    {
+      "kind": "legacy-progression-alias",
+      "progressionId": "pf1e.paizo.wizard",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 26,
+        "range": "B26"
+      },
+      "message": "Preserved legacy bare id wizard as an alias to the source-qualified id."
+    },
+    {
+      "kind": "scoped-class-skill-name-normalization",
+      "progressionId": "pf1e.paizo.magical-beast",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 69,
+        "range": "A69"
+      },
+      "message": "Joined Class Charts \"Magical beast\" to Class Skills \"Magical Beast\" by case-folded scoped name."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.agent-of-the-grave",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 79,
+        "range": "D79:L79"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 5 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.arcane-archer",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 80,
+        "range": "D80:L80"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.arcane-savant",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 81,
+        "range": "D81:L81"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 7 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.arcane-trickster",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 82,
+        "range": "D82:L82"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.assassin",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 83,
+        "range": "D83:L83"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.battle-herald",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 84,
+        "range": "D84:L84"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.bloodmage",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 85,
+        "range": "D85:L85"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.brightness-seeker",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 86,
+        "range": "D86:L86"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 5 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.brother-of-the-seal",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 87,
+        "range": "D87:L87"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.celestial-knight",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 88,
+        "range": "D88:L88"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.champion-of-the-enlightened",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 89,
+        "range": "D89:L89"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.chevalier",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 90,
+        "range": "D90:L90"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 3 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.coastal-pirate",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 91,
+        "range": "D91:L91"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.collegiate-arcanist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 92,
+        "range": "D92:L92"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.crimson-assassin",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 93,
+        "range": "D93:L93"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.cyphermage",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 94,
+        "range": "D94:L94"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.daivrat",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 95,
+        "range": "D95:L95"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.dark-delver",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 96,
+        "range": "D96:L96"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.darkfire-adept",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 97,
+        "range": "D97:L97"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.deep-sea-pirate",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 98,
+        "range": "D98:L98"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.demoniac",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 99,
+        "range": "D99:L99"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.diabolist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 100,
+        "range": "D100:L100"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.dissident-of-dawn",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 101,
+        "range": "D101:L101"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.divine-assessor",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 102,
+        "range": "D102:L102"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 6 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.divine-scion",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 103,
+        "range": "D103:L103"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.dragon-disciple",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 104,
+        "range": "D104:L104"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.duelist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 105,
+        "range": "D105:L105"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.eldritch-knight",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 106,
+        "range": "D106:L106"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.envoy-of-balance",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 107,
+        "range": "D107:L107"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.evangelist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 108,
+        "range": "D108:L108"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.exalted",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 109,
+        "range": "D109:L109"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.false-priest",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 110,
+        "range": "D110:L110"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.field-agent",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 111,
+        "range": "D111:L111"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.furious-guardian",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 112,
+        "range": "D112:L112"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.genie-binder",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 113,
+        "range": "D113:L113"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 5 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.golden-legionnaire",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 114,
+        "range": "D114:L114"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.grand-marshal",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 115,
+        "range": "D115:L115"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.gray-warden",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 116,
+        "range": "D116:L116"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.green-faith-acolyte",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 117,
+        "range": "D117:L117"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.group-leader",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 118,
+        "range": "D118:L118"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.guild-agent",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 119,
+        "range": "D119:L119"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.guild-poisoner",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 120,
+        "range": "D120:L120"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.halfling-opportunist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 121,
+        "range": "D121:L121"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 5 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.harrower",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 122,
+        "range": "D122:L122"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.hell-knight-commander",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 123,
+        "range": "D123:L123"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.hell-knight-enforcer",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 124,
+        "range": "D124:L124"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.holy-vindicator",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 125,
+        "range": "D125:L125"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.horizon-walker",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 126,
+        "range": "D126:L126"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.inheritor-s-crusader",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 127,
+        "range": "D127:L127"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 3 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.justiciar",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 128,
+        "range": "D128:L128"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 3 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.lantern-bearer",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 129,
+        "range": "D129:L129"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.liberator",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 130,
+        "range": "D130:L130"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.lion-blade",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 131,
+        "range": "D131:L131"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.living-monolith",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 132,
+        "range": "D132:L132"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.loremaster",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 133,
+        "range": "D133:L133"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.low-templar",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 134,
+        "range": "D134:L134"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.mage-of-the-third-eye",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 135,
+        "range": "D135:L135"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.mammoth-rider",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 136,
+        "range": "D136:L136"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.master-chymist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 137,
+        "range": "D137:L137"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.master-of-storms",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 138,
+        "range": "D138:L138"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.master-spy",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 139,
+        "range": "D139:L139"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.mystery-cultist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 140,
+        "range": "D140:L140"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.mystic-theurge",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 141,
+        "range": "D141:L141"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.natural-alchemist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 142,
+        "range": "D142:L142"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.nature-warden",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 143,
+        "range": "D143:L143"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.noble-scion",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 144,
+        "range": "D144:L144"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.pain-taster",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 145,
+        "range": "D145:L145"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.pathfinder-chronicler",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 146,
+        "range": "D146:L146"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.pit-fighter",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 147,
+        "range": "D147:L147"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.planes-walker",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 148,
+        "range": "D148:L148"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.purity-legion-enforcer",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 149,
+        "range": "D149:L149"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.rage-prophet",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 150,
+        "range": "D150:L150"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.sanctified-prophet",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 151,
+        "range": "D151:L151"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.sentinel",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 152,
+        "range": "D152:L152"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.shadowdancer",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 153,
+        "range": "D153:L153"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.sleepless-detective",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 154,
+        "range": "D154:L154"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.soul-warden",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 155,
+        "range": "D155:L155"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.souleater",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 156,
+        "range": "D156:L156"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.spherewalker",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 157,
+        "range": "D157:L157"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 5 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.stalwart-defender",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 158,
+        "range": "D158:L158"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.steel-falcon",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 159,
+        "range": "D159:L159"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 5 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.student-of-war",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 160,
+        "range": "D160:L160"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.sun-seeker",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 161,
+        "range": "D161:L161"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.swordlord",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 162,
+        "range": "D162:L162"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.tattooed-mystic",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 163,
+        "range": "D163:L163"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.technomancer",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 164,
+        "range": "D164:L164"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.umbral-agent",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 165,
+        "range": "D165:L165"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.veiled-illusionist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 166,
+        "range": "D166:L166"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "explicit-prestige-chart",
+      "progressionId": "pf1e.paizo.winter-witch",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 167,
+        "range": "D167:L167"
+      },
+      "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.3pp.martial.harbinger",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 206,
+        "range": "AR206"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.3pp.martial.zealot",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 208,
+        "range": "AR208"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "cached-class-skill-name-formula",
+      "progressionId": "pf1e.3pp.martial.epilektoi",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 209,
+        "range": "A209"
+      },
+      "message": "Used the source workbook's cached formula value; formulas were not evaluated."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.3pp.martial.epilektoi",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 209,
+        "range": "AR209"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "cached-class-skill-name-formula",
+      "progressionId": "pf1e.3pp.martial.medic",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 210,
+        "range": "A210"
+      },
+      "message": "Used the source workbook's cached formula value; formulas were not evaluated."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.3pp.martial.medic",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 210,
+        "range": "AR210"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "cached-class-skill-name-formula",
+      "progressionId": "pf1e.3pp.martial.parasite",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 211,
+        "range": "A211"
+      },
+      "message": "Used the source workbook's cached formula value; formulas were not evaluated."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.3pp.akashic.helmsman",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 216,
+        "range": "AR216"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.dreamscarred-press.path-of-war.stalker",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 234,
+        "range": "AR234"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.dreamscarred-press.path-of-war.warder",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 235,
+        "range": "AR235"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "pf1e.dreamscarred-press.path-of-war.warlord",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 236,
+        "range": "AR236"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-martial."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "ffd20.autosheet.engineer",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 258,
+        "range": "AR258"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-technology, repair."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "ffd20.autosheet.gunner",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 261,
+        "range": "AR261"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-technology, repair."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "ffd20.autosheet.medic",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 264,
+        "range": "AR264"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-technology."
+    },
+    {
+      "kind": "closed-prose-class-skill-supplement",
+      "progressionId": "ffd20.autosheet.gunbreaker",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 272,
+        "range": "AR272"
+      },
+      "message": "Added source-declared skills not represented by a grid marker: knowledge-technology, repair."
+    },
+    {
+      "kind": "cached-class-skill-name-formula",
+      "progressionId": "pf1e.autosheet.braggart",
+      "source": {
+        "sheet": "Class Skills",
+        "row": 278,
+        "range": "A278"
+      },
+      "message": "Used the source workbook's cached formula value; formulas were not evaluated."
+    },
+    {
+      "kind": "unrecognized-skill-metadata-marker",
+      "skillId": "lore",
+      "source": {
+        "sheet": "Class Skills",
+        "range": "AQ4"
+      },
+      "message": "Ignored \"X\" in the armor-penalty row; only the explicit Armor Penalty label is recognized."
+    },
+    {
+      "kind": "supplemental-skill-metadata",
+      "skillId": "knowledge-martial",
+      "source": {
+        "sheet": "Class Skills",
+        "range": "AR5:AR278"
+      },
+      "message": "Skill appears only in scoped class descriptions. Ability/training metadata is an explicit normalized supplement, not a header extraction."
+    },
+    {
+      "kind": "supplemental-skill-metadata",
+      "skillId": "knowledge-technology",
+      "source": {
+        "sheet": "Class Skills",
+        "range": "AR5:AR278"
+      },
+      "message": "Skill appears only in scoped class descriptions. Ability/training metadata is an explicit normalized supplement, not a header extraction."
+    },
+    {
+      "kind": "supplemental-skill-metadata",
+      "skillId": "repair",
+      "source": {
+        "sheet": "Class Skills",
+        "range": "AR5:AR278"
+      },
+      "message": "Skill appears only in scoped class descriptions. Ability/training metadata is an explicit normalized supplement, not a header extraction."
+    },
+    {
+      "kind": "armor-table-normalization",
+      "source": {
+        "sheet": "Formula References",
+        "range": "A149:I206"
+      },
+      "message": "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains zero). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata only. Column I is weight category, not pounds, and is never imported as weight. Item-specific maneuvers, proficiency and material combinations require contextual rules."
+    },
+    {
+      "kind": "xp-level-one-normalization",
+      "source": {
+        "sheet": "Formula References",
+        "range": "B115:D115"
+      },
+      "message": "Level-one em dashes normalize to zero XP. The chart ends at level 20; higher thresholds are not extrapolated. XP eligibility does not auto-advance authored class slots."
+    },
+    {
+      "kind": "age-table-scope",
+      "source": {
+        "sheet": "Formula References",
+        "range": "B28:F34"
+      },
+      "message": "Imports only the workbook's explicit ability adjustments, not racial age thresholds or the separate Young Creature template. Entries in the same age group do not stack; choose one age category."
+    },
+    {
+      "kind": "attack-profile-normalization",
+      "source": {
+        "sheet": "Formula References",
+        "range": "C45:AB61"
+      },
+      "message": "Ability pairs and 0.5/1/1.5 ratios are extracted from a closed label grammar, never cached character totals. Secondary natural attacks default to −5; an authored +3 adjustment can represent an independently qualified −2 case. Names describe prerequisite-dependent profiles, not automatic feat grants. Off-hand/single/natural profiles do not gain BAB iteratives. Haste eligibility is explicit; combined multiweapon sequences remain contextual."
+    }
+  ],
+  "unsupportedRows": [
+    {
+      "kind": "missing-class-skills",
+      "progressionId": "pf1e.paizo.mystery-cultist",
+      "name": "Mystery Cultist",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 140,
+        "range": "A140:H140"
+      },
+      "reason": "No scoped Class Skills row exists in PRESTIGE CLASSES; chassis was retained without classSkills."
+    },
+    {
+      "kind": "missing-class-skills",
+      "progressionId": "pf1e.paizo.sentinel",
+      "name": "Sentinel",
+      "source": {
+        "sheet": "Class Charts",
+        "row": 152,
+        "range": "A152:H152"
+      },
+      "reason": "No scoped Class Skills row exists in PRESTIGE CLASSES; chassis was retained without classSkills."
+    },
+    {
+      "kind": "non-equipment-armor-row",
+      "name": "Mage Armor (Spell)",
+      "source": {
+        "sheet": "Formula References",
+        "row": 151
+      },
+      "reason": "Mage Armor is a spell effect, not worn equipment."
+    },
+    {
+      "kind": "non-equipment-armor-row",
+      "name": "Bracers of Armor (Wondrous Item)",
+      "source": {
+        "sheet": "Formula References",
+        "row": 152
+      },
+      "reason": "Bracers of Armor has a parameterized +0 placeholder, not a complete item."
+    },
+    {
+      "kind": "non-equipment-armor-row",
+      "name": "Unarmored Training",
+      "source": {
+        "sheet": "Formula References",
+        "row": 154
+      },
+      "reason": "Unarmored Training depends on a separate feat."
+    },
+    {
+      "kind": "non-equipment-armor-row",
+      "name": "(Spell) Shield",
+      "source": {
+        "sheet": "Formula References",
+        "row": 205
+      },
+      "reason": "Shield is a spell effect, not a physical shield."
+    },
+    {
+      "kind": "contextual-equipment-materials",
+      "source": {
+        "sheet": "Formula References",
+        "range": "A208:I232"
+      },
+      "reason": "Material/attachment combinations require item-specific eligibility and interaction rules; raw modifiers are not applied globally. Custom items can author their final numeric chassis."
+    },
+    {
+      "kind": "contextual-attack-profiles",
+      "source": {
+        "sheet": "Formula References",
+        "range": "O45:V61,AD45:AF58"
+      },
+      "reason": "Maneuver training, flurry, kineticist and spell-based attack variants require class/ability/roll-context semantics beyond ordinary ability-based weapon profiles; their cached character formulas are not imported."
+    }
+  ],
+  "failures": []
+}

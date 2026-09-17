@@ -7,9 +7,13 @@ CHARACTER_ID = "human-martial"
 PANEL_ID = "threepf-panel"
 PLAYER_CHARACTERS = {} -- steam_id -> character id; populate through bindPlayer below.
 CHARACTER_ATTACK_IDS = {} -- character id -> authoritative displayed attack id
+CHARACTER_ATTACK_INDICES = {} -- character id -> zero-based full-attack member displayed by this panel
+CHARACTER_ATTACKS = {} -- authoritative rows; Lua never derives attack modifiers
+CHARACTER_ATTACK_POSITIONS = {} -- character id -> one-based weapon choice
 pendingPlan = nil
 pendingDie = nil
 settledFrames = 0
+rollBusy = false -- one physical roll at a time; never overwrite an in-flight plan
 
 function onLoad()
     math.randomseed(os.time())
@@ -48,16 +52,49 @@ function fetchCharacterState(characterId)
             UI.setAttribute(PANEL_ID .. "-fort", "text", "Fort  " .. signed(state.saves.fortitude))
             UI.setAttribute(PANEL_ID .. "-ref", "text", "Ref   " .. signed(state.saves.reflex))
             UI.setAttribute(PANEL_ID .. "-will", "text", "Will  " .. signed(state.saves.will))
-            if state.attacks and state.attacks[1] then
-                CHARACTER_ATTACK_IDS[requestedCharacterId] = state.attacks[1].id
-                UI.setAttribute(PANEL_ID .. "-attack", "text", state.attacks[1].name .. "  " .. signed(state.attacks[1].modifier))
-                UI.setAttribute("greatsword", "active", "true")
-            else
-                CHARACTER_ATTACK_IDS[requestedCharacterId] = nil
-                UI.setAttribute("greatsword", "active", "false")
-            end
+            CHARACTER_ATTACKS[requestedCharacterId] = state.attacks or {}
+            CHARACTER_ATTACK_POSITIONS[requestedCharacterId] = 1
+            CHARACTER_ATTACK_INDICES[requestedCharacterId] = 0
+            displayAttack(requestedCharacterId)
         end
     end)
+end
+
+function displayAttack(characterId)
+    local rows = CHARACTER_ATTACKS[characterId] or {}
+    local attack = rows[CHARACTER_ATTACK_POSITIONS[characterId] or 1]
+    if not attack then
+        CHARACTER_ATTACK_IDS[characterId] = nil
+        UI.setAttribute(PANEL_ID .. "-attack", "text", "No attack available")
+        UI.setAttribute("greatsword", "active", "false")
+        return
+    end
+    local strikes = attack.fullAttack or { attack.modifier }
+    local attackIndex = CHARACTER_ATTACK_INDICES[characterId] or 0
+    if not strikes[attackIndex + 1] then attackIndex = 0 end
+    CHARACTER_ATTACK_IDS[characterId] = attack.id
+    CHARACTER_ATTACK_INDICES[characterId] = attackIndex
+    UI.setAttribute(PANEL_ID .. "-attack", "text", attack.name .. " [" .. tostring(attackIndex + 1) .. "/" .. tostring(#strikes) .. "] " .. signed(strikes[attackIndex + 1]))
+    UI.setAttribute("greatsword", "active", "true")
+end
+
+function nextAttack(player, value, id)
+    local characterId = characterForPlayer(player)
+    local rows = CHARACTER_ATTACKS[characterId] or {}
+    if #rows == 0 then displayResult("Attack unavailable; wait for character state") return end
+    CHARACTER_ATTACK_POSITIONS[characterId] = (CHARACTER_ATTACK_POSITIONS[characterId] or 1) % #rows + 1
+    CHARACTER_ATTACK_INDICES[characterId] = 0
+    displayAttack(characterId)
+end
+
+function nextStrike(player, value, id)
+    local characterId = characterForPlayer(player)
+    local rows = CHARACTER_ATTACKS[characterId] or {}
+    local attack = rows[CHARACTER_ATTACK_POSITIONS[characterId] or 1]
+    if not attack then displayResult("Attack unavailable; wait for character state") return end
+    local strikes = attack.fullAttack or { attack.modifier }
+    CHARACTER_ATTACK_INDICES[characterId] = ((CHARACTER_ATTACK_INDICES[characterId] or 0) + 1) % #strikes
+    displayAttack(characterId)
 end
 
 function signed(value)
@@ -71,22 +108,25 @@ end
 
 function rollAttack(player, value, id)
     -- The static UI button id is not a character attack id. The server remains
-    -- rules authority, but TTS must request the actual first attack it displayed.
+    -- rules authority, but TTS must request the selected authoritative row.
     local characterId = characterForPlayer(player)
     local attackId = CHARACTER_ATTACK_IDS[characterId]
+    local attackIndex = CHARACTER_ATTACK_INDICES[characterId] or 0
     if not attackId then
         displayResult("Attack unavailable; wait for character state")
         return
     end
-    requestPlan({ kind = "attack", attackId = attackId }, value, characterId)
+    requestPlan({ kind = "attack", attackId = attackId, attackIndex = attackIndex }, value, characterId)
 end
 
 function requestPlan(request, label, characterId)
-    local body = { characterId = characterId or CHARACTER_ID, kind = request.kind, saveId = request.saveId, attackId = request.attackId }
+    if rollBusy then displayResult("Finish the current roll first") return end
+    rollBusy = true
+    local body = { characterId = characterId or CHARACTER_ID, kind = request.kind, saveId = request.saveId, attackId = request.attackId, attackIndex = request.attackIndex }
     WebRequest.custom(API_BASE .. "/roll-plan", "POST", true, JSON.encode(body), authHeaders(), function(response)
-        if response.is_error or response.response_code < 200 or response.response_code >= 300 then displayResult(label .. ": plan unavailable") return end
+        if response.is_error or response.response_code < 200 or response.response_code >= 300 then rollBusy = false displayResult(label .. ": plan unavailable") return end
         local ok, decoded = pcall(JSON.decode, response.text)
-        if not ok or not decoded or not decoded.plan then displayResult(label .. ": invalid plan") return end
+        if not ok or not decoded or not decoded.plan then rollBusy = false displayResult(label .. ": invalid plan") return end
         pendingPlan = decoded.plan
         pendingPlan.displayLabel = label
         spawnPhysicalDice()
@@ -98,6 +138,8 @@ function spawnPhysicalDice()
     settledFrames = 0
     local requirement = pendingPlan.dice[1]
     if not requirement or requirement.sides ~= 20 or requirement.count ~= 1 then
+        rollBusy = false
+        pendingPlan = nil
         displayResult("Only one physical d20 is supported in this MVP")
         return
     end
@@ -126,6 +168,8 @@ end
 
 function submitRawFace(face, label)
     WebRequest.custom(API_BASE .. "/resolve-roll", "POST", true, JSON.encode({ plan = pendingPlan, faces = { face } }), authHeaders(), function(response)
+        rollBusy = false
+        pendingPlan = nil
         if response.is_error or response.response_code < 200 or response.response_code >= 300 then displayResult(label .. ": resolve unavailable") return end
         local ok, decoded = pcall(JSON.decode, response.text)
         if ok and decoded and decoded.resolved then
@@ -145,7 +189,7 @@ UI_XML = [[
     <Text fontSize="22" color="#f3ead6" />
     <Button fontSize="18" color="#c85b40" textColor="#fff9ef" />
 </Defaults>
-<Panel id="threepf-panel" width="560" height="520" position="0 0 -0.2" color="#171c24" padding="24 24 24 24" visibility="Player1|Player2|Player3|Player4|Player5|Player6|Player7|Player8">
+<Panel id="threepf-panel" width="560" height="570" position="0 0 -0.2" color="#171c24" padding="24 24 24 24" visibility="Player1|Player2|Player3|Player4|Player5|Player6|Player7|Player8">
     <VerticalLayout spacing="10">
         <Text id="threepf-panel-name" text="CHARACTER" fontSize="30" alignment="MiddleCenter" />
         <HorizontalLayout spacing="24"><Text id="threepf-panel-hp" text="HP  -- / --" /><Text id="threepf-panel-ac" text="AC  --" /><Text id="threepf-panel-bab" text="BAB --" /></HorizontalLayout>
@@ -153,6 +197,7 @@ UI_XML = [[
         <HorizontalLayout spacing="8"><Text id="threepf-panel-ref" text="Ref   --" /><Button text="ROLL" onClick="rollSave" id="reflex" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-will" text="Will  --" /><Button text="ROLL" onClick="rollSave" id="will" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-attack" text="Attack  --" /><Button id="greatsword" text="ROLL" onClick="rollAttack" /></HorizontalLayout>
+        <HorizontalLayout spacing="8"><Button text="NEXT WEAPON" onClick="nextAttack" /><Button text="NEXT STRIKE" onClick="nextStrike" /></HorizontalLayout>
         <Text id="threepf-panel-status" text="Ready" fontSize="18" color="#e9b872" alignment="MiddleCenter" />
     </VerticalLayout>
 </Panel>]]

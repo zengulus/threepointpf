@@ -11,12 +11,16 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "check:edge": "npx --yes deno@2.3.0 check --config supabase/functions/deno.json supabase/functions/character-state/index.ts supabase/functions/roll-plan/index.ts supabase/functions/resolve-roll/index.ts",
+    "rules:import-autosheet": "node scripts/import-autosheet.mjs --write",
+    "rules:check-autosheet": "node scripts/import-autosheet.mjs --check",
     "dev": "corepack pnpm --filter @threepointpf/web dev"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "@types/node": "^22.10.0",
+    "fengari": "0.1.5",
     "typescript": "^5.7.3",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "xlsx": "^0.18.5"
   }
 }

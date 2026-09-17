@@ -4,10 +4,13 @@ import { describe, expect, it } from "vitest";
 describe("TTS advancement roll-plan contract", () => {
   it("requests the character attack id returned by the authoritative state endpoint", () => {
     const script = readFileSync("tts/src/global.lua", "utf8");
-    expect(script).toContain("CHARACTER_ATTACK_IDS[requestedCharacterId] = state.attacks[1].id");
+    expect(script).toContain("CHARACTER_ATTACK_IDS[characterId] = attack.id");
+    expect(script).toContain("CHARACTER_ATTACK_INDICES[requestedCharacterId] = 0");
     expect(script).toContain("local attackId = CHARACTER_ATTACK_IDS[characterId]");
+    expect(script).toContain("local attackIndex = CHARACTER_ATTACK_INDICES[characterId] or 0");
     expect(script).toContain('displayResult("Attack unavailable; wait for character state")');
-    expect(script).toContain('requestPlan({ kind = "attack", attackId = attackId }, value, characterId)');
+    expect(script).toContain('requestPlan({ kind = "attack", attackId = attackId, attackIndex = attackIndex }, value, characterId)');
+    expect(script).toContain("attackIndex = request.attackIndex");
     expect(script).not.toContain("CHARACTER_ATTACK_IDS[characterId] or id");
     expect(script).toContain('"BAB " .. signed(state.bab or 0)');
     expect(script).toContain('WebRequest.custom(API_BASE .. "/roll-plan", "POST", true');
