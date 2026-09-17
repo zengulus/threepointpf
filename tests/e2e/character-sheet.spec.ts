@@ -117,6 +117,24 @@ test("custom armor and profile-based weapons persist with inspectable numeric ef
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
+test("contextual actions expose step roles, exclusions and maneuver plans", async ({ page }) => {
+  await page.goto("/");
+  // The curated Power Attack declares contextual damage variants; the demo
+  // greatsword is two-handed, so the one-handed and off-hand variants are
+  // authored but excluded, and that exclusion is visible.
+  await page.getByLabel("Catalog feature or condition").selectOption("pf1e.paizo.power-attack");
+  await page.getByRole("button", { name: "+ Add", exact: true }).click();
+  await expect(page.getByTestId("roll-attack-greatsword")).toContainText("PRIMARY");
+  await page.getByRole("button", { name: "Inspect Greatsword damage" }).click();
+  await expect(page.locator(".breakdown")).toContainText("EXCLUDED BY CONTEXT");
+  await expect(page.locator(".breakdown")).toContainText(
+    "excluded for tags weapon.two-handed, weapon.off-hand",
+  );
+  await expect(page.getByTestId("roll-standard-greatsword")).toContainText("STANDARD");
+  await page.getByTestId("roll-maneuver-trip").click();
+  await expect(page.locator(".top-actions")).toContainText("trip maneuver");
+});
+
 test("mobile editors fit the viewport while N-track tables scroll within their panel", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

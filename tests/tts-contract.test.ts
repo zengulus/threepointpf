@@ -9,8 +9,16 @@ describe("TTS advancement roll-plan contract", () => {
     expect(script).toContain("local attackId = CHARACTER_ATTACK_IDS[characterId]");
     expect(script).toContain("local attackIndex = CHARACTER_ATTACK_INDICES[characterId] or 0");
     expect(script).toContain('displayResult("Attack unavailable; wait for character state")');
-    expect(script).toContain('requestPlan({ kind = "attack", attackId = attackId, attackIndex = attackIndex }, value, characterId)');
+    // The client asks for one explicit action and one member of that action's
+    // sequence; it never sends a modifier.
+    expect(script).toContain(
+      'requestPlan({ kind = "attack", attackId = attackId, attackIndex = attackIndex, action = CHARACTER_ATTACK_MODES[characterId] or "fullAttack" }, value, characterId)',
+    );
     expect(script).toContain("attackIndex = request.attackIndex");
+    expect(script).toContain("action = request.action");
+    expect(script).toContain("maneuver = request.maneuver");
+    expect(script).toContain("function toggleAttackMode(player, value, id)");
+    expect(script).toContain("function attackSteps(characterId)");
     expect(script).not.toContain("CHARACTER_ATTACK_IDS[characterId] or id");
     expect(script).toContain('"BAB " .. signed(state.bab or 0)');
     expect(script).toContain('WebRequest.custom(API_BASE .. "/roll-plan", "POST", true');
@@ -19,5 +27,7 @@ describe("TTS advancement roll-plan contract", () => {
     expect(script).not.toContain("WebRequest.get(");
     expect(script).not.toContain("WebRequest.post(");
     expect(script).not.toContain("end, authHeaders())");
+    // No rules arithmetic may live in the Lua client.
+    expect(script).not.toMatch(/bonusType|applicability|scaling/);
   });
 });

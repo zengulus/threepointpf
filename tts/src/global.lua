@@ -7,7 +7,8 @@ CHARACTER_ID = "human-martial"
 PANEL_ID = "threepf-panel"
 PLAYER_CHARACTERS = {} -- steam_id -> character id; populate through bindPlayer below.
 CHARACTER_ATTACK_IDS = {} -- character id -> authoritative displayed attack id
-CHARACTER_ATTACK_INDICES = {} -- character id -> zero-based full-attack member displayed by this panel
+CHARACTER_ATTACK_INDICES = {} -- character id -> zero-based sequence member displayed by this panel
+CHARACTER_ATTACK_MODES = {} -- character id -> "fullAttack" | "standardAttack"
 CHARACTER_ATTACKS = {} -- authoritative rows; Lua never derives attack modifiers
 CHARACTER_ATTACK_POSITIONS = {} -- character id -> one-based weapon choice
 pendingPlan = nil
@@ -55,27 +56,54 @@ function fetchCharacterState(characterId)
             CHARACTER_ATTACKS[requestedCharacterId] = state.attacks or {}
             CHARACTER_ATTACK_POSITIONS[requestedCharacterId] = 1
             CHARACTER_ATTACK_INDICES[requestedCharacterId] = 0
+            CHARACTER_ATTACK_MODES[requestedCharacterId] = CHARACTER_ATTACK_MODES[requestedCharacterId] or "fullAttack"
             displayAttack(requestedCharacterId)
         end
     end)
 end
 
-function displayAttack(characterId)
+-- The authoritative steps of an action. `steps` carries an explicit role per
+-- member; older payloads expose the full-attack values only.
+function attackSteps(characterId)
     local rows = CHARACTER_ATTACKS[characterId] or {}
     local attack = rows[CHARACTER_ATTACK_POSITIONS[characterId] or 1]
+    if not attack then return nil, nil end
+    local mode = CHARACTER_ATTACK_MODES[characterId] or "fullAttack"
+    if mode == "standardAttack" then
+        return attack, { { modifier = attack.modifier or 0, role = "primary" } }
+    end
+    if attack.steps then return attack, attack.steps end
+    local steps = {}
+    for index, value in ipairs(attack.fullAttack or { attack.modifier }) do
+        steps[index] = { modifier = value, role = index == 1 and "primary" or "iterative" }
+    end
+    return attack, steps
+end
+
+function displayAttack(characterId)
+    local attack, steps = attackSteps(characterId)
     if not attack then
         CHARACTER_ATTACK_IDS[characterId] = nil
         UI.setAttribute(PANEL_ID .. "-attack", "text", "No attack available")
         UI.setAttribute("greatsword", "active", "false")
         return
     end
-    local strikes = attack.fullAttack or { attack.modifier }
     local attackIndex = CHARACTER_ATTACK_INDICES[characterId] or 0
-    if not strikes[attackIndex + 1] then attackIndex = 0 end
+    if not steps[attackIndex + 1] then attackIndex = 0 end
     CHARACTER_ATTACK_IDS[characterId] = attack.id
     CHARACTER_ATTACK_INDICES[characterId] = attackIndex
-    UI.setAttribute(PANEL_ID .. "-attack", "text", attack.name .. " [" .. tostring(attackIndex + 1) .. "/" .. tostring(#strikes) .. "] " .. signed(strikes[attackIndex + 1]))
+    local step = steps[attackIndex + 1]
+    UI.setAttribute(PANEL_ID .. "-attack", "text", attack.name .. " [" .. tostring(attackIndex + 1) .. "/" .. tostring(#steps) .. "] " .. (step.role or "primary") .. " " .. signed(step.modifier))
     UI.setAttribute("greatsword", "active", "true")
+end
+
+-- Standard attack vs full attack is an explicit action choice, not a
+-- modifier the client may invent.
+function toggleAttackMode(player, value, id)
+    local characterId = characterForPlayer(player)
+    CHARACTER_ATTACK_MODES[characterId] = (CHARACTER_ATTACK_MODES[characterId] or "fullAttack") == "fullAttack" and "standardAttack" or "fullAttack"
+    CHARACTER_ATTACK_INDICES[characterId] = 0
+    displayAttack(characterId)
 end
 
 function nextAttack(player, value, id)
@@ -92,8 +120,8 @@ function nextStrike(player, value, id)
     local rows = CHARACTER_ATTACKS[characterId] or {}
     local attack = rows[CHARACTER_ATTACK_POSITIONS[characterId] or 1]
     if not attack then displayResult("Attack unavailable; wait for character state") return end
-    local strikes = attack.fullAttack or { attack.modifier }
-    CHARACTER_ATTACK_INDICES[characterId] = ((CHARACTER_ATTACK_INDICES[characterId] or 0) + 1) % #strikes
+    local _, steps = attackSteps(characterId)
+    CHARACTER_ATTACK_INDICES[characterId] = ((CHARACTER_ATTACK_INDICES[characterId] or 0) + 1) % #steps
     displayAttack(characterId)
 end
 
@@ -116,13 +144,17 @@ function rollAttack(player, value, id)
         displayResult("Attack unavailable; wait for character state")
         return
     end
-    requestPlan({ kind = "attack", attackId = attackId, attackIndex = attackIndex }, value, characterId)
+    requestPlan({ kind = "attack", attackId = attackId, attackIndex = attackIndex, action = CHARACTER_ATTACK_MODES[characterId] or "fullAttack" }, value, characterId)
+end
+
+function rollManeuver(player, value, id)
+    requestPlan({ kind = "maneuver", maneuver = id }, value, characterForPlayer(player))
 end
 
 function requestPlan(request, label, characterId)
     if rollBusy then displayResult("Finish the current roll first") return end
     rollBusy = true
-    local body = { characterId = characterId or CHARACTER_ID, kind = request.kind, saveId = request.saveId, attackId = request.attackId, attackIndex = request.attackIndex }
+    local body = { characterId = characterId or CHARACTER_ID, kind = request.kind, saveId = request.saveId, attackId = request.attackId, attackIndex = request.attackIndex, action = request.action, maneuver = request.maneuver }
     WebRequest.custom(API_BASE .. "/roll-plan", "POST", true, JSON.encode(body), authHeaders(), function(response)
         if response.is_error or response.response_code < 200 or response.response_code >= 300 then rollBusy = false displayResult(label .. ": plan unavailable") return end
         local ok, decoded = pcall(JSON.decode, response.text)
@@ -197,7 +229,8 @@ UI_XML = [[
         <HorizontalLayout spacing="8"><Text id="threepf-panel-ref" text="Ref   --" /><Button text="ROLL" onClick="rollSave" id="reflex" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-will" text="Will  --" /><Button text="ROLL" onClick="rollSave" id="will" /></HorizontalLayout>
         <HorizontalLayout spacing="8"><Text id="threepf-panel-attack" text="Attack  --" /><Button id="greatsword" text="ROLL" onClick="rollAttack" /></HorizontalLayout>
-        <HorizontalLayout spacing="8"><Button text="NEXT WEAPON" onClick="nextAttack" /><Button text="NEXT STRIKE" onClick="nextStrike" /></HorizontalLayout>
+        <HorizontalLayout spacing="8"><Button text="NEXT WEAPON" onClick="nextAttack" /><Button text="NEXT STRIKE" onClick="nextStrike" /><Button text="STANDARD / FULL" onClick="toggleAttackMode" /></HorizontalLayout>
+        <HorizontalLayout spacing="8"><Text text="TRIP" /><Button text="ROLL" id="trip" onClick="rollManeuver" /><Text text="DISARM" /><Button text="ROLL" id="disarm" onClick="rollManeuver" /></HorizontalLayout>
         <Text id="threepf-panel-status" text="Ready" fontSize="18" color="#e9b872" alignment="MiddleCenter" />
     </VerticalLayout>
 </Panel>]]

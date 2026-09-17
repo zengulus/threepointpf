@@ -4,8 +4,10 @@ import {
   featureCatalogSchema,
   movementModes,
   type AttackDefinition,
+  type AttackTag,
   type BonusType,
   type Effect,
+  type EffectApplicability,
   type EffectTargetId,
   type EquipmentDefinition,
   type FeatureDefinition,
@@ -64,6 +66,36 @@ const halfSpeed: Effect[] = movementModes.map((mode) => ({
 const babStep = { kind: "babStep", every: 4, base: 1 } as const;
 const scaled = (effect: Effect): Effect =>
   effect.kind === "modifier" ? { ...effect, scaling: babStep } : effect;
+/**
+ * Declares when an effect applies instead of requiring duplicate static
+ * targets. `appliesWhen` is evaluated against the roll context: attack or roll
+ * kind, melee/ranged, touch, full-attack membership, weapon tags, maneuvers and
+ * situational flags.
+ */
+/** Only non-AC modifiers accept situational applicability. */
+const when = <T extends Effect>(
+  effect: T,
+  appliesWhen: EffectApplicability,
+): T => ({ ...effect, appliesWhen }) as T;
+const rangedNonTouch: EffectApplicability = { modes: ["ranged"], touch: false };
+const rangedFullAttack: EffectApplicability = {
+  ...rangedNonTouch,
+  fullAttack: true,
+};
+const fullAttackOnly: EffectApplicability = { fullAttack: true };
+const combatExpertiseAttack: EffectApplicability = {
+  modes: ["melee"],
+  requiredFlags: ["combat-expertise"],
+};
+const combatExpertiseManeuver: EffectApplicability = {
+  requiredFlags: ["combat-expertise"],
+};
+const sightBased: EffectApplicability = {
+  kinds: ["skill"],
+  requiredFlags: ["sight-based"],
+};
+const twoHanded: AttackTag[] = ["weapon.two-handed"];
+const offHand: AttackTag[] = ["weapon.off-hand"];
 const feature = (
   slug: string,
   name: string,
@@ -89,62 +121,68 @@ const features: FeatureDefinition[] = [
     [
       scaled(modifier("attack.melee", -1)),
       scaled(modifier("cmb", -1)),
-      {
-        kind: "modifier",
-        target: "damage.melee",
-        value: 2,
-        bonusType: "untyped",
-        scaling: babStep,
-        attackSelector: {
-          excludedTags: ["weapon.two-handed", "weapon.off-hand"],
-        },
-      },
-      {
-        kind: "modifier",
-        target: "damage.melee",
-        value: 3,
-        bonusType: "untyped",
-        scaling: babStep,
-        attackSelector: {
-          requiredTags: ["weapon.two-handed"],
-          excludedTags: ["weapon.off-hand"],
-        },
-      },
-      {
-        kind: "modifier",
-        target: "damage.melee",
-        value: 1,
-        bonusType: "untyped",
-        scaling: babStep,
-        attackSelector: { requiredTags: ["weapon.off-hand"] },
-      },
+      scaled(
+        when(
+          {
+            kind: "modifier",
+            target: "damage.melee",
+            value: 2,
+            bonusType: "untyped",
+          },
+          { modes: ["melee"], excludedTags: [...twoHanded, ...offHand] },
+        ),
+      ),
+      scaled(
+        when(
+          {
+            kind: "modifier",
+            target: "damage.melee",
+            value: 3,
+            bonusType: "untyped",
+          },
+          { modes: ["melee"], requiredTags: twoHanded, excludedTags: offHand },
+        ),
+      ),
+      scaled(
+        when(
+          {
+            kind: "modifier",
+            target: "damage.melee",
+            value: 1,
+            bonusType: "untyped",
+          },
+          { modes: ["melee"], requiredTags: offHand },
+        ),
+      ),
     ],
     101,
-    "BAB-scaled melee attack penalty and damage tradeoff; the selected weapon profile supplies two-handed or off-hand scaling. Activate after checking prerequisites.",
+    "BAB-scaled melee attack penalty and damage tradeoff; the weapon's own tags select one-/two-handed/off-hand damage, and one-handed use is excluded from the two-handed and off-hand cases. Melee only, so ranged and touch attacks exclude it with a visible reason.",
     "Main Sheet",
   ),
   feature(
     "combat-expertise",
     "Combat Expertise",
     [
-      scaled(modifier("attack.melee", -1)),
-      scaled(modifier("cmb", -1)),
+      scaled(when(modifier("attack.melee", -1), combatExpertiseAttack)),
+      scaled(when(modifier("cmb", -1), combatExpertiseManeuver)),
+      // The dodge AC bonus is a sheet fact; CMD now consumes it semantically.
+      // The attack/CMB tradeoff is situational and gated on the flag this
+      // feature contributes.
       scaled(ac(1, "dodge", true, false)),
-      scaled(modifier("cmd", 1, "dodge")),
     ],
     102,
-    "BAB-scaled melee penalty and dodge defense bonus; activate when using the combat option.",
+    "BAB-scaled melee penalty and dodge defense bonus; CMD derives its dodge bonus from AC. Activate when using the combat option.",
     "Main Sheet",
   ),
   feature(
     "deadly-aim",
     "Deadly Aim",
     [
-      scaled(modifier("attack.ranged", -1)),
-      scaled(modifier("damage.ranged", 2)),
+      scaled(when(modifier("attack.ranged", -1), rangedNonTouch)),
+      scaled(when(modifier("damage.ranged", 2), rangedNonTouch)),
     ],
     103,
-    "BAB-scaled ranged attack penalty and damage bonus. Does not apply to touch attacks; choose an eligible weapon.",
+    "BAB-scaled ranged attack penalty and damage bonus. Touch attacks (rays and touch spells) are excluded by the roll context rather than by duplicating targets.",
     "Main Sheet",
   ),
   feature(
@@ -163,8 +201,8 @@ const features: FeatureDefinition[] = [
     "haste",
     "Haste",
     [
+      // CMD consumes this dodge bonus and the AC penalty rules semantically.
       ac(1, "dodge", true, false),
-      modifier("cmd", 1, "dodge"),
       modifier("save.reflex", 1, "untyped"),
       ...attacks(1, "untyped"),
       ...movementModes.map(
@@ -176,19 +214,24 @@ const features: FeatureDefinition[] = [
           capToBase: true,
         }),
       ),
-      modifier("attacks.extra.melee", 1, "enhancement"),
-      modifier("attacks.extra.ranged", 1, "enhancement"),
+      // Action-level extras: one shared extra attack for the whole full-attack
+      // action, never one per weapon and never on a standard attack.
+      when(modifier("attacks.extra.melee", 1, "enhancement"), fullAttackOnly),
+      when(modifier("attacks.extra.ranged", 1, "enhancement"), fullAttackOnly),
     ],
     105,
-    "+1 attacks, Reflex and dodge AC; speed increases by up to 30 feet, at most the intrinsic speed. One extra attack when using a weapon's full attack sequence; do not combine extra attacks from multiple weapon sequences.",
+    "+1 attacks, Reflex and dodge AC; speed increases by up to 30 feet, at most the intrinsic speed. Grants one extra attack to the full-attack action as a whole (attached to the primary weapon), not one per weapon.",
     "Main Sheet",
   ),
   feature(
     "rapid-shot",
     "Rapid Shot",
-    [modifier("attack.ranged", -2), modifier("attacks.extra.ranged", 1)],
+    [
+      when(modifier("attack.ranged", -2), rangedFullAttack),
+      when(modifier("attacks.extra.ranged", 1), rangedFullAttack),
+    ],
     106,
-    "Full-attack ranged option: one additional attack at highest bonus and −2 to all ranged attacks.",
+    "Full-attack ranged option: one additional attack at highest bonus and −2 to all ranged attacks. Applies only inside a ranged, non-touch full attack.",
     "Main Sheet",
   ),
   feature(
@@ -196,6 +239,12 @@ const features: FeatureDefinition[] = [
     "Dazzled",
     [
       ...attacks(-1),
+      // Contextual rather than universal: the penalty reaches a Perception roll
+      // only when that roll carries the `sight-based` flag.
+      when(
+        modifier("skill.perception", -1, "penalty"),
+        sightBased,
+      ),
       {
         kind: "grant",
         target: "skill.perception",
@@ -203,7 +252,7 @@ const features: FeatureDefinition[] = [
       },
     ],
     243,
-    "−1 attack rolls. Apply −1 to sight-based Perception only; shown as a reminder instead of penalizing unrelated senses.",
+    "−1 attack rolls. −1 to sight-based Perception only: the flag-driven modifier applies when a Perception roll is made with the sight-based flag, and the ordinary sheet total stays unpenalized.",
   ),
   feature(
     "deafened",
@@ -322,6 +371,9 @@ const features: FeatureDefinition[] = [
     "Only a single move action each turn.",
   ),
 ];
+const contextFlagCatalog: Record<string, string[]> = {
+  "pf1e.paizo.combat-expertise": ["combat-expertise"],
+};
 const severity: Record<string, { exclusiveGroup: string; priority: number }> = {
   "pf1e.paizo.fatigued": {
     exclusiveGroup: "pf1e.condition.fatigue",
@@ -340,7 +392,16 @@ const severity: Record<string, { exclusiveGroup: string; priority: number }> = {
 export const featureCatalog = featureCatalogSchema.parse({
   ...generatedAutosheetAgeCatalog,
   ...Object.fromEntries(
-    features.map((item) => [item.id, { ...item, ...severity[item.id] }]),
+    features.map((item) => [
+      item.id,
+      {
+        ...item,
+        ...severity[item.id],
+        ...(contextFlagCatalog[item.id]
+          ? { contextFlags: contextFlagCatalog[item.id] }
+          : {}),
+      },
+    ]),
   ),
 });
 
@@ -400,7 +461,9 @@ const equipment: EquipmentDefinition[] = [
     id: "pf1e.paizo.ring-of-protection-1",
     name: "Ring of protection +1",
     kind: "wondrous",
-    effects: [ac(1, "deflection"), modifier("cmd", 1, "deflection")],
+    // CMD derives its deflection bonus from this AC effect; no duplicate
+    // hand-authored CMD effect is needed.
+    effects: [ac(1, "deflection")],
     source: {
       ...equipmentSource,
       sheet: "Magic Items: Rings",

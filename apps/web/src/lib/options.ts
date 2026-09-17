@@ -1,0 +1,80 @@
+import { skillCatalog } from "@threepointpf/rules-data";
+import {
+  type AbilityId,
+  type BonusType,
+  type EffectTargetId,
+} from "@threepointpf/rules-schema";
+
+export const abilities: AbilityId[] = [
+  "str",
+  "dex",
+  "con",
+  "int",
+  "wis",
+  "cha",
+];
+
+export const abilityLabels: Record<AbilityId, string> = {
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+};
+
+export const bonusTypes: BonusType[] = [
+  "untyped",
+  "dodge",
+  "circumstance",
+  "armor",
+  "shield",
+  "naturalArmor",
+  "enhancement",
+  "deflection",
+  "resistance",
+  "competence",
+  "insight",
+  "luck",
+  "morale",
+  "sacred",
+  "profane",
+  "size",
+  "racial",
+  "alchemical",
+  "penalty",
+];
+
+export const effectTargets: EffectTargetId[] = [
+  "combat.bab",
+  "attack.melee",
+  "damage.melee",
+  "attack.ranged",
+  "damage.ranged",
+  "ac",
+  "ac.natural",
+  "initiative",
+  "cmb",
+  "cmd",
+  "hp",
+  "casterLevel",
+  "size.relative",
+  "save.fortitude",
+  "save.reflex",
+  "save.will",
+  "ability.str",
+  "ability.dex",
+  "ability.con",
+  "ability.int",
+  "ability.wis",
+  "ability.cha",
+  "speed.land",
+  "speed.fly",
+  "speed.swim",
+  "speed.climb",
+  "speed.burrow",
+  "skill.all",
+  "attacks.extra.melee",
+  "attacks.extra.ranged",
+  ...Object.keys(skillCatalog).map((id): EffectTargetId => `skill.${id}`),
+];

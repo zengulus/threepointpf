@@ -7,7 +7,11 @@ import {
   type ProgressionCatalog,
 } from "@threepointpf/rules-schema";
 import type { ResolvedRoll, RollPlan } from "@threepointpf/dice";
-import { RulesEngine, type RulesEngineOptions } from "@threepointpf/rules-core";
+import {
+  RulesEngine,
+  type ActionPlan,
+  type RulesEngineOptions,
+} from "@threepointpf/rules-core";
 import { z } from "zod";
 
 export interface CharacterRepository {
@@ -351,13 +355,50 @@ export class SupabaseCharacterRepository implements CharacterRepository {
   }
 }
 
+const actionKinds = ["standardAttack", "fullAttack"] as const;
+const flagList = z
+  .array(
+    z
+      .string()
+      .min(1)
+      .regex(/^[a-z][a-z0-9-]*$/, "Flags use lowercase slugs"),
+  )
+  .min(1);
+
+/**
+ * A request for one authoritative roll plan. The context fields travel to the
+ * server so it recomputes the same contextual plan from authored state; a
+ * client never supplies a modifier.
+ */
 export interface RollPlanRequest {
   characterId: string;
-  kind: "save" | "attack";
+  kind: "save" | "attack" | "maneuver" | "skill";
   saveId?: "fortitude" | "reflex" | "will";
   attackId?: string;
-  /** Zero-based member of an attack's authoritative full-attack sequence. */
+  /** Zero-based member of an attack's authoritative sequence. */
   attackIndex?: number;
+  /** Full attack (default for attacks) or a single standard attack. */
+  action?: (typeof actionKinds)[number];
+  /** Every weapon selected by a multi-weapon full attack, in order. */
+  attackIds?: string[];
+  maneuver?: string;
+  skillId?: string;
+  flags?: string[];
+  excludeFlags?: string[];
+  touch?: boolean;
+}
+
+/** The explicit action whose attacks a caller wants planned. */
+export interface ActionPlanRequest {
+  characterId: string;
+  action: "standardAttack" | "fullAttack" | "maneuver";
+  attackIds?: string[];
+  maneuver?: string;
+  flags?: string[];
+  excludeFlags?: string[];
+  touch?: boolean;
+  actorId?: string;
+  targetId?: string;
 }
 
 export interface ResolveRollRequest {
@@ -370,12 +411,26 @@ export interface ResolveRollResponse extends ResolvedRoll {}
 export const rollPlanRequestSchema = z
   .object({
     characterId: z.string().min(1),
-    kind: z.enum(["save", "attack"]),
+    kind: z.enum(["save", "attack", "maneuver", "skill"]),
     saveId: z.enum(["fortitude", "reflex", "will"]).optional(),
     attackId: z.string().min(1).optional(),
     attackIndex: z.number().int().nonnegative().optional(),
+    action: z.enum(actionKinds).optional(),
+    attackIds: z.array(z.string().min(1)).min(1).optional(),
+    maneuver: z
+      .string()
+      .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs")
+      .optional(),
+    skillId: z.string().min(1).optional(),
+    flags: flagList.optional(),
+    excludeFlags: flagList.optional(),
+    touch: z.boolean().optional(),
   })
   .superRefine((request, context) => {
+    const attackFields = () => ({
+      attackId: request.attackId,
+      attackIndex: request.attackIndex,
+    });
     if (request.kind === "save") {
       if (!request.saveId)
         context.addIssue({
@@ -383,11 +438,29 @@ export const rollPlanRequestSchema = z
           path: ["saveId"],
           message: "saveId is required for a save roll",
         });
-      if (request.attackId !== undefined || request.attackIndex !== undefined)
+      if (Object.values(attackFields()).some((value) => value !== undefined))
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["attackId"],
           message: "attack fields are not valid for a save roll",
+        });
+      return;
+    }
+    if (request.kind === "skill") {
+      if (!request.skillId)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["skillId"],
+          message: "skillId is required for a skill roll",
+        });
+      return;
+    }
+    if (request.kind === "maneuver") {
+      if (request.saveId !== undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["saveId"],
+          message: "saveId is not valid for a maneuver roll",
         });
       return;
     }
@@ -404,6 +477,22 @@ export const rollPlanRequestSchema = z
         message: "saveId is not valid for an attack roll",
       });
   });
+
+export const actionPlanRequestSchema = z.object({
+  characterId: z.string().min(1),
+  action: z.enum(["standardAttack", "fullAttack", "maneuver"]),
+  attackIds: z.array(z.string().min(1)).min(1).optional(),
+  maneuver: z
+    .string()
+    .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs")
+    .optional(),
+  flags: flagList.optional(),
+  excludeFlags: flagList.optional(),
+  touch: z.boolean().optional(),
+  actorId: z.string().min(1).optional(),
+  targetId: z.string().min(1).optional(),
+});
+
 const rollPlanSchema = z.object({
   id: z.string().min(1),
   characterId: z.string().min(1),
@@ -419,10 +508,26 @@ const rollPlanSchema = z.object({
   modifier: z.number(),
   metadata: z
     .object({
-      kind: z.enum(["save", "attack", "skill", "damage", "other"]),
+      kind: z.enum([
+        "save",
+        "attack",
+        "maneuver",
+        "skill",
+        "damage",
+        "other",
+      ]),
       target: z.string().min(1),
       attackId: z.string().optional(),
       attackIndex: z.number().int().nonnegative().optional(),
+      action: z.enum(actionKinds).optional(),
+      attackIds: z.array(z.string()).optional(),
+      stepRole: z.enum(["primary", "iterative", "extra"]).optional(),
+      maneuver: z.string().optional(),
+      touch: z.boolean().optional(),
+      fullAttack: z.boolean().optional(),
+      flags: z.array(z.string()).optional(),
+      excludeFlags: z.array(z.string()).optional(),
+      contextFlags: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -470,10 +575,55 @@ export function createCharacterRollPlan(
   const engine = new RulesEngine(authored, base);
   if (request.kind === "save" && request.saveId)
     return engine.createSaveRollPlan(request.saveId);
-  if (request.kind === "attack" && request.attackId)
-    return engine.createAttackRollPlan(
-      request.attackId,
-      request.attackIndex ?? 0,
+  if (request.kind === "skill" && request.skillId)
+    return engine.createSkillRollPlan(
+      request.skillId,
+      request.flags,
+      request.excludeFlags,
     );
-  throw new Error("A valid saveId or attackId is required");
+  if (request.kind === "maneuver")
+    return engine.createManeuverRollPlan(
+      request.maneuver,
+      request.flags,
+      request.excludeFlags,
+    );
+  if (request.kind === "attack" && request.attackId)
+    return engine.createAttackRollPlan(request.attackId, request.attackIndex ?? 0, {
+      ...(request.action ? { action: request.action } : {}),
+      ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+      ...(request.flags ? { flags: request.flags } : {}),
+      ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
+      ...(request.touch !== undefined ? { touch: request.touch } : {}),
+      ...(request.maneuver ? { maneuver: request.maneuver } : {}),
+    });
+  throw new Error("A valid saveId, skillId or attackId is required");
+}
+
+/**
+ * The explicit action plan shared by the browser and Tabletop Simulator. The
+ * server recomputes this from authored state plus the requested context; the
+ * returned plan is what the UI and the Lua client both display.
+ */
+export function createCharacterActionPlan(
+  character: CharacterInput,
+  request: ActionPlanRequest,
+  input?: CharacterRulesInput,
+  extra?: RulesEngineOptions,
+): ActionPlan {
+  request = actionPlanRequestSchema.parse(request);
+  if (request.characterId !== character.id)
+    throw new Error("Action-plan character id does not match loaded character");
+  const base = mergedRollRules(input, extra);
+  const authored = normalizeAuthoredCharacter(character, base);
+  const engine = new RulesEngine(authored, base);
+  return engine.createActionPlan({
+    action: request.action,
+    ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+    ...(request.maneuver ? { maneuver: request.maneuver } : {}),
+    ...(request.flags ? { flags: request.flags } : {}),
+    ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
+    ...(request.touch !== undefined ? { touch: request.touch } : {}),
+    ...(request.actorId ? { actorId: request.actorId } : {}),
+    ...(request.targetId ? { targetId: request.targetId } : {}),
+  });
 }

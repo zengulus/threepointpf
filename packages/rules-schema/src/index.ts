@@ -142,17 +142,132 @@ export type EffectTargetId = Exclude<
 
 export type DefenseContext = "normal" | "touch" | "flatFooted";
 
-export type AttackTag =
-  | "weapon.melee"
-  | "weapon.ranged"
-  | "weapon.two-handed"
-  | "weapon.off-hand"
-  | "natural.attack";
+export const attackTagValues = [
+  "weapon.melee",
+  "weapon.ranged",
+  "weapon.two-handed",
+  "weapon.off-hand",
+  "weapon.touch",
+  "natural.attack",
+] as const;
+export type AttackTag = (typeof attackTagValues)[number];
 
+export const attackModes = ["melee", "ranged"] as const;
+export type AttackMode = (typeof attackModes)[number];
+
+/** Standard PF1e combat maneuvers; homebrew maneuvers stay representable as strings. */
+export const maneuverIds = [
+  "bull-rush",
+  "dirty-trick",
+  "disarm",
+  "drag",
+  "grapple",
+  "overrun",
+  "reposition",
+  "steal",
+  "sunder",
+  "trip",
+] as const;
+export type ManeuverId = (typeof maneuverIds)[number] | (string & {});
+
+/** What a roll is for. Kept deliberately small: these are the evaluated actions. */
+export const rollKinds = [
+  "attack",
+  "damage",
+  "maneuver",
+  "save",
+  "skill",
+  "initiative",
+] as const;
+export type RollKind = (typeof rollKinds)[number];
+
+/**
+ * Legacy tag-only attack filter. New content should prefer `appliesWhen`, which
+ * also expresses touch, full-attack membership, maneuvers and situational
+ * flags. Retained because persisted characters contain it.
+ */
 export interface AttackSelector {
-  mode?: "melee" | "ranged";
+  mode?: AttackMode;
   requiredTags?: AttackTag[];
   excludedTags?: AttackTag[];
+}
+
+/**
+ * Explicit situational identity of a roll. This is the whole context model:
+ * actor/target identity, the action/roll kind, weapon identity, melee/ranged/
+ * touch, full-attack membership, a maneuver, classification tags and named
+ * situational flags. Effects declare when they apply to such a context instead
+ * of forcing duplicate static targets.
+ */
+export interface RollContext {
+  kind: RollKind;
+  mode?: AttackMode;
+  /** Authored attack/weapon identity the roll belongs to. */
+  attackId?: string;
+  /** Weapon classification tags resolved from the attack definition. */
+  attackTags?: AttackTag[];
+  /** True for touch attacks (rays, touch spells, melee touch). */
+  touch?: boolean;
+  /** True when the roll is part of a full-attack action. */
+  fullAttack?: boolean;
+  /** Zero-based membership of an attack's own sequence. */
+  attackIndex?: number;
+  /** Combat maneuver being attempted, when the roll is a maneuver. */
+  maneuver?: ManeuverId;
+  /** Situational flags, such as `combat-expertise` or `sight-based`. */
+  flags?: string[];
+  actorId?: string;
+  targetId?: string;
+}
+
+/**
+ * When an effect applies. Every field is optional; an omitted field never
+ * restricts. A field that is present must match the roll context for the
+ * effect to contribute.
+ */
+export interface EffectApplicability {
+  kinds?: RollKind[];
+  modes?: AttackMode[];
+  requiredTags?: AttackTag[];
+  excludedTags?: AttackTag[];
+  /** `true` requires a touch attack; `false` requires a non-touch attack. */
+  touch?: boolean;
+  /** `true` requires full-attack membership; `false` requires a standard attack. */
+  fullAttack?: boolean;
+  maneuvers?: ManeuverId[];
+  requiredFlags?: string[];
+  excludedFlags?: string[];
+}
+
+/**
+ * Effect targets that stand for a whole family of concrete facts. Selectors
+ * accept additive modifiers only: replacing or bounding "every skill" has no
+ * single baseline to replace.
+ */
+export const selectorTargets = ["skill.all"] as const;
+export type SelectorTargetId = (typeof selectorTargets)[number];
+export type ConcreteEffectTargetId = Exclude<
+  EffectTargetId,
+  SelectorTargetId
+>;
+export function isSelectorTarget(target: string): target is SelectorTargetId {
+  return (selectorTargets as readonly string[]).includes(target);
+}
+
+/**
+ * Targets that can be evaluated against a `RollContext`. Situational effect
+ * applicability is only meaningful for these; scalar sheet facts such as AC or
+ * HP are evaluated once without a roll context.
+ */
+export function isContextualTarget(target: string): boolean {
+  return (
+    target === "cmb" ||
+    target === "cmd" ||
+    target === "initiative" ||
+    target.startsWith("save.") ||
+    target.startsWith("skill.") ||
+    /^(attack|damage|attacks\.extra)\.(melee|ranged)$/.test(target)
+  );
 }
 
 /** A deliberately narrow scalar for BAB-stepped combat options. */
@@ -222,6 +337,29 @@ export interface AcModifierEffect {
   scaling?: BabStepScaling;
 }
 
+/** Bonus types that never add to CMD; their penalties still apply. */
+export const cmdExcludedBonusTypes: BonusType[] = [
+  "armor",
+  "shield",
+  "naturalArmor",
+  /** Size is already a first-class CMD term; re-reading it would double count. */
+  "size",
+];
+
+/**
+ * A semantic AC-derived contributor for a defense other than AC. CMD consumes
+ * every AC modifier that applies in the normal context except armor, shield,
+ * natural armor and size bonuses; all AC penalties apply regardless of
+ * category. This is why a `+2 deflection AC` effect raises CMD without a
+ * second hand-authored CMD effect.
+ */
+export function acModifierAppliesToCmd(
+  value: number,
+  bonusType: BonusType,
+): boolean {
+  return value < 0 || !cmdExcludedBonusTypes.includes(bonusType);
+}
+
 export interface NonAcModifierEffect {
   kind: "modifier";
   target: Exclude<EffectTargetId, "ac">;
@@ -229,7 +367,10 @@ export interface NonAcModifierEffect {
   bonusType: BonusType;
   source?: SourceReference;
   scaling?: BabStepScaling;
+  /** Legacy tag/mode filter; new content should use `appliesWhen`. */
   attackSelector?: AttackSelector;
+  /** Contextual applicability, evaluated against a `RollContext`. */
+  appliesWhen?: EffectApplicability;
   /** Movement increase limited to the intrinsic speed (Haste). */
   capToBase?: boolean;
 }
@@ -238,7 +379,7 @@ export type ModifierEffect = AcModifierEffect | NonAcModifierEffect;
 
 export interface ReplaceBaseEffect {
   kind: "replaceBase";
-  target: EffectTargetId;
+  target: ConcreteEffectTargetId;
   value: number;
   source?: SourceReference;
 }
@@ -246,7 +387,7 @@ export interface ReplaceBaseEffect {
 /** Applied after baseline replacement and typed additive modifiers. */
 export interface MultiplyEffect {
   kind: "multiply";
-  target: EffectTargetId;
+  target: ConcreteEffectTargetId;
   factor: number;
   source?: SourceReference;
 }
@@ -254,7 +395,7 @@ export interface MultiplyEffect {
 /** Applied after multiplication. Multiple minimums use the greatest value. */
 export interface MinimumEffect {
   kind: "minimum";
-  target: EffectTargetId;
+  target: ConcreteEffectTargetId;
   value: number;
   source?: SourceReference;
 }
@@ -262,14 +403,14 @@ export interface MinimumEffect {
 /** Applied after minimums. Multiple maximums use the least value. */
 export interface MaximumEffect {
   kind: "maximum";
-  target: EffectTargetId;
+  target: ConcreteEffectTargetId;
   value: number;
   source?: SourceReference;
 }
 
 export interface GrantEffect {
   kind: "grant";
-  target: EffectTargetId;
+  target: ConcreteEffectTargetId;
   grant: string;
   source?: SourceReference;
 }
@@ -292,6 +433,11 @@ export interface FeatureDefinition {
   /** Only the highest-priority active definition in a group applies. */
   exclusiveGroup?: string;
   priority?: number;
+  /**
+   * Situational flags this enabled feature contributes to every roll context,
+   * such as `combat-expertise`. Effects may then require the flag.
+   */
+  contextFlags?: string[];
 }
 
 export type FeatureCatalog = Record<string, FeatureDefinition>;
@@ -303,6 +449,8 @@ export interface FeatureInstance {
   description?: string;
   enabled: boolean;
   effects: EffectDefinition[];
+  /** Authored situational flags contributed while this instance is enabled. */
+  contextFlags?: string[];
 }
 
 export interface SkillConfiguration {
@@ -545,18 +693,45 @@ const effectTargetIdSchema = targetIdSchema.refine(
   "Progression level targets and experience levels are query-only",
 ) as z.ZodType<EffectTargetId>;
 const defenseContextSchema = z.enum(["normal", "touch", "flatFooted"]);
-const attackTagSchema = z.enum([
-  "weapon.melee",
-  "weapon.ranged",
-  "weapon.two-handed",
-  "weapon.off-hand",
-  "natural.attack",
-]);
+const attackTagSchema = z.enum(attackTagValues);
+const attackModeSchema = z.enum(attackModes);
 const attackSelectorSchema = z.object({
-  mode: z.enum(["melee", "ranged"]).optional(),
+  mode: attackModeSchema.optional(),
   requiredTags: z.array(attackTagSchema).optional(),
   excludedTags: z.array(attackTagSchema).optional(),
 });
+/** Homebrew maneuvers remain representable, but must be stable slugs. */
+const maneuverIdSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs such as trip");
+const flagSchema = z
+  .string()
+  .min(1)
+  .regex(/^[a-z][a-z0-9-]*$/, "Situational flags use lowercase slugs");
+const applicabilitySchema = z
+  .object({
+    kinds: z.array(z.enum(rollKinds)).min(1).optional(),
+    modes: z.array(attackModeSchema).min(1).optional(),
+    requiredTags: z.array(attackTagSchema).optional(),
+    excludedTags: z.array(attackTagSchema).optional(),
+    touch: z.boolean().optional(),
+    fullAttack: z.boolean().optional(),
+    maneuvers: z.array(maneuverIdSchema).min(1).optional(),
+    requiredFlags: z.array(flagSchema).min(1).optional(),
+    excludedFlags: z.array(flagSchema).min(1).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const restricts = Object.values(value).some(
+      (entry) => entry !== undefined,
+    );
+    if (!restricts)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "An applicability rule must restrict something; omit appliesWhen instead of using {}",
+      });
+  }) as z.ZodType<EffectApplicability>;
 const scalingSchema = z.object({
   kind: z.literal("babStep"),
   every: z.number().finite().int().positive(),
@@ -582,39 +757,50 @@ const nonAcModifierSchema = z.object({
   source: sourceReferenceSchema.optional(),
   scaling: scalingSchema.optional(),
   attackSelector: attackSelectorSchema.optional(),
+  appliesWhen: applicabilitySchema.optional(),
   capToBase: z.boolean().optional(),
 });
+/**
+ * Selector targets (`skill.all`) accept additive modifiers only. Operations
+ * that need one concrete baseline or bound must name a concrete target; the
+ * schema rejects the nonsensical combination instead of silently applying it
+ * to every member of the family.
+ */
+const concreteOperationTargetSchema = effectTargetIdSchema.refine(
+  (target) => !isSelectorTarget(target),
+  "This operation needs a concrete target; a selector such as `skill.all` only accepts modifiers",
+) as z.ZodType<ConcreteEffectTargetId>;
 export const effectSchema: z.ZodType<Effect> = z
   .union([
     acModifierSchema,
     nonAcModifierSchema,
     z.object({
       kind: z.literal("replaceBase"),
-      target: effectTargetIdSchema,
+      target: concreteOperationTargetSchema,
       value: z.number().finite(),
       source: sourceReferenceSchema.optional(),
     }),
     z.object({
       kind: z.literal("multiply"),
-      target: effectTargetIdSchema,
+      target: concreteOperationTargetSchema,
       factor: z.number().finite(),
       source: sourceReferenceSchema.optional(),
     }),
     z.object({
       kind: z.literal("minimum"),
-      target: effectTargetIdSchema,
+      target: concreteOperationTargetSchema,
       value: z.number().finite(),
       source: sourceReferenceSchema.optional(),
     }),
     z.object({
       kind: z.literal("maximum"),
-      target: effectTargetIdSchema,
+      target: concreteOperationTargetSchema,
       value: z.number().finite(),
       source: sourceReferenceSchema.optional(),
     }),
     z.object({
       kind: z.literal("grant"),
-      target: effectTargetIdSchema,
+      target: concreteOperationTargetSchema,
       grant: z.string().min(1),
       source: sourceReferenceSchema.optional(),
     }),
@@ -665,6 +851,16 @@ export const effectSchema: z.ZodType<Effect> = z
           message:
             "capToBase is only supported for nonnegative movement increases",
         });
+      if (
+        "appliesWhen" in effect &&
+        effect.appliesWhen &&
+        !isContextualTarget(effect.target)
+      )
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "appliesWhen is only supported on roll-scoped targets such as attacks, damage, extra attacks, CMB, CMD, saves, skills or initiative",
+        });
     }
   }) as z.ZodType<Effect>;
 export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
@@ -674,6 +870,7 @@ export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
   description: z.string().optional(),
   enabled: z.boolean(),
   effects: z.array(effectSchema),
+  contextFlags: z.array(flagSchema).min(1).optional(),
 });
 export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   id: z.string().min(1),
@@ -728,6 +925,7 @@ export const featureDefinitionSchema: z.ZodType<FeatureDefinition> = z.object({
   source: progressionSourceMetadataSchema.optional(),
   exclusiveGroup: z.string().min(1).optional(),
   priority: z.number().finite().int().optional(),
+  contextFlags: z.array(flagSchema).min(1).optional(),
 });
 export const attackProfileDefinitionSchema: z.ZodType<AttackProfileDefinition> =
   z.object({
@@ -1250,6 +1448,35 @@ export interface Contribution {
   children?: Contribution[];
   note?: string;
   sourceMetadata?: ProgressionSourceMetadata;
+  /**
+   * Marks a negative modifier contribution to an ability score. Temporary
+   * ability penalties floor the score at 1; other mechanisms (replacement
+   * baselines, future damage/drain) are not marked and are not floored here.
+   */
+  abilityPenalty?: boolean;
+}
+
+/**
+ * Why an otherwise-authored effect was filtered out of a contextual
+ * evaluation. Exclusions are provenance, not omissions: the audit trail shows
+ * both what contributed and what did not, and why.
+ */
+export interface ExcludedContribution {
+  target: TargetId;
+  value: number;
+  label: string;
+  source: string;
+  bonusType?: BonusType;
+  /** Human-readable reason, e.g. `requires full-attack membership`. */
+  reason: string;
+  /** The context actually evaluated, when one existed. */
+  rollContext?: RollContext;
+}
+
+/** The result of context filtering a set of candidate contributions. */
+export interface ContextualModifiers {
+  applied: Contribution[];
+  excluded: ExcludedContribution[];
 }
 
 export interface EvaluationResult {
@@ -1257,6 +1484,10 @@ export interface EvaluationResult {
   value: number;
   contributions: Contribution[];
   context?: DefenseContext;
+  /** Present when the evaluation was made for a specific roll context. */
+  rollContext?: RollContext;
+  /** Contextual filtering provenance: effects that were authored but did not apply. */
+  excluded?: ExcludedContribution[];
 }
 
 export interface DamageEvaluation {
@@ -1264,6 +1495,8 @@ export interface DamageEvaluation {
   dice: DiceExpression;
   modifier: number;
   contributions: Contribution[];
+  /** Contextual filtering provenance for damage effects. */
+  excluded?: ExcludedContribution[];
 }
 
 export interface DerivedSkill {
@@ -1313,6 +1546,49 @@ export interface DerivedAttack {
   damage: DamageEvaluation;
   /** One weapon's full attack sequence, including BAB iteratives and explicit extra attacks. */
   fullAttack: EvaluationResult[];
+  /** This weapon's default full-attack action, with explicit step roles. */
+  action: ActionPlan;
+}
+
+/** How a single attack in an action's sequence was reached. */
+export type AttackStepRole = "primary" | "iterative" | "extra";
+
+/** One explicit member of an attack's sequence, never a concatenated blob. */
+export interface ActionPlanStep {
+  /** Zero-based position within this attack's own sequence. */
+  index: number;
+  role: AttackStepRole;
+  modifier: number;
+  /** The contextual evaluation behind `modifier`, including exclusions. */
+  evaluation: EvaluationResult;
+}
+
+/** One weapon's contribution to an action. */
+export interface ActionAttackPlan {
+  attackId: string;
+  name: string;
+  role: "primary" | "off-hand" | "secondary";
+  context: RollContext;
+  steps: ActionPlanStep[];
+}
+
+/**
+ * An explicit combat action and its selected attacks. Multiple weapons are
+ * modelled as explicit members with roles; they are never silently
+ * concatenated into one fake combined full attack. Action-level extras (Haste)
+ * are computed once and attached to the primary attack only.
+ */
+export interface ActionPlan {
+  id: string;
+  characterId: string;
+  action: "standardAttack" | "fullAttack" | "maneuver";
+  label: string;
+  context: RollContext;
+  attacks: ActionAttackPlan[];
+  /** The single contextual evaluation behind a maneuver action. */
+  evaluation?: EvaluationResult;
+  /** Effects filtered out at the action level, with reasons. */
+  excluded: ExcludedContribution[];
 }
 
 export interface DerivedCharacter {

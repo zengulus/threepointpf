@@ -13,11 +13,31 @@ export interface PhysicalRollResult {
   faces: number[];
 }
 
+/**
+ * Everything the server needs to rebuild the same contextual plan from
+ * authored state. Clients submit raw die faces only; they never supply
+ * modifiers.
+ */
 export interface RollMetadata {
-  kind: "save" | "attack" | "skill" | "damage" | "other";
+  kind: "save" | "attack" | "skill" | "damage" | "other" | "maneuver";
   target: string;
   attackId?: string;
   attackIndex?: number;
+  /** The action the step belongs to. */
+  action?: "standardAttack" | "fullAttack" | "maneuver";
+  /** Ordered weapons selected by the action, for action-level extras. */
+  attackIds?: string[];
+  /** Step role within the weapon's sequence. */
+  stepRole?: "primary" | "iterative" | "extra";
+  maneuver?: string;
+  touch?: boolean;
+  fullAttack?: boolean;
+  /** Caller-supplied situational flags. */
+  flags?: string[];
+  /** Situational flags withheld for this roll. */
+  excludeFlags?: string[];
+  /** The resolved flag set the plan was evaluated with. */
+  contextFlags?: string[];
 }
 
 export interface RollPlan {

@@ -40,6 +40,16 @@ Progression-level queries retain every slot/track increment as provenance. Catal
 
 AC applicability is required through `appliesTo: normal | touch | flatFooted` on generic `ac` modifiers. Bonus type does not imply AC context, and missing applicability is rejected. `ac.natural` is a distinct natural-armor target with a zero baseline that contributes to normal and flat-footed AC, never touch AC. `baseHpBeforeConstitution` is the current authored HP baseline; `hitDiceCount` is manual in legacy mode and derived from advancement slots otherwise. `maxHp` applies Constitution once per hit die, while `damageTaken` and `temporaryHp` are persisted mutable state and `currentHp` is derived.
 
+## Combat and contextual semantics
+
+The workbook's CMB/CMD columns consume the AC modifiers directly, and so does the engine: every AC modifier that applies in the normal defense context reaches CMD except armor, shield, natural-armor and size *bonuses*, while every AC penalty applies regardless of category. A `+2 deflection AC` effect therefore raises CMD without a second hand-authored `cmd` effect, and a flat-footed-only AC effect does not reach CMD. CMD-only facts, such as a maneuver-specific bonus, are still authored on `cmd`. Filtered AC modifiers are reported with a reason rather than dropped.
+
+A negative additive modifier on `ability.*` is a temporary ability penalty and cannot reduce the score below 1; the limit appears as a `rules-core.ability-penalty-floor` provenance node. Baseline replacement is a different mechanism and is not floored, so future damage, drain or absent-ability semantics can reach 0 without changing penalty behavior.
+
+Targets such as `skill.all` are selectors, not concrete facts. They accept additive modifiers and reject `replaceBase`, `multiply`, `minimum`, `maximum` and `grant`, which need one baseline or bound.
+
+Effects can declare when they apply with `appliesWhen` instead of duplicating static targets: roll kind, melee/ranged, touch, required/excluded attack tags, full-attack membership, maneuver and required/excluded situational flags. The evaluated context (`RollContext`) records the same identity, which is what lets Deadly Aim exclude touch attacks, Rapid Shot require a ranged non-touch full attack, Power Attack select one-/two-handed/off-hand damage, Haste grant one shared extra attack to the action, and Dazzled penalize only sight-based Perception. An action is modeled explicitly as a standard attack, a full attack with per-weapon members and `primary`/`iterative`/`extra` steps, or a maneuver; weapon sequences are never concatenated. Both the browser and TTS request these plans from the server, which recomputes them from authored state plus context before resolving raw die faces.
+
 ## Deliberate discrepancies
 
 The new model does not preserve spreadsheet-only custom-effect row limits, combined bonus categories, lookup formulas, formula-reference cells, or the workbook's gestalt switch. Those are implementation mechanisms, not the domain model. This milestone keeps manual BAB/saves/HD as an explicit compatibility mode while advancement tracks provide the same baseline facts without introducing an `isGestalt` foundation.

@@ -2,6 +2,8 @@
 
 Reviewed: 2026-09-15
 
+Updated: 2026-09-18 (combat-context pass: CMD derivation, ability penalties, selectors, contextual actions, module split)
+
 This review compares the implementation with the supplied `Pathfinder Autosheet v6.2.1` workbook and the current vertical-slice brief. The workbook remains a behavioral reference, not a runtime dependency.
 
 ## Overall assessment
@@ -67,7 +69,43 @@ The nonlinear modifier node carries the formula note `floor((score - 10) / 2)`. 
 
 ### Attack tags are classifications
 
-Attack tags are now a narrow union (`weapon.melee`, `weapon.ranged`, `weapon.two-handed`, `weapon.off-hand`, `natural.attack`). They describe an attack entry; they do not add numeric semantics. Numeric effects still target stable IDs such as `attack.melee` and `damage.melee`. Mode is explicit or inferred from `weapon.ranged`.
+Attack tags are a narrow union (`weapon.melee`, `weapon.ranged`, `weapon.two-handed`, `weapon.off-hand`, `weapon.touch`, `natural.attack`). They describe an attack entry; they do not add numeric semantics. Numeric effects still target stable IDs such as `attack.melee` and `damage.melee`. Mode is explicit or inferred from `weapon.ranged`. Tags are now consumed twice: as the legacy `attackSelector` filter and as the `requiredTags`/`excludedTags` of a contextual `appliesWhen` rule.
+
+### CMD derives applicable AC modifiers semantically
+
+CMD is not authored twice. `acModifiersForCmd` consumes every enabled `ac` modifier whose applicability includes the normal context, except armor, shield, natural-armor and size **bonuses**; every AC penalty applies regardless of category. Size is already a first-class CMD term, so re-reading a size bonus would double count it, and armor, shield and natural armor never add to CMD. A `+2 deflection AC` effect therefore raises CMD with no second hand-authored `cmd` effect, while a `−2 armor AC` penalty lowers both AC and CMD.
+
+Filtered AC modifiers appear in `EvaluationResult.excluded` with their reason (`armor bonuses do not add to CMD`), so the audit trail shows the dependency rather than hiding it. A target-restricted AC effect (flat-footed only, for example) contributes to CMD only when it applies in the normal context. Authoring a `cmd` effect is still valid for genuinely CMD-only facts such as a maneuver-specific bonus; duplicated deflection/dodge `cmd` effects were removed from curated content.
+
+### Ability penalties floor at 1, replacements do not
+
+A negative additive modifier on `ability.*` is classified as a *temporary ability penalty* (`Contribution.abilityPenalty`) and may not take the score below 1 (`abilityPenaltyFloor`). The limit is a provenance node (`rules-core.ability-penalty-floor`) that explains the reduction, not a silent clip of the number. Nothing else is clamped to 1: a `replaceBase` baseline, and future damage, drain or absent-ability mechanics, can reach 0 and only the structural non-negative invariant applies. This keeps "penalized" and "replaced/destroyed" distinct instead of applying one global floor.
+
+### Selectors are not concrete fact targets
+
+`skill.all` is a *selector*: a family target that expands to the concrete facts consuming it. It accepts additive modifiers and rejects operations that need a single baseline or bound. `replaceBase`, `multiply`, `minimum`, `maximum` and `grant` on `skill.all` are rejected when the effect is parsed, for curated content and persisted homebrew data alike. Previously a `replaceBase` on the selector silently reset every skill baseline, and a `minimum` bounded every skill at once.
+
+### Contextual rolls and actions
+
+`RollContext` is the whole situational model, deliberately no larger than the visible cases require: actor and target identity, `kind`, `mode`, authored attack identity and tags, `touch`, `fullAttack`, sequence index, `maneuver`, and named situational flags. `EffectApplicability` (`appliesWhen`) restricts an effect to such a context by kind, mode, required/excluded tags, touch, full-attack membership, maneuver and required/excluded flags. An empty `appliesWhen` is rejected: an effect either applies generally (omit the field) or restricts something.
+
+`ActionPlan` models a real action rather than a modifier:
+
+| Action | Content |
+| --- | --- |
+| `standardAttack` | Exactly one selected weapon and one step. Never inherits full-attack extras or iteratives. |
+| `fullAttack` | Every selected weapon as an explicit member with role `primary`/`off-hand`/`secondary`; each member owns its own sequence of `primary`, `iterative` and `extra` steps. |
+| `maneuver` | One contextual CMB evaluation, with no weapon members. |
+
+Multiple weapons are never concatenated into a fake combined full attack, and action-level extras are evaluated once for the primary attack, so Haste can never contribute one extra attack per weapon. The driver cases are covered by `tests/contextual-actions.test.ts`: Deadly Aim excluding touch attacks, Power Attack selecting one-/two-handed/off-hand damage by tags, Haste granting one shared extra attack on full attacks only, Rapid Shot applying only inside an eligible ranged non-touch full attack, the Combat Expertise attack/CMB tradeoff gated on the flag its feature contributes, maneuver-conditional CMB modifiers, natural secondary attacks keeping one step with no extras, and Dazzled's sight-based Perception penalty applying only when the roll carries the `sight-based` flag.
+
+Contextual filtering preserves provenance in both directions: `EvaluationResult.excluded` and `DamageEvaluation.excluded` report each authored-but-filtered effect with a reason (`does not apply to touch attacks`, `requires flags combat-expertise`, `excluded for tags weapon.two-handed, weapon.off-hand`), and `actionExclusions` flattens an action's exclusions for display. The sheet shows what contributed *and* why other authored effects did not.
+
+Server authority is unchanged by the extra context: `roll-plan` accepts either an action request or a single-sequence-member request, and `resolve-roll` rebuilds the request from the plan's own metadata, so a client never supplies a modifier and every contextual plan is recomputed from authored state plus context before raw die faces are resolved. The TTS panel requests the same contextual plans, carries an explicit standard/full attack choice, and exposes maneuver buttons; it still derives no modifiers itself.
+
+### Module boundaries
+
+`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. `apps/web/src/App.tsx` is composition only: domain panels live in `components/`, and state plus rules wiring lives in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
 
 ## Workbook parity scenarios
 
@@ -80,7 +118,9 @@ The following are known scope boundaries, not hidden assumptions:
 - HP-before-Constitution remains an authored baseline. Manual BAB/saves/HD are retained for legacy mode; validated Autosheet chassis data now supplies advancement BAB, saves, HD count, and HD sides.
 - AC supports the current base, Dexterity, natural armor and explicit AC effects. Armor/equipment inventories, shield handling, size, concealment, cover, conditions and special defenses are not yet modeled.
 - Movement currently reduces additive speed contributions. Multipliers, caps and all non-land modes need a future operation model; the target IDs already leave room for those modes.
-- Attacks currently derive one attack modifier and one damage modifier per entry. Iterative attacks, two-weapon penalties, critical rules, ammunition, range and special attack text are outside this slice.
+- Attack entries now derive an action: a standard attack, a full attack with BAB iteratives and explicit extra attacks, or a maneuver. Two-weapon fighting penalties, off-hand sequence limits, critical rules, ammunition, range increments and special attack text are still outside this slice.
+- CMD consumes the applicable AC categories semantically, but cover, concealment, miss chance and special defenses are not modeled, and maneuver resolution stops at the CMB/CMD modifier: opposed checks, size limits ("cannot trip a creature two sizes larger") and maneuver defense DCs remain author reminders.
+- Situational flags are authored slugs. There is no registry, so a homebrew flag only matters if an effect requires it; conditions contribute flags rather than running an autonomous condition engine.
 - Skills use authored ranks, governing ability, class-skill flag, misc and armor/size adjustments. Class-based skill configuration and trained-only rules are future data, not inferred from a class string.
 - Gestalt is not represented by an `isGestalt` boolean; track count in ordered advancement slots supplies that structure.
 
@@ -100,7 +140,8 @@ The core remains small and auditable, with advancement isolated in its dedicated
 
 ## Recommended next increments
 
-1. Expand validated progression content and add HP-from-HD without changing the global-level/track aggregation contract.
-2. Add equipment/armor/shield inputs and source-specific AC applicability using the same contribution tree.
-3. Expand attack entries to iterative/full-attack and critical metadata without adding numeric meaning to tags.
-4. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary.
+1. Resolve opposed maneuvers: size-limited maneuver legality, maneuver defense DCs and grappled/entangled action restrictions on top of the existing `RollContext.maneuver`.
+2. Model concealment, cover and miss chance as explicit defense/roll contexts rather than modifier guesses.
+3. Derive off-hand and two-weapon sequence limits so a selected off-hand weapon stops being authored as a full independent sequence.
+4. Expand validated progression content and add HP-from-HD without changing the global-level/track aggregation contract.
+5. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary.
