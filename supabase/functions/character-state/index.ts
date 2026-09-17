@@ -1,4 +1,4 @@
-import { RulesEngine } from "@threepointpf/rules-core";
+import { RulesEngine, isFullAttackAction } from "@threepointpf/rules-core";
 import { rulesCatalogs } from "@threepointpf/rules-data";
 import { bearer, json, options } from "../_shared/http.ts";
 import { loadCharacter } from "../_shared/load-character.ts";
@@ -17,7 +17,9 @@ Deno.serve(async (request) => {
       // The authoritative full-attack action, with explicit step roles. TTS
       // requests a step identity and never derives a modifier itself.
       action: { kind: attack.action.action, label: attack.action.label, attackIds: [attack.definition.id] },
-      steps: attack.action.attacks[0]!.steps.map((step) => ({ index: step.index, role: step.role, modifier: step.modifier, flags: step.evaluation.rollContext?.flags ?? [], fullAttack: step.evaluation.rollContext?.fullAttack ?? true })),
+      // Every step names the roll that resolves it and the threat range that
+      // roll was evaluated with; the client derives neither.
+      steps: attack.action.attacks[0]!.steps.map((step) => ({ index: step.index, role: step.role, modifier: step.modifier, rollId: step.roll.id, flags: step.roll.context.flags ?? [], fullAttack: step.roll.context ? isFullAttackAction(step.roll.context) : true, criticalRange: step.roll.criticalRange ?? null })),
       fullAttack: attack.fullAttack.map((strike) => strike.value),
     })) });
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Unable to load character" }, 400); }

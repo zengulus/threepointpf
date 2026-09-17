@@ -1,6 +1,7 @@
 import type { RollPlan } from "@threepointpf/dice";
 import {
   type ActionAttackPlan,
+  type ActionKind,
   type ActionPlan,
   type ActionPlanStep,
   type AttackDefinition,
@@ -12,39 +13,55 @@ import {
   type ExcludedContribution,
   type ManeuverId,
   type RollContext,
+  type RollDefense,
   type RollKind,
+  type TargetContext,
   type TargetId,
 } from "@threepointpf/rules-schema";
 import { base, lookup, sourceContribution } from "./contributions.js";
 import { babContribution, evaluateCombatManeuver } from "./defenses.js";
-import { resolveContextFlags } from "./effects.js";
+import { attackModeOf, resolveContextFlags } from "./effects.js";
 import { labelForTarget } from "./labels.js";
+import { evaluateCriticalRange } from "./outcomes.js";
 import type { RulesRuntime } from "./runtime.js";
 
-export function attackModeOf(definition: AttackDefinition): AttackMode {
-  return (
-    definition.mode ??
-    (definition.attackTags?.includes("weapon.ranged") ? "ranged" : "melee")
-  );
-}
+export { attackModeOf };
 
 export interface AttackContextInput {
   kind: RollKind;
-  fullAttack?: boolean;
-  attackIndex?: number;
+  /** Which action this roll belongs to. */
+  actionKind: ActionKind;
+  /** Identity of the action instance; equals its `ActionPlan` id. */
+  actionId?: string;
+  /** Position of this roll within its own weapon's sequence. */
+  sequenceIndex?: number;
+  /** Weapons the action selects, in order. */
+  attackIds?: string[];
   touch?: boolean;
   maneuver?: ManeuverId;
+  /** This roll is the critical consequence of the attack it follows. */
+  criticalDamage?: boolean;
   flags?: string[];
   /** Situational flags withheld for this roll. */
   excludeFlags?: string[];
-  actorId?: string;
-  targetId?: string;
+  /** Known defense the roll is compared against. */
+  defense?: RollDefense;
+  target?: TargetContext;
+}
+
+function targetContextOf(input: AttackContextInput): TargetContext | undefined {
+  if (!input.target && !input.defense) return undefined;
+  return {
+    ...(input.target ?? {}),
+    ...(input.defense ? { defense: input.defense } : {}),
+  };
 }
 
 /**
  * The contextual identity of one attack or damage roll. Enabled feature flags
  * (Combat Expertise and friends) and caller-supplied situational flags are both
- * visible to effect applicability.
+ * visible to effect applicability; the action kind and position describe what
+ * the actor is doing rather than what the character is.
  */
 export function attackContext(
   runtime: RulesRuntime,
@@ -52,24 +69,31 @@ export function attackContext(
   input: AttackContextInput,
 ): RollContext {
   const attackTags = definition.attackTags ?? [];
+  const target = targetContextOf(input);
   return {
     kind: input.kind,
-    mode: attackModeOf(definition),
+    actorCharacterId: runtime.character.id,
+    action: {
+      kind: input.actionKind,
+      ...(input.actionId ? { sequenceId: input.actionId } : {}),
+      ...(input.sequenceIndex !== undefined
+        ? { sequenceIndex: input.sequenceIndex }
+        : {}),
+      ...(input.attackIds ? { attackIds: input.attackIds } : {}),
+    },
     attackId: definition.id,
     attackTags,
+    mode: attackModeOf(definition),
     touch: input.touch ?? attackTags.includes("weapon.touch"),
-    fullAttack: input.fullAttack ?? false,
-    ...(input.attackIndex !== undefined
-      ? { attackIndex: input.attackIndex }
-      : {}),
     ...(input.maneuver ? { maneuver: input.maneuver } : {}),
+    ...(input.criticalDamage ? { criticalDamage: true } : {}),
     flags: resolveContextFlags(
       runtime.enabledContextFlags(),
       input.flags,
       input.excludeFlags,
     ),
-    ...(input.actorId ? { actorId: input.actorId } : {}),
-    ...(input.targetId ? { targetId: input.targetId } : {}),
+    ...(input.excludeFlags?.length ? { excludeFlags: input.excludeFlags } : {}),
+    ...(target ? { target } : {}),
   };
 }
 
@@ -259,6 +283,135 @@ export function evaluateDamage(
   };
 }
 
+export interface DamageRollOptions {
+  /** The action this damage roll belongs to; standalone plans default to a full attack. */
+  action?: ActionKind;
+  actionId?: string;
+  /** The sequence member whose damage this is. */
+  attackIndex?: number;
+  attackIds?: string[];
+  touch?: boolean;
+  flags?: string[];
+  excludeFlags?: string[];
+  /** Roll the damage twice and add it together, for a critical hit. */
+  criticalDamage?: boolean;
+}
+
+function attackDefinitionFor(
+  runtime: RulesRuntime,
+  attackId: string,
+): AttackDefinition {
+  const definition = runtime.attackDefinitions.find(
+    (item) => item.id === attackId,
+  );
+  if (!definition) throw new Error(`Unknown attack: ${attackId}`);
+  return definition;
+}
+
+/**
+ * One step's damage roll. The dice are the weapon's own base dice, the modifier
+ * is the contextual damage evaluation, and a critical hit rolls the same damage
+ * a second time instead of a caller inventing extra dice.
+ */
+function damagePlanFrom(
+  runtime: RulesRuntime,
+  definition: AttackDefinition,
+  context: RollContext,
+  criticalDamage = false,
+): RollPlan {
+  const evaluation = evaluateDamage(runtime, definition, context);
+  const target = `damage.${attackModeOf(definition)}` as TargetId;
+  const step = context.action.sequenceIndex ?? 0;
+  const standard = context.action.kind === "standardAttack";
+  const suffix = standard ? ":standard" : step ? `:${step}` : "";
+  return {
+    id: `damage:${runtime.character.id}:${definition.id}${suffix}${criticalDamage ? ":critical" : ""}`,
+    characterId: runtime.character.id,
+    label: `${definition.name} damage${standard || step === 0 ? "" : ` ${step + 1}`}${criticalDamage ? " (critical)" : ""}`,
+    dice: [
+      {
+        sides: definition.baseDamage.sides,
+        count: definition.baseDamage.count * (criticalDamage ? 2 : 1),
+      },
+    ],
+    modifier: evaluation.modifier * (criticalDamage ? 2 : 1),
+    context,
+    outcomePolicy: runtime.outcomePolicies.plain,
+    provenance: {
+      // A critical hit rolls the damage again, so the contributions gain one
+      // more copy of the modifier and still sum to the plan's modifier.
+      modifier: criticalDamage
+        ? [
+            ...evaluation.contributions,
+            sourceContribution(
+              target,
+              evaluation.modifier,
+              "damage.critical",
+              "Critical hit",
+              undefined,
+              { note: "The damage is rolled a second time and added" },
+            ),
+          ]
+        : evaluation.contributions,
+      excluded: evaluation.excluded ?? [],
+    },
+  };
+}
+
+/**
+ * The authoritative damage plan of one sequence member. A standalone plan is
+ * identical to the same step's damage inside its action, so an action's roll
+ * list can be resolved member by member.
+ */
+export function damageRollPlan(
+  runtime: RulesRuntime,
+  attackId: string,
+  options: DamageRollOptions = {},
+): RollPlan {
+  const action = options.action ?? "fullAttack";
+  const attackIds = options.attackIds ?? [attackId];
+  const attackIndex = options.attackIndex ?? 0;
+  if (!Number.isInteger(attackIndex) || attackIndex < 0)
+    throw new Error(`Unknown attack sequence index ${attackIndex}`);
+  if (action === "standardAttack" && attackIndex !== 0)
+    throw new Error("A standard attack has a single sequence member");
+  // The same action is built to validate the member, exactly as an attack plan
+  // validates its own sequence index, so a damage plan can never name a step
+  // the action does not have.
+  const plan = buildActionPlan(runtime, {
+    action,
+    attackIds,
+    flags: options.flags,
+    excludeFlags: options.excludeFlags,
+    ...(options.touch !== undefined ? { touch: options.touch } : {}),
+  });
+  const attack = plan.attacks.find((item) => item.attackId === attackId);
+  if (!attack)
+    throw new Error(`Attack ${attackId} is not part of this action plan`);
+  if (!attack.steps.some((step) => step.index === attackIndex))
+    throw new Error(
+      `Unknown damage sequence index ${attackIndex} for ${attackId}`,
+    );
+  const definition = attackDefinitionFor(runtime, attackId);
+  const context = attackContext(runtime, definition, {
+    kind: "damage",
+    actionKind: action,
+    actionId: actionPlanId(runtime.character.id, action, attackIds),
+    sequenceIndex: attackIndex,
+    attackIds,
+    flags: options.flags,
+    excludeFlags: options.excludeFlags,
+    ...(options.touch !== undefined ? { touch: options.touch } : {}),
+    ...(options.criticalDamage ? { criticalDamage: true } : {}),
+  });
+  return damagePlanFrom(
+    runtime,
+    definition,
+    context,
+    options.criticalDamage ?? false,
+  );
+}
+
 /**
  * Extra attacks are an action-level fact, not a per-weapon one. The count is
  * evaluated once with full-attack context and attached to the action's primary
@@ -276,6 +429,8 @@ export function evaluateExtraAttacks(
     flags?: string[];
     excludeFlags?: string[];
     touch?: boolean;
+    actionId?: string;
+    attackIds?: string[];
   } = {},
 ): ExtraAttackEvaluation {
   const mode = attackModeOf(definition);
@@ -287,7 +442,9 @@ export function evaluateExtraAttacks(
     };
   const context = attackContext(runtime, definition, {
     kind: "attack",
-    fullAttack: true,
+    actionKind: "fullAttack",
+    ...(options.actionId ? { actionId: options.actionId } : {}),
+    ...(options.attackIds ? { attackIds: options.attackIds } : {}),
     flags: options.flags,
     excludeFlags: options.excludeFlags,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
@@ -328,21 +485,95 @@ function attackRole(
 }
 
 export interface ActionRequest {
-  action: "standardAttack" | "fullAttack" | "maneuver";
+  action: ActionKind;
   attackIds?: string[];
   flags?: string[];
   /** Situational flags withheld for this action, e.g. `combat-expertise`. */
   excludeFlags?: string[];
   touch?: boolean;
   maneuver?: ManeuverId;
-  actorId?: string;
-  targetId?: string;
+  /** Known defense the action's rolls are compared against. */
+  defense?: RollDefense;
+  target?: TargetContext;
+}
+
+/** The stable identity of an action instance; every roll of it names this id. */
+export function actionPlanId(
+  characterId: string,
+  action: ActionKind,
+  attackIds: readonly string[],
+): string {
+  if (action === "maneuver") return `action:${characterId}:maneuver`;
+  return `action:${characterId}:${action}:${attackIds.join("+")}`;
+}
+
+function attackRollId(
+  runtime: RulesRuntime,
+  definition: AttackDefinition,
+  action: ActionKind,
+  index: number,
+): string {
+  const characterId = runtime.character.id;
+  if (action === "standardAttack")
+    return `attack:${characterId}:${definition.id}:standard`;
+  return `attack:${characterId}:${definition.id}${index ? `:${index}` : ""}`;
+}
+
+function attackRollLabel(
+  definition: AttackDefinition,
+  action: ActionKind,
+  index: number,
+): string {
+  if (action === "standardAttack") return `${definition.name} standard attack`;
+  return `${definition.name} attack${index ? ` ${index + 1}` : ""}`;
+}
+
+/**
+ * One resolvable roll of an attack's sequence. The plan carries the context it
+ * was evaluated in, the policy that interprets raw faces, and the effective
+ * threat range with its provenance.
+ */
+function attackRollFor(
+  runtime: RulesRuntime,
+  definition: AttackDefinition,
+  evaluation: EvaluationResult,
+  options: {
+    action: ActionKind;
+    index: number;
+    defense?: RollDefense;
+    target?: TargetContext;
+  },
+): RollPlan {
+  const context = evaluation.rollContext;
+  if (!context)
+    throw new Error(
+      `Attack evaluation for ${definition.id} produced no roll context`,
+    );
+  const criticalRange = evaluateCriticalRange(runtime, definition, context);
+  return {
+    id: attackRollId(runtime, definition, options.action, options.index),
+    characterId: runtime.character.id,
+    label: attackRollLabel(definition, options.action, options.index),
+    dice: [{ sides: 20, count: 1 }],
+    modifier: evaluation.value,
+    context,
+    outcomePolicy: runtime.outcomePolicies.attack,
+    criticalRange: criticalRange.effective,
+    provenance: {
+      modifier: evaluation.contributions,
+      excluded: evaluation.excluded ?? [],
+      criticalRange,
+    },
+  };
 }
 
 function evaluateSequence(
   runtime: RulesRuntime,
   definition: AttackDefinition,
   options: {
+    action: ActionKind;
+    actionId: string;
+    attackIds: string[];
     withExtras: boolean;
     /** A full-attack action has BAB iteratives; a standard attack does not. */
     withIteratives: boolean;
@@ -350,30 +581,73 @@ function evaluateSequence(
     excludeFlags?: string[];
     touch?: boolean;
     maneuver?: ManeuverId;
-    actorId?: string;
-    targetId?: string;
+    defense?: RollDefense;
+    target?: TargetContext;
     extraEvaluation?: ExtraAttackEvaluation;
   },
 ): ActionAttackPlan {
   const mode = attackModeOf(definition);
   const target = `attack.${mode}` as TargetId;
   const steps: ActionPlanStep[] = [];
-  const primaryContext = attackContext(runtime, definition, {
-    kind: "attack",
-    fullAttack: true,
-    attackIndex: 0,
+  const contextInput = {
+    actionKind: options.action,
+    actionId: options.actionId,
+    attackIds: options.attackIds,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
     maneuver: options.maneuver,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
-    ...(options.actorId ? { actorId: options.actorId } : {}),
-    ...(options.targetId ? { targetId: options.targetId } : {}),
+    ...(options.defense ? { defense: options.defense } : {}),
+    ...(options.target ? { target: options.target } : {}),
+  } as const;
+  // A damage roll is never compared against a defense, so its context carries
+  // neither the defense nor the target the attack roll was made against.
+  const damageContextFields = {
+    actionKind: options.action,
+    actionId: options.actionId,
+    attackIds: options.attackIds,
+    flags: options.flags,
+    excludeFlags: options.excludeFlags,
+    ...(options.touch !== undefined ? { touch: options.touch } : {}),
+  } as const;
+  const damageFor = (sequenceIndex: number) =>
+    damagePlanFrom(
+      runtime,
+      definition,
+      attackContext(runtime, definition, {
+        kind: "damage",
+        sequenceIndex,
+        ...damageContextFields,
+      }),
+    );
+  const primaryContext = attackContext(runtime, definition, {
+    kind: "attack",
+    sequenceIndex: 0,
+    ...contextInput,
   });
   const primary = evaluateAttack(runtime, definition, primaryContext);
-  steps.push({ index: 0, role: "primary", modifier: primary.value, evaluation: primary });
+  steps.push({
+    index: 0,
+    role: "primary",
+    modifier: primary.value,
+    evaluation: primary,
+    roll: attackRollFor(runtime, definition, primary, {
+      action: options.action,
+      index: 0,
+    }),
+    damage: damageFor(0),
+  });
   let index = 1;
   if (options.withExtras) {
-    const extras = options.extraEvaluation ?? evaluateExtraAttacks(runtime, definition, options);
+    const extras =
+      options.extraEvaluation ??
+      evaluateExtraAttacks(runtime, definition, {
+        flags: options.flags,
+        excludeFlags: options.excludeFlags,
+        touch: options.touch,
+        actionId: options.actionId,
+        attackIds: options.attackIds,
+      });
     // Resource boundary, not a game-rule truncation: invalid huge authored
     // sequences fail explicitly before allocating or persisting them.
     if (extras.result.value + iterativeCount(runtime, definition) > 256)
@@ -381,24 +655,30 @@ function evaluateSequence(
         `Attack sequence exceeds the supported 256 rolls for ${definition.id}`,
       );
     for (let count = 0; count < extras.result.value; count++) {
+      const evaluation: EvaluationResult = {
+        ...primary,
+        contributions: [
+          ...primary.contributions,
+          sourceContribution(
+            target,
+            0,
+            `attacks.extra.${mode}`,
+            "Additional attack at highest bonus",
+            undefined,
+            { children: extras.result.contributions },
+          ),
+        ],
+      };
       steps.push({
         index,
         role: "extra",
         modifier: primary.value,
-        evaluation: {
-          ...primary,
-          contributions: [
-            ...primary.contributions,
-            sourceContribution(
-              target,
-              0,
-              `attacks.extra.${mode}`,
-              "Additional attack at highest bonus",
-              undefined,
-              { children: extras.result.contributions },
-            ),
-          ],
-        },
+        evaluation,
+        roll: attackRollFor(runtime, definition, evaluation, {
+          action: options.action,
+          index,
+        }),
+        damage: damageFor(index),
       });
       index += 1;
     }
@@ -411,32 +691,34 @@ function evaluateSequence(
   for (let step = 1; step < iterations; step++) {
     const context = attackContext(runtime, definition, {
       kind: "attack",
-      fullAttack: true,
-      attackIndex: index,
-      flags: options.flags,
-      excludeFlags: options.excludeFlags,
-      maneuver: options.maneuver,
-      ...(options.touch !== undefined ? { touch: options.touch } : {}),
+      sequenceIndex: index,
+      ...contextInput,
     });
     const evaluation = evaluateAttack(runtime, definition, context);
     const value = evaluation.value - 5 * step;
+    const iterative: EvaluationResult = {
+      ...evaluation,
+      value,
+      contributions: [
+        ...evaluation.contributions,
+        base(
+          target,
+          -5 * step,
+          "combat.bab.iterative",
+          `Iterative attack ${step + 1}`,
+        ),
+      ],
+    };
     steps.push({
       index,
       role: "iterative",
       modifier: value,
-      evaluation: {
-        ...evaluation,
-        value,
-        contributions: [
-          ...evaluation.contributions,
-          base(
-            target,
-            -5 * step,
-            "combat.bab.iterative",
-            `Iterative attack ${step + 1}`,
-          ),
-        ],
-      },
+      evaluation: iterative,
+      roll: attackRollFor(runtime, definition, iterative, {
+        action: options.action,
+        index,
+      }),
+      damage: damageFor(index),
     });
     index += 1;
   }
@@ -449,42 +731,68 @@ function evaluateSequence(
   };
 }
 
+function maneuverActionPlan(
+  runtime: RulesRuntime,
+  request: ActionRequest,
+): ActionPlan {
+  const characterId = runtime.character.id;
+  const evaluation = evaluateCombatManeuver(runtime, "cmb", {
+    maneuver: request.maneuver,
+    flags: request.flags,
+    excludeFlags: request.excludeFlags,
+    ...(request.defense ? { defense: request.defense } : {}),
+    ...(request.target ? { target: request.target } : {}),
+  });
+  const context = evaluation.rollContext;
+  if (!context) throw new Error("Maneuver evaluation produced no roll context");
+  const roll: RollPlan = {
+    id: `maneuver:${characterId}:${request.maneuver ?? "cmb"}`,
+    characterId,
+    label: `CMB${request.maneuver ? ` ${request.maneuver}` : ""}`,
+    dice: [{ sides: 20, count: 1 }],
+    modifier: evaluation.value,
+    context,
+    outcomePolicy: runtime.outcomePolicies.maneuver,
+    provenance: {
+      modifier: evaluation.contributions,
+      excluded: evaluation.excluded ?? [],
+    },
+  };
+  return {
+    id: actionPlanId(characterId, "maneuver", []),
+    characterId,
+    action: "maneuver",
+    label: `CMB${request.maneuver ? ` (${request.maneuver})` : ""}`,
+    context,
+    attacks: [],
+    evaluation,
+    excluded: evaluation.excluded ?? [],
+    rolls: [roll],
+  };
+}
+
 /**
  * Builds an explicit action plan. Multiple weapons stay separate members with
  * roles; their sequences are never concatenated into a fake combined full
- * attack, and action-level extras attach to the primary attack only.
+ * attack, and action-level extras attach to the primary attack only. Every step
+ * carries its own resolvable roll.
  */
 export function buildActionPlan(
   runtime: RulesRuntime,
   request: ActionRequest,
 ): ActionPlan {
   const characterId = runtime.character.id;
+  if (request.action === "maneuver") return maneuverActionPlan(runtime, request);
   const flags = request.flags;
-  if (request.action === "maneuver") {
-    const evaluation = evaluateCombatManeuver(runtime, "cmb", {
-      maneuver: request.maneuver,
-      flags,
-      excludeFlags: request.excludeFlags,
-    });
-    return {
-      id: `action:${characterId}:maneuver:${request.maneuver ?? "cmb"}`,
-      characterId,
-      action: "maneuver",
-      label: `CMB${request.maneuver ? ` (${request.maneuver})` : ""}`,
-      context: evaluation.rollContext ?? {
-        kind: "maneuver",
-        ...(request.maneuver ? { maneuver: request.maneuver } : {}),
-        flags: [...runtime.enabledContextFlags(), ...(flags ?? [])],
-      },
-      attacks: [],
-      evaluation,
-      excluded: evaluation.excluded ?? [],
-    };
-  }
-  const ids = request.attackIds?.length
-    ? request.attackIds
-    : runtime.attackDefinitions.map((definition) => definition.id);
+  // An omitted selection means "every authored weapon"; an explicit empty
+  // selection is a contradiction, not a synonym for it.
+  if (request.attackIds !== undefined && request.attackIds.length === 0)
+    throw new Error("An attack action requires an attack");
+  const ids =
+    request.attackIds ?? runtime.attackDefinitions.map((definition) => definition.id);
   if (ids.length === 0) throw new Error("An attack action requires an attack");
+  if (new Set(ids).size !== ids.length)
+    throw new Error("A weapon may be selected once per action");
   const definitions = ids.map((id) => {
     const definition = runtime.attackDefinitions.find((item) => item.id === id);
     if (!definition) throw new Error(`Unknown attack: ${id}`);
@@ -493,6 +801,7 @@ export function buildActionPlan(
   if (request.action === "standardAttack" && definitions.length > 1)
     throw new Error("A standard attack action selects exactly one attack");
   const fullAttack = request.action === "fullAttack";
+  const actionId = actionPlanId(characterId, request.action, ids);
   // Action-level extras are computed once, for the primary attack, before any
   // weapon's sequence is built.
   const primary = definitions[0]!;
@@ -500,20 +809,25 @@ export function buildActionPlan(
     ? evaluateExtraAttacks(runtime, primary, {
         flags,
         excludeFlags: request.excludeFlags,
+        actionId,
+        attackIds: ids,
         ...(request.touch !== undefined ? { touch: request.touch } : {}),
       })
     : undefined;
   const attacks = definitions.map((definition, index) => {
     const plan = evaluateSequence(runtime, definition, {
+      action: request.action,
+      actionId,
+      attackIds: ids,
       withExtras: fullAttack && index === 0,
       withIteratives: fullAttack,
       ...(extraEvaluation ? { extraEvaluation } : {}),
       flags,
       excludeFlags: request.excludeFlags,
-      touch: request.touch,
-      maneuver: request.maneuver,
-      actorId: request.actorId,
-      targetId: request.targetId,
+      ...(request.touch !== undefined ? { touch: request.touch } : {}),
+      ...(request.maneuver ? { maneuver: request.maneuver } : {}),
+      ...(request.defense ? { defense: request.defense } : {}),
+      ...(request.target ? { target: request.target } : {}),
     });
     return {
       ...plan,
@@ -522,7 +836,7 @@ export function buildActionPlan(
     };
   });
   return {
-    id: `action:${characterId}:${request.action}:${ids.join("+")}`,
+    id: actionId,
     characterId,
     action: request.action,
     label:
@@ -532,15 +846,27 @@ export function buildActionPlan(
     context: attacks[0]!.context,
     attacks,
     excluded: extraEvaluation?.excluded ?? [],
+    rolls: attacks.flatMap((attack) =>
+      attack.steps.flatMap((step) =>
+        step.damage ? [step.roll, step.damage] : [step.roll],
+      ),
+    ),
   };
 }
 
-/** This weapon's default full-attack action, plus its standard attack. */
+/**
+ * This weapon's default full-attack action, plus its standard attack. The
+ * uncontextualized `attack` value is the standard-attack roll, so a sheet query
+ * stays meaningful without a full-attack action.
+ */
 export function deriveAttack(
   runtime: RulesRuntime,
   definition: AttackDefinition,
 ): DerivedAttack {
-  const damageContext = attackContext(runtime, definition, { kind: "damage" });
+  const damageContext = attackContext(runtime, definition, {
+    kind: "damage",
+    actionKind: "standardAttack",
+  });
   const action = buildActionPlan(runtime, {
     action: "fullAttack",
     attackIds: [definition.id],
@@ -550,7 +876,10 @@ export function deriveAttack(
     attack: evaluateAttack(
       runtime,
       definition,
-      attackContext(runtime, definition, { kind: "attack" }),
+      attackContext(runtime, definition, {
+        kind: "attack",
+        actionKind: "standardAttack",
+      }),
     ),
     damage: evaluateDamage(runtime, definition, damageContext),
     fullAttack: action.attacks[0]!.steps.map((step) => step.evaluation),
@@ -566,12 +895,16 @@ export interface AttackRollOptions {
   excludeFlags?: string[];
   touch?: boolean;
   maneuver?: ManeuverId;
+  /** Known defense the roll is compared against; absent means hit stays unresolved. */
+  defense?: RollDefense;
+  target?: TargetContext;
 }
 
 /**
  * The authoritative roll plan for one sequence member. A full attack is the
  * default so existing callers keep their meaning; `action: "standardAttack"`
- * asks for the single-attack plan instead.
+ * asks for the single-attack plan instead. Both paths build the same action
+ * plan, so a standalone plan is always identical to the same roll inside one.
  */
 export function attackRollPlan(
   runtime: RulesRuntime,
@@ -579,52 +912,21 @@ export function attackRollPlan(
   attackIndex = 0,
   options: AttackRollOptions = {},
 ): RollPlan {
-  const definition = runtime.attackDefinitions.find(
-    (item) => item.id === attackId,
-  );
-  if (!definition) throw new Error(`Unknown attack: ${attackId}`);
+  const action = options.action ?? "fullAttack";
+  const attackIds = options.attackIds ?? [attackId];
   if (!Number.isInteger(attackIndex) || attackIndex < 0)
     throw new Error(`Unknown attack sequence index ${attackIndex}`);
-  const action = options.action ?? "fullAttack";
-  if (action === "standardAttack") {
-    if (attackIndex !== 0)
-      throw new Error("A standard attack has a single sequence member");
-    const context = attackContext(runtime, definition, {
-      kind: "attack",
-      fullAttack: false,
-      flags: options.flags,
-      excludeFlags: options.excludeFlags,
-      maneuver: options.maneuver,
-      ...(options.touch !== undefined ? { touch: options.touch } : {}),
-    });
-    const evaluation = evaluateAttack(runtime, definition, context);
-    return {
-      id: `attack:${runtime.character.id}:${attackId}:standard`,
-      characterId: runtime.character.id,
-      label: `${definition.name} standard attack`,
-      dice: [{ sides: 20, count: 1 }],
-      modifier: evaluation.value,
-      metadata: {
-        kind: "attack",
-        target: evaluation.target,
-        attackId,
-        attackIndex: 0,
-        action: "standardAttack",
-        fullAttack: false,
-        ...(options.flags ? { flags: options.flags } : {}),
-        ...(options.excludeFlags ? { excludeFlags: options.excludeFlags } : {}),
-        ...(options.touch !== undefined ? { touch: options.touch } : {}),
-        ...(context.flags?.length ? { contextFlags: context.flags } : {}),
-      },
-    };
-  }
+  if (action === "standardAttack" && attackIndex !== 0)
+    throw new Error("A standard attack has a single sequence member");
   const plan = buildActionPlan(runtime, {
-    action: "fullAttack",
-    attackIds: options.attackIds ?? [attackId],
+    action,
+    attackIds,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
     maneuver: options.maneuver,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
+    ...(options.defense ? { defense: options.defense } : {}),
+    ...(options.target ? { target: options.target } : {}),
   });
   const attack = plan.attacks.find((item) => item.attackId === attackId);
   if (!attack)
@@ -634,55 +936,24 @@ export function attackRollPlan(
     throw new Error(
       `Unknown attack sequence index ${attackIndex} for ${attackId}`,
     );
-  return {
-    id: `attack:${runtime.character.id}:${attackId}${attackIndex ? `:${attackIndex}` : ""}`,
-    characterId: runtime.character.id,
-    label: `${definition.name} attack${attackIndex ? ` ${attackIndex + 1}` : ""}`,
-    dice: [{ sides: 20, count: 1 }],
-    modifier: step.modifier,
-    metadata: {
-      kind: "attack",
-      target: step.evaluation.target,
-      attackId,
-      attackIndex,
-      action: "fullAttack",
-      fullAttack: true,
-      stepRole: step.role,
-      ...(plan.attacks.length > 1
-        ? { attackIds: plan.attacks.map((item) => item.attackId) }
-        : {}),
-      ...(options.flags ? { flags: options.flags } : {}),
-      ...(options.touch !== undefined ? { touch: options.touch } : {}),
-      ...(options.maneuver ? { maneuver: options.maneuver } : {}),
-    },
-  };
+  return step.roll;
 }
 
 export function maneuverRollPlan(
   runtime: RulesRuntime,
   maneuver?: ManeuverId,
-  flags: string[] = [],
-  excludeFlags: string[] = [],
+  options: {
+    flags?: string[];
+    excludeFlags?: string[];
+    defense?: RollDefense;
+    target?: TargetContext;
+  } = {},
 ): RollPlan {
-  const evaluation = evaluateCombatManeuver(runtime, "cmb", {
+  return maneuverActionPlan(runtime, {
+    action: "maneuver",
     maneuver,
-    flags,
-    excludeFlags,
-  });
-  return {
-    id: `maneuver:${runtime.character.id}:${maneuver ?? "cmb"}`,
-    characterId: runtime.character.id,
-    label: `CMB${maneuver ? ` ${maneuver}` : ""}`,
-    dice: [{ sides: 20, count: 1 }],
-    modifier: evaluation.value,
-    metadata: {
-      kind: "maneuver",
-      target: "cmb",
-      ...(maneuver ? { maneuver } : {}),
-      ...(flags.length ? { flags } : {}),
-      ...(excludeFlags.length ? { excludeFlags } : {}),
-    },
-  };
+    ...options,
+  }).rolls[0]!;
 }
 
 /** Exclusions of a contextual action, flattened for the audit trail. */
@@ -694,3 +965,5 @@ export function actionExclusions(plan: ActionPlan): ExcludedContribution[] {
     ),
   ];
 }
+
+export type { AttackMode };

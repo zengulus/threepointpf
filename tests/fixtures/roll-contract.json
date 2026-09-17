@@ -5,7 +5,24 @@
     "label": "Greatsword attack",
     "dice": [{ "sides": 20, "count": 1 }],
     "modifier": 11,
-    "metadata": { "kind": "attack", "target": "attack.melee", "attackId": "greatsword" }
+    "context": {
+      "kind": "attack",
+      "actorCharacterId": "human-martial",
+      "action": { "kind": "standardAttack" },
+      "attackId": "greatsword",
+      "mode": "melee",
+      "attackTags": ["weapon.melee", "weapon.two-handed"],
+      "touch": false,
+      "flags": []
+    },
+    "outcomePolicy": {
+      "id": "pf1e.attack",
+      "kind": "attack",
+      "natural20": { "automatic": true, "classification": "natural20" },
+      "natural1": { "automatic": true, "classification": "criticalFailure" },
+      "criticalConfirmationRequired": false
+    },
+    "criticalRange": { "minimumNaturalRoll": 20 }
   },
   "faces": [17],
   "expected": { "total": 28, "modifier": 11 }

@@ -1,5 +1,10 @@
 -- 3.PF Tabletop Simulator client.
 -- This script is intentionally a thin, untrusted client: it never calculates a rule.
+--
+-- DEFERRED (do this later): frozen at its MVP scope -- saves, one authoritative
+-- attack member with a standard/full choice, maneuvers, one physical d20. New
+-- roll families (initiative, damage) and multi-die plans are deliberately not
+-- wired in here. See the TTS gate in docs/open-decisions.md before extending it.
 
 API_BASE = "https://YOUR-PROJECT.supabase.co/functions/v1"
 API_TOKEN = "" -- A short-lived user/campaign token; never put a Supabase service-role key here.
@@ -93,8 +98,21 @@ function displayAttack(characterId)
     CHARACTER_ATTACK_IDS[characterId] = attack.id
     CHARACTER_ATTACK_INDICES[characterId] = attackIndex
     local step = steps[attackIndex + 1]
-    UI.setAttribute(PANEL_ID .. "-attack", "text", attack.name .. " [" .. tostring(attackIndex + 1) .. "/" .. tostring(#steps) .. "] " .. (step.role or "primary") .. " " .. signed(step.modifier))
+    -- The threat range is authored content, never inferred from a weapon name.
+    local threat = step.criticalRange and ("  threat " .. tostring(step.criticalRange.minimumNaturalRoll) .. "-20") or ""
+    UI.setAttribute(PANEL_ID .. "-attack", "text", attack.name .. " [" .. tostring(attackIndex + 1) .. "/" .. tostring(#steps) .. "] " .. (step.role or "primary") .. " " .. signed(step.modifier) .. threat)
     UI.setAttribute("greatsword", "active", "true")
+end
+
+-- The natural face and the semantic outcome stay separate facts on screen.
+function outcomeLabel(resolved)
+    local outcome = resolved.outcome
+    if not outcome then return tostring(resolved.total) end
+    local parts = { tostring(resolved.total) }
+    if outcome.natural20 then parts[#parts + 1] = "natural 20" elseif outcome.natural1 then parts[#parts + 1] = "natural 1" end
+    if outcome.automaticHit or outcome.automaticSuccess then parts[#parts + 1] = "automatic" end
+    parts[#parts + 1] = tostring(outcome.kind)
+    return table.concat(parts, " · ")
 end
 
 -- Standard attack vs full attack is an explicit action choice, not a
@@ -205,7 +223,7 @@ function submitRawFace(face, label)
         if response.is_error or response.response_code < 200 or response.response_code >= 300 then displayResult(label .. ": resolve unavailable") return end
         local ok, decoded = pcall(JSON.decode, response.text)
         if ok and decoded and decoded.resolved then
-            displayResult(label .. ": " .. tostring(decoded.resolved.total))
+            displayResult(label .. ": " .. outcomeLabel(decoded.resolved))
         else
             displayResult(label .. ": invalid result")
         end

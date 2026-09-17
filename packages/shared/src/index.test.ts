@@ -245,7 +245,13 @@ it("validates and preserves a non-first full-attack index through the shared TTS
   };
   const request = rollPlanRequestSchema.parse({ characterId: iterative.id, kind: "attack", attackId: "sword", attackIndex: 1 });
   const plan = createCharacterRollPlan(iterative, request, rules);
-  expect(plan.metadata).toMatchObject({ kind: "attack", attackId: "sword", attackIndex: 1 });
+  expect(plan.context).toMatchObject({
+    kind: "attack",
+    actorCharacterId: iterative.id,
+    attackId: "sword",
+    action: { kind: "fullAttack", sequenceIndex: 1 },
+  });
+  expect(plan.criticalRange).toEqual({ minimumNaturalRoll: 20 });
   expect(plan.modifier).toBe(new RulesEngine(iterative, rules).derive().attacks[0]?.fullAttack[1]?.value);
   expect(() => rollPlanRequestSchema.parse({ characterId: iterative.id, kind: "attack", attackId: "sword", attackIndex: -1 })).toThrow();
   expect(() => rollPlanRequestSchema.parse({ characterId: iterative.id, kind: "save", saveId: "fortitude", attackIndex: 0 })).toThrow();

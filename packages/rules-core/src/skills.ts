@@ -1,10 +1,13 @@
+import type { RollPlan } from "@threepointpf/dice";
 import type {
   Contribution,
   DerivedSkill,
   EvaluationResult,
   RollContext,
+  RollDefense,
   SkillConfiguration,
   SkillId,
+  TargetContext,
   TargetId,
 } from "@threepointpf/rules-schema";
 import { base, lookup, sourceContribution } from "./contributions.js";
@@ -17,18 +20,39 @@ export interface ClassSkillStatus {
   provenance: Contribution[];
 }
 
+export interface SkillRollOptions {
+  flags?: string[];
+  /** Situational flags withheld for this roll. */
+  excludeFlags?: string[];
+  /** The DC being attempted, when the caller knows it. */
+  defense?: RollDefense;
+  target?: TargetContext;
+}
+
 export function skillContext(
   runtime: RulesRuntime,
-  flags: string[] = [],
-  excludeFlags: string[] = [],
+  options: SkillRollOptions = {},
 ): RollContext {
+  const target: TargetContext | undefined =
+    options.target || options.defense
+      ? {
+          ...(options.target ?? {}),
+          ...(options.defense ? { defense: options.defense } : {}),
+        }
+      : undefined;
   return {
     kind: "skill",
+    actorCharacterId: runtime.character.id,
+    action: { kind: "skillCheck" },
     flags: resolveContextFlags(
       runtime.enabledContextFlags(),
-      flags,
-      excludeFlags,
+      options.flags ?? [],
+      options.excludeFlags ?? [],
     ),
+    ...(options.excludeFlags?.length
+      ? { excludeFlags: options.excludeFlags }
+      : {}),
+    ...(target ? { target } : {}),
   };
 }
 
@@ -92,8 +116,7 @@ export function classSkillStatus(
 export function evaluateSkill(
   runtime: RulesRuntime,
   id: string,
-  flags: string[] = [],
-  excludeFlags: string[] = [],
+  options: SkillRollOptions = {},
 ): DerivedSkill {
   const character = runtime.character;
   const config: SkillConfiguration = character.skills?.[id] ?? {};
@@ -106,7 +129,7 @@ export function evaluateSkill(
   const ranks = character.skillRanks[id] ?? 0;
   const target = `skill.${id}` as TargetId;
   const classSkill = classSkillStatus(runtime, id, target);
-  const context = skillContext(runtime, flags, excludeFlags);
+  const context = skillContext(runtime, options);
   const global = runtime.directModifiers("skill.all", {
     context,
     reportExclusions: true,
@@ -192,11 +215,30 @@ export function evaluateSkill(
   };
 }
 
-export function evaluateInitiative(runtime: RulesRuntime): EvaluationResult {
+/** The situational inputs of an initiative check; it is never compared to a defense. */
+export interface InitiativeRollOptions {
+  flags?: string[];
+  /** Situational flags withheld for this check. */
+  excludeFlags?: string[];
+}
+
+export function evaluateInitiative(
+  runtime: RulesRuntime,
+  options: InitiativeRollOptions = {},
+): EvaluationResult {
   const target = "initiative" as TargetId;
   const context: RollContext = {
     kind: "initiative",
-    flags: runtime.enabledContextFlags(),
+    actorCharacterId: runtime.character.id,
+    action: { kind: "other" },
+    flags: resolveContextFlags(
+      runtime.enabledContextFlags(),
+      options.flags ?? [],
+      options.excludeFlags ?? [],
+    ),
+    ...(options.excludeFlags?.length
+      ? { excludeFlags: options.excludeFlags }
+      : {}),
   };
   const modifiers = runtime.directModifiers(target, {
     context,
@@ -212,6 +254,34 @@ export function evaluateInitiative(runtime: RulesRuntime): EvaluationResult {
     ],
     { rollContext: context, excluded: modifiers.excluded },
   );
+}
+
+/**
+ * The authoritative initiative plan. Initiative is a d20 check with no success
+ * or failure of its own, so it carries the plain outcome policy and the same
+ * contextual flags its evaluation used.
+ */
+export function initiativeRollPlan(
+  runtime: RulesRuntime,
+  options: InitiativeRollOptions = {},
+): RollPlan {
+  const evaluation = evaluateInitiative(runtime, options);
+  const context = evaluation.rollContext;
+  if (!context)
+    throw new Error("Initiative evaluation produced no roll context");
+  return {
+    id: `initiative:${runtime.character.id}`,
+    characterId: runtime.character.id,
+    label: "Initiative",
+    dice: [{ sides: 20, count: 1 }],
+    modifier: evaluation.value,
+    context,
+    outcomePolicy: runtime.outcomePolicies.plain,
+    provenance: {
+      modifier: evaluation.contributions,
+      excluded: evaluation.excluded ?? [],
+    },
+  };
 }
 
 /** Effects authored against `skill.initiative` reach the initiative fact once. */

@@ -225,7 +225,11 @@ importers:
         specifier: ^6.0.7
         version: 6.4.3(@types/node@22.20.2)
 
-  packages/dice: {}
+  packages/dice:
+    dependencies:
+      '@threepointpf/rules-schema':
+        specifier: workspace:*
+        version: link:../rules-schema
 
   packages/rules-core:
     dependencies:

@@ -1,7 +1,22 @@
-export interface DiceRequirement {
-  sides: number;
-  count: number;
-}
+import type {
+  DiceRequirement,
+  RollOutcome,
+  RollOutcomeKind,
+  RollOutcomePolicy,
+  RollPlan,
+} from "@threepointpf/rules-schema";
+
+// The plan and its context are shared domain vocabulary, so they live in
+// `rules-schema` and are re-exported here where consumers already import them.
+export type {
+  DiceRequirement,
+  RollContext,
+  RollOutcome,
+  RollOutcomeKind,
+  RollOutcomePolicy,
+  RollPlan,
+  RollPlanProvenance,
+} from "@threepointpf/rules-schema";
 
 export interface PhysicalRollRequest {
   planId: string;
@@ -13,48 +28,15 @@ export interface PhysicalRollResult {
   faces: number[];
 }
 
-/**
- * Everything the server needs to rebuild the same contextual plan from
- * authored state. Clients submit raw die faces only; they never supply
- * modifiers.
- */
-export interface RollMetadata {
-  kind: "save" | "attack" | "skill" | "damage" | "other" | "maneuver";
-  target: string;
-  attackId?: string;
-  attackIndex?: number;
-  /** The action the step belongs to. */
-  action?: "standardAttack" | "fullAttack" | "maneuver";
-  /** Ordered weapons selected by the action, for action-level extras. */
-  attackIds?: string[];
-  /** Step role within the weapon's sequence. */
-  stepRole?: "primary" | "iterative" | "extra";
-  maneuver?: string;
-  touch?: boolean;
-  fullAttack?: boolean;
-  /** Caller-supplied situational flags. */
-  flags?: string[];
-  /** Situational flags withheld for this roll. */
-  excludeFlags?: string[];
-  /** The resolved flag set the plan was evaluated with. */
-  contextFlags?: string[];
-}
-
-export interface RollPlan {
-  id: string;
-  characterId: string;
-  label: string;
-  dice: DiceRequirement[];
-  modifier: number;
-  metadata?: RollMetadata;
-}
-
 export interface ResolvedRoll {
   planId: string;
   label: string;
   faces: number[];
   modifier: number;
   total: number;
+  /** The raw d20 that drove the outcome, when the plan rolls one. */
+  naturalFace?: number;
+  outcome: RollOutcome;
 }
 
 export interface DiceProvider {
@@ -91,9 +73,164 @@ export function validateFaces(plan: RollPlan, faces: readonly number[]): void {
   }
 }
 
+/**
+ * The natural face is the first face of the plan's first d20 group, which is
+ * how every d20 roll family declares its primary die. A plan with no d20 has no
+ * natural face and therefore no natural-face semantics.
+ */
+export function naturalFaceOf(plan: RollPlan, faces: readonly number[]): number | undefined {
+  let index = 0;
+  for (const group of plan.dice) {
+    if (group.sides === 20) return faces[index];
+    index += group.count;
+  }
+  return undefined;
+}
+
+function attackKind(
+  outcome: RollOutcome,
+  policy: RollOutcomePolicy,
+): RollOutcomeKind {
+  if (outcome.automaticMiss)
+    return policy.natural1.classification === "criticalFailure"
+      ? "criticalFailure"
+      : "failure";
+  if (outcome.critical === true) return "criticalSuccess";
+  if (outcome.hit === true)
+    return policy.natural20.classification === "criticalSuccess"
+      ? "criticalSuccess"
+      : "success";
+  if (outcome.hit === false) return "failure";
+  if (outcome.natural20) return policy.natural20.classification;
+  if (outcome.natural1) return policy.natural1.classification;
+  return "unresolved";
+}
+
+function checkKind(
+  outcome: RollOutcome,
+  policy: RollOutcomePolicy,
+): RollOutcomeKind {
+  if (outcome.automaticFailure)
+    return policy.natural1.classification === "criticalFailure"
+      ? "criticalFailure"
+      : "failure";
+  if (outcome.automaticSuccess)
+    return policy.natural20.classification === "criticalSuccess"
+      ? "criticalSuccess"
+      : "success";
+  if (outcome.success === true) return "success";
+  if (outcome.success === false) return "failure";
+  if (outcome.natural20) return policy.natural20.classification;
+  if (outcome.natural1) return policy.natural1.classification;
+  return "unresolved";
+}
+
+/**
+ * Deterministic interpretation of raw faces. Attack critical range and
+ * automatic-hit semantics are separate rules: only the automatic rule makes a
+ * threat hit, and a threat outside the automatic rule still has to beat the
+ * known defense. When no defense is known, `hit` / `success` and therefore any
+ * non-automatic `critical` stay unresolved instead of being guessed.
+ *
+ * This campaign uses no critical confirmation. A policy that required it would
+ * keep the threat visible through `inCriticalRange` while `critical` stays
+ * unresolved, because resolution never rolls a second die.
+ */
+export function evaluateRollOutcome(
+  plan: RollPlan,
+  naturalFace: number | undefined,
+  total: number,
+): RollOutcome {
+  const policy = plan.outcomePolicy;
+  const natural20 = naturalFace === 20;
+  const natural1 = naturalFace === 1;
+  const defense = plan.context.target?.defense;
+  const range = plan.criticalRange;
+  const inCriticalRange =
+    range && naturalFace !== undefined
+      ? naturalFace >= range.minimumNaturalRoll
+      : undefined;
+  const outcome: RollOutcome = {
+    kind: "unresolved",
+    natural20,
+    natural1,
+    ...(defense ? { defense } : {}),
+    ...(range && naturalFace !== undefined
+      ? { criticalRange: range, inCriticalRange }
+      : {}),
+  };
+  // A plain roll (damage, initiative) is compared against nothing, so it has no
+  // success or failure of its own: only the raw-face facts are recorded.
+  if (policy.kind === "plain") return outcome;
+  if (policy.kind === "check") {
+    outcome.automaticSuccess = natural20 && policy.natural20.automatic;
+    outcome.automaticFailure = natural1 && policy.natural1.automatic;
+    outcome.success = outcome.automaticSuccess
+      ? true
+      : outcome.automaticFailure
+        ? false
+        : defense
+          ? total >= defense.value
+          : undefined;
+    outcome.kind = checkKind(outcome, policy);
+    return outcome;
+  }
+  outcome.automaticHit = natural20 && policy.natural20.automatic;
+  outcome.automaticMiss = natural1 && policy.natural1.automatic;
+  outcome.hit = outcome.automaticHit
+    ? true
+    : outcome.automaticMiss
+      ? false
+      : defense
+        ? total >= defense.value
+        : undefined;
+  outcome.critical = outcome.automaticMiss
+    ? false
+    : inCriticalRange === undefined
+      ? undefined
+      : !inCriticalRange
+        ? false
+        : outcome.hit === undefined
+          ? undefined
+          : outcome.hit === false
+            ? false
+            : policy.criticalConfirmationRequired
+              ? undefined
+              : true;
+  outcome.kind = attackKind(outcome, policy);
+  return outcome;
+}
+
+/** Resolves raw faces against a plan. Identical plan plus identical faces always produce the same result. */
 export function resolveRollPlan(plan: RollPlan, faces: readonly number[]): ResolvedRoll {
   validateFaces(plan, faces);
-  return { planId: plan.id, label: plan.label, faces: [...faces], modifier: plan.modifier, total: faces.reduce((sum, face) => sum + face, 0) + plan.modifier };
+  const total = faces.reduce((sum, face) => sum + face, 0) + plan.modifier;
+  const naturalFace = naturalFaceOf(plan, faces);
+  return {
+    planId: plan.id,
+    label: plan.label,
+    faces: [...faces],
+    modifier: plan.modifier,
+    total,
+    ...(naturalFace !== undefined ? { naturalFace } : {}),
+    outcome: evaluateRollOutcome(plan, naturalFace, total),
+  };
+}
+
+/** A short human-readable outcome for displays; rules semantics stay in the outcome itself. */
+export function formatRollOutcome(outcome: RollOutcome): string {
+  const parts: string[] = [];
+  if (outcome.natural20) parts.push("natural 20");
+  else if (outcome.natural1) parts.push("natural 1");
+  if (outcome.automaticHit || outcome.automaticSuccess) parts.push("automatic");
+  parts.push(outcome.kind);
+  if (outcome.criticalRange && outcome.inCriticalRange !== undefined)
+    parts.push(
+      `threat ${outcome.criticalRange.minimumNaturalRoll}–20${
+        outcome.inCriticalRange ? " (in range)" : " (not in range)"
+      }`,
+    );
+  return parts.join(" · ");
 }
 
 function secureRandomInt(maxExclusive: number): number {

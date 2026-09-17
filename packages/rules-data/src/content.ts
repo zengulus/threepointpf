@@ -425,6 +425,8 @@ const weapon = (
   sides: number,
   profileSlug: string,
   weight: number,
+  /** Threat range: 20 (omitted) crits only on a natural 20, 19 on 19–20, and so on. */
+  threatMinimum?: number,
 ): EquipmentDefinition => ({
   id: `pf1e.paizo.${slug}`,
   name,
@@ -438,15 +440,18 @@ const weapon = (
     attackAbility: "str",
     baseDamage: { count, sides },
     profileId: `pf1e.autosheet.${profileSlug}`,
+    ...(threatMinimum ? { criticalRange: { minimumNaturalRoll: threatMinimum } } : {}),
     source: equipmentSource,
   },
 });
 const equipment: EquipmentDefinition[] = [
-  weapon("longsword", "Longsword", 1, 8, "standard-melee", 4),
-  weapon("greatsword", "Greatsword", 2, 6, "two-handed", 8),
-  weapon("dagger", "Dagger", 1, 4, "standard-melee", 1),
-  weapon("rapier", "Rapier (finesse)", 1, 6, "finesse", 2),
-  weapon("light-crossbow", "Light crossbow", 1, 8, "ranged", 4),
+  weapon("longsword", "Longsword", 1, 8, "standard-melee", 4, 19),
+  weapon("greatsword", "Greatsword", 2, 6, "two-handed", 8, 19),
+  weapon("dagger", "Dagger", 1, 4, "standard-melee", 1, 19),
+  // Rapiers threaten on 18–20; the critical range is authored data, never
+  // inferred from the weapon's name.
+  weapon("rapier", "Rapier (finesse)", 1, 6, "finesse", 2, 18),
+  weapon("light-crossbow", "Light crossbow", 1, 8, "ranged", 4, 19),
   weapon("javelin", "Javelin", 1, 6, "thrown", 2),
   {
     id: "pf1e.paizo.heavy-steel-shield",

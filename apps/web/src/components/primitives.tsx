@@ -1,4 +1,5 @@
 import { formatModifier } from "@threepointpf/dice";
+import { isFullAttackAction } from "@threepointpf/rules-core";
 import type { Contribution, EvaluationResult } from "@threepointpf/rules-schema";
 import { sourceLabel } from "../lib/format";
 
@@ -87,7 +88,8 @@ export function Breakdown({
             ? " · " + selected.evaluation.rollContext.mode
             : ""}
           {selected.evaluation.rollContext.touch ? " · touch" : ""}
-          {selected.evaluation.rollContext.fullAttack
+          {" · " + selected.evaluation.rollContext.action.kind}
+          {isFullAttackAction(selected.evaluation.rollContext)
             ? " · full attack"
             : ""}
           {selected.evaluation.rollContext.maneuver

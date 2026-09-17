@@ -21,6 +21,12 @@ describe("TTS advancement roll-plan contract", () => {
     expect(script).toContain("function attackSteps(characterId)");
     expect(script).not.toContain("CHARACTER_ATTACK_IDS[characterId] or id");
     expect(script).toContain('"BAB " .. signed(state.bab or 0)');
+    // The panel shows the natural face, the automatic rule and the semantic
+    // outcome the server returned; it derives none of them.
+    expect(script).toContain("function outcomeLabel(resolved)");
+    expect(script).toContain("outcome.kind");
+    expect(script).toContain("step.criticalRange.minimumNaturalRoll");
+    expect(script).not.toMatch(/minimumNaturalRoll\s*[-+]/);
     expect(script).toContain('WebRequest.custom(API_BASE .. "/roll-plan", "POST", true');
     expect(script).toContain('WebRequest.custom(API_BASE .. "/resolve-roll", "POST", true');
     expect(script).toContain('"GET", true, "", authHeaders()');
@@ -29,5 +35,17 @@ describe("TTS advancement roll-plan contract", () => {
     expect(script).not.toContain("end, authHeaders())");
     // No rules arithmetic may live in the Lua client.
     expect(script).not.toMatch(/bonusType|applicability|scaling/);
+  });
+
+  it("is gated off, so new roll families are not wired into it by accident", () => {
+    const script = readFileSync("tts/src/global.lua", "utf8");
+    // The client says out loud that it is deferred at its frozen scope, so
+    // nothing here is treated as a live parity target.
+    expect(script).toContain("DEFERRED (do this later)");
+    expect(script).toContain("docs/open-decisions.md");
+    // Damage and initiative plans exist server-side but stay out of the frozen
+    // client; wiring either in here means deliberately un-gating it.
+    expect(script).not.toContain('kind = "damage"');
+    expect(script).not.toContain('kind = "initiative"');
   });
 });

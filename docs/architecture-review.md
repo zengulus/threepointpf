@@ -4,6 +4,8 @@ Reviewed: 2026-09-15
 
 Updated: 2026-09-18 (combat-context pass: CMD derivation, ability penalties, selectors, contextual actions, module split)
 
+Updated: 2026-09-18 (roll-contract pass: actors/actions/targets in context, per-step roll plans, semantic outcomes, authored critical ranges; damage and initiative plans complete an action's roll list)
+
 This review compares the implementation with the supplied `Pathfinder Autosheet v6.2.1` workbook and the current vertical-slice brief. The workbook remains a behavioral reference, not a runtime dependency.
 
 ## Overall assessment
@@ -99,17 +101,67 @@ A negative additive modifier on `ability.*` is classified as a *temporary abilit
 
 Multiple weapons are never concatenated into a fake combined full attack, and action-level extras are evaluated once for the primary attack, so Haste can never contribute one extra attack per weapon. The driver cases are covered by `tests/contextual-actions.test.ts`: Deadly Aim excluding touch attacks, Power Attack selecting one-/two-handed/off-hand damage by tags, Haste granting one shared extra attack on full attacks only, Rapid Shot applying only inside an eligible ranged non-touch full attack, the Combat Expertise attack/CMB tradeoff gated on the flag its feature contributes, maneuver-conditional CMB modifiers, natural secondary attacks keeping one step with no extras, and Dazzled's sight-based Perception penalty applying only when the roll carries the `sight-based` flag.
 
-Contextual filtering preserves provenance in both directions: `EvaluationResult.excluded` and `DamageEvaluation.excluded` report each authored-but-filtered effect with a reason (`does not apply to touch attacks`, `requires flags combat-expertise`, `excluded for tags weapon.two-handed, weapon.off-hand`), and `actionExclusions` flattens an action's exclusions for display. The sheet shows what contributed *and* why other authored effects did not.
+Contextual filtering preserves provenance in both directions: `EvaluationResult.excluded` and `DamageEvaluation.excluded` report each authored-but-filtered effect with a reason (`does not apply to touch attacks`, `requires flags combat-expertise`, `excluded for tags weapon.two-handed, weapon.off-hand`), and `actionExclusions` flattens an action's exclusions for display. Every exclusion is structured data (target, source, value, reason), so the machine-readable record does not depend on prose. The sheet shows what contributed *and* why other authored effects did not.
 
-Server authority is unchanged by the extra context: `roll-plan` accepts either an action request or a single-sequence-member request, and `resolve-roll` rebuilds the request from the plan's own metadata, so a client never supplies a modifier and every contextual plan is recomputed from authored state plus context before raw die faces are resolved. The TTS panel requests the same contextual plans, carries an explicit standard/full attack choice, and exposes maneuver buttons; it still derives no modifiers itself.
+Server authority is unchanged by the extra context: `roll-plan` accepts either an action request or a single-sequence-member request, and `resolve-roll` rebuilds the request from the plan's own metadata, so a client never supplies a modifier and every contextual plan is recomputed from authored state plus context before raw die faces are resolved. The TTS panel requests the same contextual plans, carries an explicit standard/full attack choice, and exposes maneuver buttons; it still derives no modifiers itself. That client is deferred and frozen at this scope (see the TTS gate in `docs/open-decisions.md`), so new plan families do not wait on it.
+
+### The roll and outcome contract
+
+The roll interface now answers five questions explicitly: *what action is being attempted*, *which roll within it*, *what rules context applies*, *what raw dice are needed*, and *what the raw faces meant*.
+
+`RollContext` is the whole situational model and keeps actor, action and target apart:
+
+| Part | Content |
+| --- | --- |
+| actor | `actorCharacterId` — character facts describe the actor |
+| `action` | `ActionContext`: `kind` (`standardAttack`, `fullAttack`, `maneuver`, `save`, `skillCheck`, `other`), `sequenceId`, `sequenceIndex`, `attackIds` |
+| rolled fact | `kind`, `attackId`, `saveId`, `skillId`, `attackTags`, `mode`, `touch`, `maneuver`, effective `flags` and withheld `excludeFlags` |
+| `target` | `TargetContext` with an optional `RollDefense` (`ac` in a `DefenseContext`, `cmd` or `dc`) |
+
+Full-attack membership is derived from the action (`isFullAttackAction`) instead of a second boolean, so the action is the single authority for what the actor is doing. A bare fact query (`evaluate("attack.melee")`) carries no action and therefore does not satisfy an effect that needs one.
+
+`RollPlan` carries everything resolution needs and nothing a client may author: `dice`, `modifier`, the `context` above, the `outcomePolicy` that interprets faces, the effective `criticalRange`, and `provenance` (the modifier contributions, the contextual exclusions with reasons, and how the threat range was reached). Plans are ephemeral; they are not written into authored character state, and only `roll_history` keeps a plan/result snapshot.
+
+Every attack step also carries the damage roll it deals (`ActionPlanStep.damage`), so `ActionPlan.rolls` is the complete action-ordered list — each step's attack roll followed by its damage roll — and a caller resolves the whole action without inventing dice. A damage plan's dice are the weapon's own base dice, its modifier is the contextual damage evaluation, and a critical hit is the same plan rolled twice (`criticalDamage`, dice count and modifier both doubled) rather than client-side arithmetic. Damage and initiative are *plain* rolls: they are compared against nothing, so they carry no defense and resolution adds no success or failure. Initiative is planned the same way and requested by its own kind, with the same contextual flags its evaluation used. A maneuver still produces only its check: maneuver damage is not modeled.
+
+`ActionPlan` gains `rolls`, the flattened list of its steps' own `roll` plans. One action therefore produces many self-describing rolls, and multiple weapons still stay separate members: their sequences are never concatenated, and an action-level extra (Haste) attaches to the primary weapon only, so it can never be counted once per weapon.
+
+### Outcome semantics
+
+Resolution is deterministic and lives in the rules-free `dice` package, which applies the plan's declared policy to the raw faces:
+
+```text
+raw faces → validate against the plan's dice → total → natural face → semantic outcome
+```
+
+Attack outcomes distinguish four independent facts: whether the raw face was a 20 or a 1, whether it fell inside the effective threat range, whether the natural-face rule made it an automatic hit or miss, and whether the total beat the supplied defense. Only the automatic rule makes a threat hit; an in-range natural 19 against an unknown or too-high AC stays a `failure`, and with no defense at all `hit` and `critical` are left unresolved instead of assumed. `criticalSuccess` means a rule classified a critical outcome, which is not the same event as `natural20`.
+
+| Roll family | Natural 20 | Natural 1 | Comparison |
+| --- | --- | --- | --- |
+| attack | automatic hit | automatic miss, classified `criticalFailure` | total vs AC, threats crit without confirmation |
+| maneuver | automatic success | automatic failure | total vs CMD |
+| save, skill | no special semantics | no special semantics | total vs DC |
+| plain (damage, initiative and similar) | reported, not classified | reported, not classified | none |
+
+Policies are one small, overridable layer (`RollOutcomePolicySet`, PF1e defaults in `outcomes.ts`); a campaign supplies only the families it changes. `criticalConfirmationRequired` exists for compatibility and is **false** for this campaign: the resolver emits no second roll, and a policy that required confirmation would still show `inCriticalRange` while `critical` stayed unresolved rather than inventing a confirmation die.
+
+### Critical ranges are authored, derived, and contextual
+
+A threat range belongs to the weapon or profile (`CriticalRange { minimumNaturalRoll }`; default 20) and is never inferred from a weapon's name or from the d20 system. The curated longsword, greatsword, dagger and light crossbow carry 19–20 and the rapier 18–20 as ordinary data.
+
+The *effective* range is derived through the same machinery as other facts: a `criticalRange` effect on an attack-scoped target widens it, `appliesWhen` decides whether that widening is in context, excluded widenings are reported with reasons, and contributions sum to the distance from the base (clamped to 2–20). `evaluateCriticalRange` returns base, effective, contributions and exclusions, and the plan carries both `criticalRange` and that provenance. A widened range is still only a threat: `tests/roll-outcomes.test.ts` pins that a 15–20 weapon misses a high AC on a natural 15 without becoming a critical hit.
+
+### Request contracts and server authority
+
+Clients request rolls by context, never by modifier: a request names the roll kind, the action and its selected weapons, the sequence member, situational flags, and the defense it is compared against. `roll-plan` recomputes the plan from authored state plus that context, and `resolve-roll` rebuilds the plan from the submitted plan's own `context` before interpreting the raw faces, so a submitted `modifier`, `provenance` or outcome is ignored. Contradictory contexts fail validation instead of being reinterpreted: a save cannot be compared against an AC, a maneuver against an AC rather than CMD, a touch attack against a non-touch AC, a standard attack against several weapons, or a maneuver action against selected weapons. The one thing the server does not yet own is the target's own sheet: a supplied defense is caller-provided context, recorded and echoed in the outcome, and `docs/open-decisions.md` keeps that open.
 
 ### Module boundaries
 
-`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. `apps/web/src/App.tsx` is composition only: domain panels live in `components/`, and state plus rules wiring lives in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
+`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. `apps/web/src/App.tsx` is composition only: domain panels live in `components/`, and state plus rules wiring lives in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
 
 ## Workbook parity scenarios
 
-`tests/fixtures/autosheet-scenarios.json` records the intended outcomes for plain base values, Heroism, Haste, Power Attack, the Rage equivalent and same-type reduction. These are small parity anchors extracted from the workbook's base/effect-table/quick-toggle behavior. `tests/fixtures/roll-contract.json` anchors the physical-die contract: the client sends raw faces and the rules-bearing resolver applies the modifier.
+`tests/fixtures/autosheet-scenarios.json` records the intended outcomes for plain base values, Heroism, Haste, Power Attack, the Rage equivalent and same-type reduction. These are small parity anchors extracted from the workbook's base/effect-table/quick-toggle behavior. `tests/fixtures/roll-contract.json` anchors the physical-die contract: the client sends raw faces plus a contextual plan, and the rules-bearing resolver applies the modifier and classifies the outcome.
 
 ## Pathfinder calculations that are intentionally limited in v0
 
@@ -118,7 +170,7 @@ The following are known scope boundaries, not hidden assumptions:
 - HP-before-Constitution remains an authored baseline. Manual BAB/saves/HD are retained for legacy mode; validated Autosheet chassis data now supplies advancement BAB, saves, HD count, and HD sides.
 - AC supports the current base, Dexterity, natural armor and explicit AC effects. Armor/equipment inventories, shield handling, size, concealment, cover, conditions and special defenses are not yet modeled.
 - Movement currently reduces additive speed contributions. Multipliers, caps and all non-land modes need a future operation model; the target IDs already leave room for those modes.
-- Attack entries now derive an action: a standard attack, a full attack with BAB iteratives and explicit extra attacks, or a maneuver. Two-weapon fighting penalties, off-hand sequence limits, critical rules, ammunition, range increments and special attack text are still outside this slice.
+- Attack entries now derive an action: a standard attack, a full attack with BAB iteratives and explicit extra attacks, or a maneuver, each producing explicit roll plans with semantic outcomes, and each step also carrying the damage roll it deals. Critical damage is the damage rolled twice, expressed by the plan rather than by a caller. Two-weapon fighting penalties, off-hand sequence limits, precision-damage exemptions from critical doubling, ammunition, range increments and special attack text are still outside this slice.
 - CMD consumes the applicable AC categories semantically, but cover, concealment, miss chance and special defenses are not modeled, and maneuver resolution stops at the CMB/CMD modifier: opposed checks, size limits ("cannot trip a creature two sizes larger") and maneuver defense DCs remain author reminders.
 - Situational flags are authored slugs. There is no registry, so a homebrew flag only matters if an effect requires it; conditions contribute flags rather than running an autonomous condition engine.
 - Skills use authored ranks, governing ability, class-skill flag, misc and armor/size adjustments. Class-based skill configuration and trained-only rules are future data, not inferred from a class string.
@@ -128,7 +180,7 @@ These omissions are preferable to spreadsheet-shaped special cases because they 
 
 ## Trust, persistence and integration audit
 
-The browser and TTS script are untrusted clients. They may request a plan and submit raw physical die faces, but they do not hold rules authority. `roll-plan` reloads the authored character and creates the plan server-side. `resolve-roll` reloads the character, rebuilds the plan from its metadata, validates the submitted faces, resolves the roll, and records the result in `roll_history`. The TTS script contains UI, die spawning, settle detection and transport only; it does not contain PF formulas or a service-role key.
+The browser and TTS script are untrusted clients. They may request a plan and submit raw physical die faces, but they do not hold rules authority. `roll-plan` reloads the authored character and creates the plan server-side. `resolve-roll` reloads the character, rebuilds the plan from the submitted plan's own context (never from its modifier or provenance), validates the submitted faces against that rebuild, resolves the roll, and records the result in `roll_history`. The TTS script contains UI, die spawning, settle detection and transport only; it does not contain PF formulas or a service-role key.
 
 Supabase stores authored character inputs, feature state, attack definitions and roll history. Derived totals are not persisted as authoritative state. Edge Function request bodies and character rows are validated before use, and the public browser/TTS credentials are bearer tokens rather than service-role credentials. The remaining production work is operational—short-lived token issuance, row-level policy review, rate limiting, replay/idempotency policy and deployment secrets—not a reason to move rules into clients.
 
@@ -136,12 +188,13 @@ The HP migration preserves pre-`cacd050` rows by reconstructing `damage_taken` f
 
 ## Maintainability decisions
 
-The core remains small and auditable, with advancement isolated in its dedicated module and content isolated in `rules-data`. If conditions, equipment or operation types are added, continue splitting along those boundaries (`reducers`, `provenance`, `advancement`, `defense`, `combat`) before the code becomes the new spreadsheet. The current tests exercise the invariants that should survive that split: typed reduction, replacement, dependency propagation, explicit AC contexts, nested provenance, character-global progression levels, whole-track aggregation, N-track persistence, and TTS roll-plan parity.
+The core remains small and auditable, with advancement isolated in its dedicated module and content isolated in `rules-data`. If conditions, equipment or operation types are added, continue splitting along those boundaries (`reducers`, `provenance`, `advancement`, `defense`, `combat`) before the code becomes the new spreadsheet. The current tests exercise the invariants that should survive that split: typed reduction, replacement, dependency propagation, explicit AC contexts, nested provenance, character-global progression levels, whole-track aggregation, N-track persistence, contextual action membership, deterministic outcome classification and TTS roll-plan parity.
 
 ## Recommended next increments
 
 1. Resolve opposed maneuvers: size-limited maneuver legality, maneuver defense DCs and grappled/entangled action restrictions on top of the existing `RollContext.maneuver`.
 2. Model concealment, cover and miss chance as explicit defense/roll contexts rather than modifier guesses.
 3. Derive off-hand and two-weapon sequence limits so a selected off-hand weapon stops being authored as a full independent sequence.
-4. Expand validated progression content and add HP-from-HD without changing the global-level/track aggregation contract.
-5. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary.
+4. Let an action offer its critical damage plan automatically: the doubling exists (`criticalDamage`), but a caller must still ask for it after resolving a `criticalSuccess`, and precision damage is currently doubled with everything else.
+5. Expand validated progression content and add HP-from-HD without changing the global-level/track aggregation contract.
+6. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary.

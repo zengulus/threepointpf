@@ -1,10 +1,13 @@
 import {
+  isFullAttackAction,
   isSelectorTarget,
   type AttackDefinition,
+  type AttackMode,
   type AttackSelector,
   type CharacterInput,
   type ContextualModifiers,
   type Contribution,
+  type CriticalRangeEffect,
   type Effect,
   type EffectApplicability,
   type EvaluationResult,
@@ -119,6 +122,14 @@ export function resolveContextFlags(
   return [...new Set(result)].sort();
 }
 
+/** An attack's mode is explicit, or inferred once from its ranged tag. */
+export function attackModeOf(definition: AttackDefinition): AttackMode {
+  return (
+    definition.mode ??
+    (definition.attackTags?.includes("weapon.ranged") ? "ranged" : "melee")
+  );
+}
+
 /** Legacy tag/mode selector. New content should use `appliesWhen`. */
 export function matchesAttackSelector(
   selector: AttackSelector | undefined,
@@ -126,9 +137,7 @@ export function matchesAttackSelector(
 ): boolean {
   if (!selector) return true;
   if (!attack) return false;
-  const mode =
-    attack.mode ??
-    (attack.attackTags?.includes("weapon.ranged") ? "ranged" : "melee");
+  const mode = attackModeOf(attack);
   return (
     (!selector.mode || selector.mode === mode) &&
     (selector.requiredTags ?? []).every((tag) =>
@@ -170,7 +179,7 @@ function describeApplicability(applicability: EffectApplicability): string {
  * being silently dropped.
  */
 export function applicabilityOf(
-  effect: ModifierEffect,
+  effect: ModifierEffect | CriticalRangeEffect,
   options: { attack?: AttackDefinition; context?: RollContext } = {},
 ): { applies: boolean; reason?: string } {
   const selector = "attackSelector" in effect ? effect.attackSelector : undefined;
@@ -228,7 +237,7 @@ export function applicabilityOf(
     };
   if (
     applicability.fullAttack !== undefined &&
-    (context.fullAttack ?? false) !== applicability.fullAttack
+    isFullAttackAction(context) !== applicability.fullAttack
   )
     return {
       applies: false,

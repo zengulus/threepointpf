@@ -32,9 +32,12 @@ import {
   type ProgressionAliasMap,
   type ProgressionCatalog,
   type RollContext,
+  type RollDefense,
+  type RollOutcomePolicySet,
   type SaveId,
   type SizeCategory,
   type SkillCatalog,
+  type TargetContext,
   type TargetId,
 } from "@threepointpf/rules-schema";
 import {
@@ -65,10 +68,17 @@ import {
   collectFeatureEffects,
   featureContextFlags,
   findReplacementEffect,
+  resolveContextFlags,
 } from "./effects.js";
 import { labelForTarget } from "./labels.js";
 import { experienceResult } from "./experience.js";
-import { evaluateInitiative, evaluateSkill } from "./skills.js";
+import {
+  evaluateInitiative,
+  evaluateSkill,
+  initiativeRollPlan,
+  type InitiativeRollOptions,
+  type SkillRollOptions,
+} from "./skills.js";
 import {
   computeSizeResult,
   evaluateMovement,
@@ -78,17 +88,34 @@ import {
 import {
   attackRollPlan,
   buildActionPlan,
+  damageRollPlan,
   deriveAttack,
   maneuverRollPlan,
   type ActionRequest,
   type AttackRollOptions,
+  type DamageRollOptions,
 } from "./attacks.js";
+import { outcomePolicyFor, pf1eOutcomePolicies } from "./outcomes.js";
 import type { EquipmentEntry, RulesRuntime } from "./runtime.js";
 import {
   evaluateAdvancement,
   type AdvancementEvaluation,
   type ProgressionLevelResult,
 } from "./advancement.js";
+
+/**
+ * The situational inputs a caller may supply for one roll: which flags to add or
+ * withhold, and the known defense the roll is compared against. Nothing here is
+ * a derived character fact.
+ */
+export interface RollRequestOptions {
+  flags?: string[];
+  /** Situational flags withheld, e.g. rolling without Combat Expertise. */
+  excludeFlags?: string[];
+  /** Known target defense; absent means hit/success stays unresolved. */
+  defense?: RollDefense;
+  target?: TargetContext;
+}
 
 /** Concrete progression content belongs to a caller-owned catalog, never rules-core. */
 export interface RulesEngineOptions {
@@ -101,6 +128,11 @@ export interface RulesEngineOptions {
   equipmentCatalog?: EquipmentCatalog;
   attackProfileCatalog?: AttackProfileCatalog;
   experienceCatalog?: ExperienceCatalog;
+  /**
+   * Overrides how raw faces are interpreted per roll family. Only the families
+   * a campaign changes need to be supplied; PF1e defaults fill the rest.
+   */
+  outcomePolicies?: Partial<RollOutcomePolicySet>;
 }
 
 export class RulesEngine implements RulesRuntime {
@@ -111,6 +143,7 @@ export class RulesEngine implements RulesRuntime {
   readonly skillCatalog?: SkillCatalog;
   readonly attackProfileCatalog?: AttackProfileCatalog;
   readonly progressionCatalog?: ProgressionCatalog;
+  readonly outcomePolicies: RollOutcomePolicySet;
   private readonly advancement?: AdvancementEvaluation;
   private readonly progressionAliases: ProgressionAliasMap;
   private readonly experienceCatalog?: ExperienceCatalog;
@@ -131,6 +164,7 @@ export class RulesEngine implements RulesRuntime {
     this.progressionAliases = options.progressionAliases ?? {};
     this.skillCatalog = options.skillCatalog;
     this.attackProfileCatalog = options.attackProfileCatalog;
+    this.outcomePolicies = { ...pf1eOutcomePolicies, ...options.outcomePolicies };
     this.experienceCatalog = options.experienceCatalog
       ? experienceCatalogSchema.parse(options.experienceCatalog)
       : undefined;
@@ -200,6 +234,10 @@ export class RulesEngine implements RulesRuntime {
             attackTags: profile.attackTags,
             iterative: profile.iterative,
             extraAttackEligible: profile.extraAttackEligible,
+            // A weapon's own threat range wins over the profile it uses.
+            ...(attack.criticalRange ?? profile.criticalRange
+              ? { criticalRange: attack.criticalRange ?? profile.criticalRange }
+              : {}),
             attackBonus: (attack.attackBonus ?? 0) + (profile.attackBonus ?? 0),
           }
         : attack;
@@ -235,7 +273,7 @@ export class RulesEngine implements RulesRuntime {
         const numeric =
           effect.kind === "multiply"
             ? effect.factor
-            : effect.kind === "grant"
+            : effect.kind === "grant" || effect.kind === "criticalRange"
               ? undefined
               : effect.value;
         if (numeric !== undefined && !Number.isInteger(numeric))
@@ -571,14 +609,40 @@ export class RulesEngine implements RulesRuntime {
     );
   }
 
-  private save(id: SaveId): EvaluationResult {
+  /** The situational identity of one save, including any known DC. */
+  private saveContext(id: SaveId, options: RollRequestOptions = {}): RollContext {
+    const target: TargetContext | undefined =
+      options.target || options.defense
+        ? {
+            ...(options.target ?? {}),
+            ...(options.defense ? { defense: options.defense } : {}),
+          }
+        : undefined;
+    return {
+      kind: "save",
+      actorCharacterId: this.character.id,
+      action: { kind: "save" },
+      saveId: id,
+      flags: resolveContextFlags(
+        this.enabledContextFlags(),
+        options.flags,
+        options.excludeFlags,
+      ),
+      ...(options.excludeFlags?.length
+        ? { excludeFlags: options.excludeFlags }
+        : {}),
+      ...(target ? { target } : {}),
+    };
+  }
+
+  private save(
+    id: SaveId,
+    options: RollRequestOptions = {},
+    context: RollContext = this.saveContext(id, options),
+  ): EvaluationResult {
     const target = `save.${id}` as TargetId;
     const ability: AbilityId =
       id === "fortitude" ? "con" : id === "reflex" ? "dex" : "wis";
-    const context: RollContext = {
-      kind: "save",
-      flags: this.enabledContextFlags(),
-    };
     const modifiers = this.directModifiers(target, {
       context,
       reportExclusions: true,
@@ -685,9 +749,15 @@ export class RulesEngine implements RulesRuntime {
       return this.skillResult(target.slice(6)).total;
     if (target.startsWith("speed."))
       return this.movementResult(target.slice("speed.".length) as MovementMode);
+    // A bare fact query names no action, so it carries no action context: an
+    // effect that needs one is excluded rather than assumed to apply.
     const context: RollContext | undefined =
       target.startsWith("attack.") || target.startsWith("damage.")
-        ? { kind: target.startsWith("attack.") ? "attack" : "damage" }
+        ? {
+            kind: target.startsWith("attack.") ? "attack" : "damage",
+            actorCharacterId: this.character.id,
+            action: { kind: "other" },
+          }
         : undefined;
     const direct = this.directModifiers(target, {
       context,
@@ -718,12 +788,8 @@ export class RulesEngine implements RulesRuntime {
     return evaluateInitiative(this);
   }
 
-  private skillResult(
-    id: string,
-    flags: string[] = [],
-    excludeFlags: string[] = [],
-  ) {
-    return evaluateSkill(this, id, flags, excludeFlags);
+  private skillResult(id: string, options: SkillRollOptions = {}) {
+    return evaluateSkill(this, id, options);
   }
 
   /** Grants are intentionally non-numeric in v0: they expose capabilities for future consumers. */
@@ -819,15 +885,21 @@ export class RulesEngine implements RulesRuntime {
   // Roll plans and actions
   // ---------------------------------------------------------------------
 
-  createSaveRollPlan(id: SaveId): RollPlan {
-    const evaluation = this.save(id);
+  createSaveRollPlan(id: SaveId, options: RollRequestOptions = {}): RollPlan {
+    const context = this.saveContext(id, options);
+    const evaluation = this.save(id, options, context);
     return {
       id: `save:${this.character.id}:${id}`,
       characterId: this.character.id,
       label: `${id.charAt(0).toUpperCase()}${id.slice(1)} save`,
       dice: [{ sides: 20, count: 1 }],
       modifier: evaluation.value,
-      metadata: { kind: "save", target: `save.${id}` },
+      context,
+      outcomePolicy: this.outcomePolicies.save,
+      provenance: {
+        modifier: evaluation.contributions,
+        excluded: evaluation.excluded ?? [],
+      },
     };
   }
 
@@ -842,10 +914,25 @@ export class RulesEngine implements RulesRuntime {
 
   createManeuverRollPlan(
     maneuver?: ManeuverId,
-    flags: string[] = [],
-    excludeFlags: string[] = [],
+    options: RollRequestOptions = {},
   ): RollPlan {
-    return maneuverRollPlan(this, maneuver, flags, excludeFlags);
+    return maneuverRollPlan(this, maneuver, options);
+  }
+
+  /**
+   * The damage plan of one attack's sequence member. `criticalDamage` rolls the
+   * damage twice, so a critical outcome resolves through the same contract as
+   * an ordinary hit instead of the caller doubling anything.
+   */
+  createDamageRollPlan(
+    attackId: string,
+    options: DamageRollOptions = {},
+  ): RollPlan {
+    return damageRollPlan(this, attackId, options);
+  }
+
+  createInitiativeRollPlan(options: InitiativeRollOptions = {}): RollPlan {
+    return initiativeRollPlan(this, options);
   }
 
   /**
@@ -872,24 +959,24 @@ export class RulesEngine implements RulesRuntime {
 
   createSkillRollPlan(
     id: string,
-    flags: string[] = [],
-    excludeFlags: string[] = [],
+    options: RollRequestOptions = {},
   ): RollPlan {
-    const skill = evaluateSkill(this, id, flags, excludeFlags);
+    const skill = evaluateSkill(this, id, options);
+    const context = skill.total.rollContext;
+    if (!context)
+      throw new Error(`Skill ${id} produced no roll context`);
+    const flags = options.flags ?? [];
     return {
       id: `skill:${this.character.id}:${id}${flags.length ? `:${flags.join("+")}` : ""}`,
       characterId: this.character.id,
       label: `${skill.label} check`,
       dice: [{ sides: 20, count: 1 }],
       modifier: skill.total.value,
-      metadata: {
-        kind: "skill",
-        target: `skill.${id}`,
-        ...(flags.length ? { flags } : {}),
-        ...(excludeFlags.length ? { excludeFlags } : {}),
-        ...(skill.total.rollContext?.flags?.length
-          ? { contextFlags: skill.total.rollContext.flags }
-          : {}),
+      context: { ...context, skillId: id },
+      outcomePolicy: this.outcomePolicies.skill,
+      provenance: {
+        modifier: skill.total.contributions,
+        excluded: skill.total.excluded ?? [],
       },
     };
   }

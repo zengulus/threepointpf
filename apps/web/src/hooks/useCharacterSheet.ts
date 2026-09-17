@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserDiceProvider,
   formatModifier,
+  formatRollOutcome,
   resolveRollPlan,
 } from "@threepointpf/dice";
 import { RulesEngine } from "@threepointpf/rules-core";
@@ -396,6 +397,9 @@ export function useCharacterSheet() {
         dice: value.dice,
       });
       const result = resolveRollPlan(value, raw.faces);
+      // The natural face and the semantic outcome are reported separately, so a
+      // threat outside the automatic rule is never shown as a hit. A plan with
+      // no comparison of its own (damage, initiative) reports its total only.
       setNotice(
         label +
           ": " +
@@ -403,7 +407,10 @@ export function useCharacterSheet() {
           " " +
           formatModifier(result.modifier) +
           " = " +
-          result.total,
+          result.total +
+          (value.outcomePolicy.kind === "plain"
+            ? ""
+            : " · " + formatRollOutcome(result.outcome)),
       );
     } catch (failure) {
       setNotice(errorText(failure));

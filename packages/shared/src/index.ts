@@ -1,15 +1,26 @@
 import {
+  actionKinds,
+  criticalRangeSchema,
   mergeProgressionCatalogs,
   normalizeAdvancementSlots,
   parseCharacterInput,
   parseProgressionCatalog,
+  rollContextSchema,
+  rollDefenseSchema,
+  rollOutcomePolicySchema,
+  saveIds,
+  type ActionKind,
   type CharacterInput,
   type ProgressionCatalog,
+  type RollDefense,
+  type RollDefenseKind,
+  type SaveId,
 } from "@threepointpf/rules-schema";
 import type { ResolvedRoll, RollPlan } from "@threepointpf/dice";
 import {
   RulesEngine,
   type ActionPlan,
+  type RollRequestOptions,
   type RulesEngineOptions,
 } from "@threepointpf/rules-core";
 import { z } from "zod";
@@ -355,7 +366,20 @@ export class SupabaseCharacterRepository implements CharacterRepository {
   }
 }
 
-const actionKinds = ["standardAttack", "fullAttack"] as const;
+const attackActionKinds = ["standardAttack", "fullAttack"] as const;
+/** Fields that describe something other than who acts first. */
+const initiativeInvalidFields = [
+  "saveId",
+  "skillId",
+  "attackId",
+  "attackIndex",
+  "attackIds",
+  "action",
+  "maneuver",
+  "touch",
+  "criticalDamage",
+  "target",
+] as const;
 const flagList = z
   .array(
     z
@@ -364,21 +388,37 @@ const flagList = z
       .regex(/^[a-z][a-z0-9-]*$/, "Flags use lowercase slugs"),
   )
   .min(1);
+const targetRequestSchema = z
+  .object({
+    characterId: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+  })
+  .strict();
+const defenseRequestSchema = rollDefenseSchema;
+
+/** Who or what a roll is made against, and the defense it is compared with. */
+export interface TargetRequest {
+  characterId?: string;
+  name?: string;
+}
 
 /**
- * A request for one authoritative roll plan. The context fields travel to the
- * server so it recomputes the same contextual plan from authored state; a
- * client never supplies a modifier.
+ * A request for one authoritative roll plan. Every field describes *what the
+ * actor is doing* and what the roll is made against; the server recomputes the
+ * plan from authored state plus this context, and a client never supplies a
+ * modifier or an outcome.
  */
 export interface RollPlanRequest {
   characterId: string;
-  kind: "save" | "attack" | "maneuver" | "skill";
-  saveId?: "fortitude" | "reflex" | "will";
+  kind: "save" | "attack" | "maneuver" | "skill" | "damage" | "initiative";
+  saveId?: SaveId;
   attackId?: string;
   /** Zero-based member of an attack's authoritative sequence. */
   attackIndex?: number;
+  /** Damage only: roll the damage twice, for a critical hit. */
+  criticalDamage?: boolean;
   /** Full attack (default for attacks) or a single standard attack. */
-  action?: (typeof actionKinds)[number];
+  action?: (typeof attackActionKinds)[number];
   /** Every weapon selected by a multi-weapon full attack, in order. */
   attackIds?: string[];
   maneuver?: string;
@@ -386,19 +426,22 @@ export interface RollPlanRequest {
   flags?: string[];
   excludeFlags?: string[];
   touch?: boolean;
+  /** Known target defense: AC for attacks, CMD for maneuvers, DC for saves and skills. */
+  defense?: RollDefense;
+  target?: TargetRequest;
 }
 
 /** The explicit action whose attacks a caller wants planned. */
 export interface ActionPlanRequest {
   characterId: string;
-  action: "standardAttack" | "fullAttack" | "maneuver";
+  action: ActionKind;
   attackIds?: string[];
   maneuver?: string;
   flags?: string[];
   excludeFlags?: string[];
   touch?: boolean;
-  actorId?: string;
-  targetId?: string;
+  defense?: RollDefense;
+  target?: TargetRequest;
 }
 
 export interface ResolveRollRequest {
@@ -408,14 +451,64 @@ export interface ResolveRollRequest {
 
 export interface ResolveRollResponse extends ResolvedRoll {}
 
+/**
+ * Rejects a defense that cannot be what this roll is compared against. A save
+ * is never made against an Armor Class, an AC is only meaningful for an attack,
+ * and a damage or initiative roll is compared against nothing at all, so a
+ * contradictory context fails loudly instead of being guessed at.
+ */
+function defenseKindsFor(kind: string): RollDefenseKind[] {
+  if (kind === "attack" || kind === "standardAttack" || kind === "fullAttack")
+    return ["ac"];
+  if (kind === "maneuver") return ["cmd"];
+  if (kind === "damage" || kind === "initiative") return [];
+  return ["dc"];
+}
+
+function validateDefense(
+  request: { kind: string; defense?: RollDefense; touch?: boolean },
+  context: z.RefinementCtx,
+): void {
+  const defense = request.defense;
+  if (!defense) return;
+  const allowed = defenseKindsFor(request.kind);
+  if (allowed.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["defense"],
+      message: `A ${request.kind} roll is not compared against a defense`,
+    });
+    return;
+  }
+  if (!allowed.includes(defense.kind))
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["defense", "kind"],
+      message: `A ${request.kind} roll is compared against ${allowed.join(" or ")}${allowed.length > 1 ? " targets" : ""}, not ${defense.kind}`,
+    });
+  if (
+    defense.kind === "ac" &&
+    defense.context !== undefined &&
+    request.touch !== undefined &&
+    (request.touch ? defense.context !== "touch" : defense.context === "touch")
+  )
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["defense", "context"],
+      message:
+        "The supplied Armor Class must be the one this attack is made against (touch attacks use touch AC)",
+    });
+}
+
 export const rollPlanRequestSchema = z
   .object({
     characterId: z.string().min(1),
-    kind: z.enum(["save", "attack", "maneuver", "skill"]),
-    saveId: z.enum(["fortitude", "reflex", "will"]).optional(),
+    kind: z.enum(["save", "attack", "maneuver", "skill", "damage", "initiative"]),
+    saveId: z.enum(saveIds).optional(),
     attackId: z.string().min(1).optional(),
     attackIndex: z.number().int().nonnegative().optional(),
-    action: z.enum(actionKinds).optional(),
+    criticalDamage: z.boolean().optional(),
+    action: z.enum(attackActionKinds).optional(),
     attackIds: z.array(z.string().min(1)).min(1).optional(),
     maneuver: z
       .string()
@@ -425,12 +518,23 @@ export const rollPlanRequestSchema = z
     flags: flagList.optional(),
     excludeFlags: flagList.optional(),
     touch: z.boolean().optional(),
+    defense: defenseRequestSchema.optional(),
+    target: targetRequestSchema.optional(),
   })
   .superRefine((request, context) => {
     const attackFields = () => ({
       attackId: request.attackId,
       attackIndex: request.attackIndex,
     });
+    validateDefense(request, context);
+    // Rolling damage twice is a damage-roll fact, so no other family may
+    // declare it.
+    if (request.kind !== "damage" && request.criticalDamage !== undefined)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["criticalDamage"],
+        message: "criticalDamage is only valid for a damage roll",
+      });
     if (request.kind === "save") {
       if (!request.saveId)
         context.addIssue({
@@ -464,6 +568,45 @@ export const rollPlanRequestSchema = z
         });
       return;
     }
+    if (request.kind === "initiative") {
+      const invalid = initiativeInvalidFields.filter(
+        (field) => request[field] !== undefined,
+      );
+      if (invalid.length > 0)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["kind"],
+          message: `An initiative roll has no ${invalid.join(", ")}`,
+        });
+      return;
+    }
+    if (request.kind === "damage") {
+      if (!request.attackId)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["attackId"],
+          message: "attackId is required for a damage roll",
+        });
+      if (request.saveId !== undefined || request.skillId !== undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["kind"],
+          message: "A damage roll names a weapon, not a save or a skill",
+        });
+      if (request.maneuver !== undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["maneuver"],
+          message: "A damage roll follows a weapon attack, not a maneuver",
+        });
+      if (request.target !== undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["target"],
+          message: "A damage roll is compared against nothing, so it takes no target",
+        });
+      return;
+    }
     if (!request.attackId)
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -476,23 +619,63 @@ export const rollPlanRequestSchema = z
         path: ["saveId"],
         message: "saveId is not valid for an attack roll",
       });
+    if (request.action === "standardAttack" && (request.attackIds?.length ?? 0) > 1)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["attackIds"],
+        message: "A standard attack action selects exactly one attack",
+      });
   });
 
-export const actionPlanRequestSchema = z.object({
-  characterId: z.string().min(1),
-  action: z.enum(["standardAttack", "fullAttack", "maneuver"]),
-  attackIds: z.array(z.string().min(1)).min(1).optional(),
-  maneuver: z
-    .string()
-    .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs")
-    .optional(),
-  flags: flagList.optional(),
-  excludeFlags: flagList.optional(),
-  touch: z.boolean().optional(),
-  actorId: z.string().min(1).optional(),
-  targetId: z.string().min(1).optional(),
-});
+export const actionPlanRequestSchema = z
+  .object({
+    characterId: z.string().min(1),
+    action: z.enum(actionKinds),
+    attackIds: z.array(z.string().min(1)).min(1).optional(),
+    maneuver: z
+      .string()
+      .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs")
+      .optional(),
+    flags: flagList.optional(),
+    excludeFlags: flagList.optional(),
+    touch: z.boolean().optional(),
+    defense: defenseRequestSchema.optional(),
+    target: targetRequestSchema.optional(),
+  })
+  .superRefine((request, context) => {
+    validateDefense(
+      {
+        kind: request.action,
+        ...(request.defense ? { defense: request.defense } : {}),
+        ...(request.touch !== undefined ? { touch: request.touch } : {}),
+      },
+      context,
+    );
+    if (request.action === "maneuver" && (request.attackIds?.length ?? 0) > 0)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["attackIds"],
+        message: "A maneuver action selects no weapons",
+      });
+    if (request.action !== "maneuver" && request.maneuver !== undefined)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["maneuver"],
+        message: "A maneuver identity is only valid for a maneuver action",
+      });
+    if (request.action === "standardAttack" && (request.attackIds?.length ?? 0) > 1)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["attackIds"],
+        message: "A standard attack action selects exactly one attack",
+      });
+  });
 
+/**
+ * A submitted plan is validated for shape only. Its modifier and provenance are
+ * never trusted: resolution rebuilds the plan from authored state and the
+ * context it declares, then interprets the raw faces against that rebuild.
+ */
 const rollPlanSchema = z.object({
   id: z.string().min(1),
   characterId: z.string().min(1),
@@ -506,30 +689,10 @@ const rollPlanSchema = z.object({
     )
     .min(1),
   modifier: z.number(),
-  metadata: z
-    .object({
-      kind: z.enum([
-        "save",
-        "attack",
-        "maneuver",
-        "skill",
-        "damage",
-        "other",
-      ]),
-      target: z.string().min(1),
-      attackId: z.string().optional(),
-      attackIndex: z.number().int().nonnegative().optional(),
-      action: z.enum(actionKinds).optional(),
-      attackIds: z.array(z.string()).optional(),
-      stepRole: z.enum(["primary", "iterative", "extra"]).optional(),
-      maneuver: z.string().optional(),
-      touch: z.boolean().optional(),
-      fullAttack: z.boolean().optional(),
-      flags: z.array(z.string()).optional(),
-      excludeFlags: z.array(z.string()).optional(),
-      contextFlags: z.array(z.string()).optional(),
-    })
-    .optional(),
+  context: rollContextSchema,
+  outcomePolicy: rollOutcomePolicySchema,
+  criticalRange: criticalRangeSchema.optional(),
+  provenance: z.unknown().optional(),
 });
 export const resolveRollRequestSchema = z.object({
   plan: rollPlanSchema,
@@ -561,6 +724,15 @@ function mergedRollRules(
  * original ProgressionCatalog or a full RulesEngineOptions; a fourth options
  * argument augments the legacy catalog form.
  */
+function rollRequestOptions(request: RollPlanRequest): RollRequestOptions {
+  return {
+    ...(request.flags ? { flags: request.flags } : {}),
+    ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
+    ...(request.defense ? { defense: request.defense } : {}),
+    ...(request.target ? { target: request.target } : {}),
+  };
+}
+
 export function createCharacterRollPlan(
   character: CharacterInput,
   request: RollPlanRequest,
@@ -573,26 +745,36 @@ export function createCharacterRollPlan(
   const base = mergedRollRules(input, extra);
   const authored = normalizeAuthoredCharacter(character, base);
   const engine = new RulesEngine(authored, base);
+  const options = rollRequestOptions(request);
   if (request.kind === "save" && request.saveId)
-    return engine.createSaveRollPlan(request.saveId);
+    return engine.createSaveRollPlan(request.saveId, options);
   if (request.kind === "skill" && request.skillId)
-    return engine.createSkillRollPlan(
-      request.skillId,
-      request.flags,
-      request.excludeFlags,
-    );
+    return engine.createSkillRollPlan(request.skillId, options);
   if (request.kind === "maneuver")
-    return engine.createManeuverRollPlan(
-      request.maneuver,
-      request.flags,
-      request.excludeFlags,
-    );
-  if (request.kind === "attack" && request.attackId)
-    return engine.createAttackRollPlan(request.attackId, request.attackIndex ?? 0, {
-      ...(request.action ? { action: request.action } : {}),
-      ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+    return engine.createManeuverRollPlan(request.maneuver, options);
+  if (request.kind === "initiative")
+    return engine.createInitiativeRollPlan({
       ...(request.flags ? { flags: request.flags } : {}),
       ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
+    });
+  if (request.kind === "damage" && request.attackId)
+    return engine.createDamageRollPlan(request.attackId, {
+      ...options,
+      ...(request.action ? { action: request.action } : {}),
+      ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+      ...(request.attackIndex !== undefined
+        ? { attackIndex: request.attackIndex }
+        : {}),
+      ...(request.touch !== undefined ? { touch: request.touch } : {}),
+      ...(request.criticalDamage !== undefined
+        ? { criticalDamage: request.criticalDamage }
+        : {}),
+    });
+  if (request.kind === "attack" && request.attackId)
+    return engine.createAttackRollPlan(request.attackId, request.attackIndex ?? 0, {
+      ...options,
+      ...(request.action ? { action: request.action } : {}),
+      ...(request.attackIds ? { attackIds: request.attackIds } : {}),
       ...(request.touch !== undefined ? { touch: request.touch } : {}),
       ...(request.maneuver ? { maneuver: request.maneuver } : {}),
     });
@@ -623,7 +805,7 @@ export function createCharacterActionPlan(
     ...(request.flags ? { flags: request.flags } : {}),
     ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
     ...(request.touch !== undefined ? { touch: request.touch } : {}),
-    ...(request.actorId ? { actorId: request.actorId } : {}),
-    ...(request.targetId ? { targetId: request.targetId } : {}),
+    ...(request.defense ? { defense: request.defense } : {}),
+    ...(request.target ? { target: request.target } : {}),
   });
 }

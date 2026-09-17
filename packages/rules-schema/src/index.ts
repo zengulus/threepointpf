@@ -193,31 +193,110 @@ export interface AttackSelector {
 }
 
 /**
- * Explicit situational identity of a roll. This is the whole context model:
- * actor/target identity, the action/roll kind, weapon identity, melee/ranged/
- * touch, full-attack membership, a maneuver, classification tags and named
- * situational flags. Effects declare when they apply to such a context instead
- * of forcing duplicate static targets.
+ * The kind of thing the actor is doing right now. One action may produce many
+ * rolls, so this names the action rather than a single roll.
+ */
+export const actionKinds = [
+  "standardAttack",
+  "fullAttack",
+  "maneuver",
+  "save",
+  "skillCheck",
+  "other",
+] as const;
+export type ActionKind = (typeof actionKinds)[number];
+
+/**
+ * What the actor is doing, and where this roll sits inside it. A full attack is
+ * one action whose rolls belong to selected weapons; it is never modelled as
+ * each weapon independently owning every extra attack.
+ */
+export interface ActionContext {
+  kind: ActionKind;
+  /** Identity of the action instance; equal to its `ActionPlan` id. */
+  sequenceId?: string;
+  /** Zero-based position of this roll within its own weapon's sequence. */
+  sequenceIndex?: number;
+  /** Weapons the action selects, in order (weapon actions only). */
+  attackIds?: string[];
+}
+
+/** What a roll is compared against, when that is part of the rolled context. */
+export const rollDefenseKinds = ["ac", "cmd", "dc"] as const;
+export type RollDefenseKind = (typeof rollDefenseKinds)[number];
+
+/**
+ * A known defense the roll is compared against. This is *target* state supplied
+ * as context; the engine never invents it, and an absent defense means hit /
+ * success stays unresolved rather than assumed.
+ */
+export interface RollDefense {
+  kind: RollDefenseKind;
+  value: number;
+  /** AC context, when the defense is an Armor Class. */
+  context?: DefenseContext;
+}
+
+export interface TargetContext {
+  /** The character the roll is made against, when it is a persisted sheet. */
+  characterId?: string;
+  name?: string;
+  defense?: RollDefense;
+}
+
+/**
+ * Explicit situational identity of one roll: who is acting, what they are
+ * doing, which specific fact is being rolled, and what it is rolled against.
+ * Character facts describe the actor; this describes the actor's current
+ * attempt. Effects declare when they apply to such a context instead of forcing
+ * duplicate static targets.
  */
 export interface RollContext {
+  /** Which evaluated fact this roll produces. */
   kind: RollKind;
-  mode?: AttackMode;
+  /** The acting character; every roll has exactly one actor. */
+  actorCharacterId: string;
+  /** The action or check this roll belongs to. */
+  action: ActionContext;
+  /** What the roll is made against, when known. */
+  target?: TargetContext;
   /** Authored attack/weapon identity the roll belongs to. */
   attackId?: string;
+  /** The save being rolled, when the roll is a save. */
+  saveId?: SaveId;
+  /** The skill being rolled, when the roll is a skill check. */
+  skillId?: string;
   /** Weapon classification tags resolved from the attack definition. */
   attackTags?: AttackTag[];
+  /** Ranged or melee, for weapon rolls. */
+  mode?: AttackMode;
   /** True for touch attacks (rays, touch spells, melee touch). */
   touch?: boolean;
-  /** True when the roll is part of a full-attack action. */
-  fullAttack?: boolean;
-  /** Zero-based membership of an attack's own sequence. */
-  attackIndex?: number;
   /** Combat maneuver being attempted, when the roll is a maneuver. */
   maneuver?: ManeuverId;
-  /** Situational flags, such as `combat-expertise` or `sight-based`. */
+  /**
+   * True when a damage roll expresses the critical consequence of the attack it
+   * follows. It belongs to the roll's identity because the server rebuilds the
+   * widened damage roll from the context alone; absent means ordinary damage.
+   */
+  criticalDamage?: boolean;
+  /** The resolved situational flags this roll was evaluated with. */
   flags?: string[];
-  actorId?: string;
-  targetId?: string;
+  /** Flags the caller withheld, kept so the server rebuilds the same evaluation. */
+  excludeFlags?: string[];
+}
+
+/**
+ * Full-attack membership is an action fact, so it is derived from the action
+ * rather than duplicated as a second boolean on the roll.
+ */
+export function isFullAttackAction(context: RollContext): boolean {
+  return context.action.kind === "fullAttack";
+}
+
+/** The action a maneuver roll belongs to. */
+export function isManeuverAction(context: RollContext): boolean {
+  return context.action.kind === "maneuver";
 }
 
 /**
@@ -237,6 +316,182 @@ export interface EffectApplicability {
   maneuvers?: ManeuverId[];
   requiredFlags?: string[];
   excludedFlags?: string[];
+}
+
+/** The lowest natural d20 face that threatens a critical hit. */
+export interface CriticalRange {
+  minimumNaturalRoll: number;
+}
+
+export const defaultCriticalRange: CriticalRange = { minimumNaturalRoll: 20 };
+
+/**
+ * How the effective critical range of one attack was reached: the weapon's base
+ * range plus every contextual widening that applied, with the filtered ones.
+ */
+export interface CriticalRangeEvaluation {
+  /** The attack-scoped target the range was evaluated for. */
+  target: TargetId;
+  base: CriticalRange;
+  effective: CriticalRange;
+  contributions: Contribution[];
+  excluded: ExcludedContribution[];
+}
+
+/**
+ * Widens the threatening range of eligible attacks. Critical range is an
+ * attack property that contextual rules may modify, so it stays derivable
+ * through ordinary rules machinery instead of being baked into resolution.
+ */
+export interface CriticalRangeEffect {
+  kind: "criticalRange";
+  /** An attack-scoped target such as `attack.melee`. */
+  target: ConcreteEffectTargetId;
+  /** Faces to widen by: 1 turns a 20 threat range into 19–20. */
+  widenBy: number;
+  appliesWhen?: EffectApplicability;
+  source?: SourceReference;
+}
+
+/**
+ * Semantic classification of a resolved roll. `natural20` / `natural1` mean the
+ * raw d20 showed that face, which is not the same event as a rule-defined
+ * critical outcome.
+ */
+export const rollOutcomeKinds = [
+  "criticalSuccess",
+  "criticalFailure",
+  "natural20",
+  "natural1",
+  "success",
+  "failure",
+  "unresolved",
+] as const;
+export type RollOutcomeKind = (typeof rollOutcomeKinds)[number];
+
+export const naturalFaceClassifications = [
+  "criticalSuccess",
+  "criticalFailure",
+  "natural20",
+  "natural1",
+] as const;
+export type NaturalFaceClassification =
+  (typeof naturalFaceClassifications)[number];
+
+/** What a raw d20 face means to a roll family before modifiers are compared. */
+export interface NaturalFacePolicy {
+  /** Applies regardless of the total: automatic hit or automatic success. */
+  automatic: boolean;
+  /** How that face is classified when nothing more specific applies. */
+  classification: NaturalFaceClassification;
+}
+
+/**
+ * The smallest explicit policy layer that answers the questions resolution
+ * needs: does a natural 20 hit outright, does a natural 1 miss outright, do they
+ * carry special success/failure semantics, and is a critical threat confirmed
+ * with a second roll.
+ */
+export interface RollOutcomePolicy {
+  /** Named policy the plan was authored under, such as `pf1e.attack`. */
+  id: string;
+  /**
+   * Attacks compare against a defense and can crit; checks compare against a
+   * defense; plain rolls (damage, initiative) compare against nothing and have
+   * no success or failure of their own.
+   */
+  kind: "attack" | "check" | "plain";
+  natural20: NaturalFacePolicy;
+  natural1: NaturalFacePolicy;
+  /**
+   * Attacks: a threat is confirmed with a second roll. This campaign does not
+   * use confirmation, so the default is false and the resolver never emits a
+   * second roll. When a policy does require confirmation, the threat stays
+   * visible through `inCriticalRange` and `critical` remains unresolved.
+   */
+  criticalConfirmationRequired: boolean;
+}
+
+/** The policy families a roll can be resolved under. */
+export interface RollOutcomePolicySet {
+  attack: RollOutcomePolicy;
+  maneuver: RollOutcomePolicy;
+  save: RollOutcomePolicy;
+  skill: RollOutcomePolicy;
+  /** Rolls with no success/failure comparison, such as damage. */
+  plain: RollOutcomePolicy;
+}
+
+/**
+ * Everything resolution determined, with raw-face facts kept distinct from rule
+ * classifications so a caller never has to reverse-engineer which happened.
+ */
+export interface RollOutcome {
+  kind: RollOutcomeKind;
+  /** True when the raw d20 showed 20 (a face fact, not a rule outcome). */
+  natural20: boolean;
+  /** True when the raw d20 showed 1 (a face fact, not a rule outcome). */
+  natural1: boolean;
+  /** Attacks: the roll beat the defense (or an automatic rule applied). */
+  hit?: boolean;
+  /** Checks: the total beat the defense (or an automatic rule applied). */
+  success?: boolean;
+  /** Attacks: the natural face hit regardless of the total. */
+  automaticHit?: boolean;
+  /** Attacks: the natural face missed regardless of the total. */
+  automaticMiss?: boolean;
+  /** Checks: the natural face succeeded regardless of the total. */
+  automaticSuccess?: boolean;
+  /** Checks: the natural face failed regardless of the total. */
+  automaticFailure?: boolean;
+  /** Whether the raw face threatened a critical, when a range applies. */
+  inCriticalRange?: boolean;
+  /** Attacks: a critical outcome was classified. Absent while unresolved. */
+  critical?: boolean;
+  /** The effective range the membership test used. */
+  criticalRange?: CriticalRange;
+  /** The defense the roll was compared against, when one was supplied. */
+  defense?: RollDefense;
+}
+
+/** Raw dice a plan requires: one count of same-sided dice per group. */
+export interface DiceRequirement {
+  sides: number;
+  count: number;
+}
+
+/**
+ * How the modifier and the effective threat range were reached, so a plan
+ * explains itself without re-deriving the character.
+ */
+export interface RollPlanProvenance {
+  /** Contributions that sum to the modifier. */
+  modifier: Contribution[];
+  /** Contextual effects that were authored but filtered out, with reasons. */
+  excluded: ExcludedContribution[];
+  criticalRange?: CriticalRangeEvaluation;
+}
+
+/**
+ * The authoritative description of one requested roll: what it is, what action
+ * it belongs to, what it is rolled against, which raw dice it needs, and how
+ * those raw faces are interpreted. Plans are ephemeral; the server rebuilds one
+ * from current authored state plus the requested context, and a client never
+ * supplies a modifier.
+ */
+export interface RollPlan {
+  id: string;
+  characterId: string;
+  label: string;
+  dice: DiceRequirement[];
+  modifier: number;
+  /** Situational identity: actor, action, rolled fact and known defense. */
+  context: RollContext;
+  /** How raw faces become a semantic outcome for this roll family. */
+  outcomePolicy: RollOutcomePolicy;
+  /** The effective threat range, for rolls that can crit. */
+  criticalRange?: CriticalRange;
+  provenance?: RollPlanProvenance;
 }
 
 /**
@@ -421,7 +676,8 @@ export type Effect =
   | ReplaceBaseEffect
   | MultiplyEffect
   | MinimumEffect
-  | MaximumEffect;
+  | MaximumEffect
+  | CriticalRangeEffect;
 export type EffectDefinition = Effect;
 
 export interface FeatureDefinition {
@@ -498,6 +754,8 @@ export interface AttackDefinition {
   /** Natural attacks normally do not gain BAB iteratives. */
   iterative?: boolean;
   extraAttackEligible?: boolean;
+  /** This weapon's threat range; the profile's range applies when omitted. */
+  criticalRange?: CriticalRange;
   source?: ProgressionSourceMetadata;
 }
 
@@ -513,6 +771,8 @@ export interface AttackProfileDefinition {
   attackBonus?: number;
   iterative?: boolean;
   extraAttackEligible?: boolean;
+  /** Threat range shared by weapons using this profile; defaults to 20. */
+  criticalRange?: CriticalRange;
   source?: ProgressionSourceMetadata;
 }
 export type AttackProfileCatalog = Record<string, AttackProfileDefinition>;
@@ -737,6 +997,84 @@ const scalingSchema = z.object({
   every: z.number().finite().int().positive(),
   base: z.number().finite().int(),
 });
+/**
+ * A threat range is a natural-face threshold: 20 crits on a natural 20, 19 on
+ * 19 or 20, and so on. It belongs to the weapon/profile, never to the d20.
+ */
+export const criticalRangeSchema: z.ZodType<CriticalRange> = z
+  .object({ minimumNaturalRoll: z.number().int().min(2).max(20) })
+  .strict();
+/** Critical range is an attack property, so only attack-scoped targets qualify. */
+const attackScopedTargetSchema = effectTargetIdSchema.refine(
+  (target) => /^attack\.(melee|ranged)$/.test(target),
+  "Critical range is an attack property; target `attack.melee` or `attack.ranged`",
+);
+export const rollDefenseSchema: z.ZodType<RollDefense> = z
+  .object({
+    kind: z.enum(rollDefenseKinds),
+    value: z.number().finite(),
+    context: defenseContextSchema.optional(),
+  })
+  .strict();
+export const actionContextSchema: z.ZodType<ActionContext> = z
+  .object({
+    kind: z.enum(actionKinds),
+    sequenceId: z.string().min(1).optional(),
+    sequenceIndex: z.number().int().nonnegative().optional(),
+    attackIds: z.array(z.string().min(1)).min(1).optional(),
+  })
+  .strict();
+export const targetContextSchema: z.ZodType<TargetContext> = z
+  .object({
+    characterId: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    defense: rollDefenseSchema.optional(),
+  })
+  .strict();
+export const rollContextSchema: z.ZodType<RollContext> = z
+  .object({
+    kind: z.enum(rollKinds),
+    actorCharacterId: z.string().min(1),
+    action: actionContextSchema,
+    target: targetContextSchema.optional(),
+    attackId: z.string().min(1).optional(),
+    saveId: z.enum(saveIds).optional(),
+    skillId: z.string().min(1).optional(),
+    attackTags: z.array(attackTagSchema).optional(),
+    mode: attackModeSchema.optional(),
+    touch: z.boolean().optional(),
+    maneuver: maneuverIdSchema.optional(),
+    criticalDamage: z.boolean().optional(),
+    flags: z.array(flagSchema).optional(),
+    excludeFlags: z.array(flagSchema).optional(),
+  })
+  .strict();
+const naturalFacePolicySchema: z.ZodType<NaturalFacePolicy> = z.object({
+  automatic: z.boolean(),
+  classification: z.enum(naturalFaceClassifications),
+});
+export const rollOutcomePolicySchema: z.ZodType<RollOutcomePolicy> = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["attack", "check", "plain"]),
+  natural20: naturalFacePolicySchema,
+  natural1: naturalFacePolicySchema,
+  criticalConfirmationRequired: z.boolean(),
+});
+export const rollOutcomeSchema: z.ZodType<RollOutcome> = z.object({
+  kind: z.enum(rollOutcomeKinds),
+  natural20: z.boolean(),
+  natural1: z.boolean(),
+  hit: z.boolean().optional(),
+  success: z.boolean().optional(),
+  automaticHit: z.boolean().optional(),
+  automaticMiss: z.boolean().optional(),
+  automaticSuccess: z.boolean().optional(),
+  automaticFailure: z.boolean().optional(),
+  inCriticalRange: z.boolean().optional(),
+  critical: z.boolean().optional(),
+  criticalRange: criticalRangeSchema.optional(),
+  defense: rollDefenseSchema.optional(),
+});
 const acModifierSchema = z.object({
   kind: z.literal("modifier"),
   target: z.literal("ac"),
@@ -804,9 +1142,20 @@ export const effectSchema: z.ZodType<Effect> = z
       grant: z.string().min(1),
       source: sourceReferenceSchema.optional(),
     }),
+    z.object({
+      kind: z.literal("criticalRange"),
+      target: attackScopedTargetSchema,
+      widenBy: z.number().int().min(1).max(18),
+      appliesWhen: applicabilitySchema.optional(),
+      source: sourceReferenceSchema.optional(),
+    }),
   ])
   .superRefine((effect, context) => {
-    if (effect.target === "size.relative" && effect.kind !== "grant") {
+    if (
+      effect.target === "size.relative" &&
+      effect.kind !== "grant" &&
+      effect.kind !== "criticalRange"
+    ) {
       const value = effect.kind === "multiply" ? effect.factor : effect.value;
       if (!Number.isInteger(value))
         context.addIssue({
@@ -887,6 +1236,7 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   damageAbilityMaximum: z.number().finite().optional(),
   iterative: z.boolean().optional(),
   extraAttackEligible: z.boolean().optional(),
+  criticalRange: criticalRangeSchema.optional(),
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 export const progressionFeatureDefinitionSchema: z.ZodType<ProgressionFeatureDefinition> =
@@ -940,6 +1290,7 @@ export const attackProfileDefinitionSchema: z.ZodType<AttackProfileDefinition> =
     attackBonus: z.number().finite().optional(),
     iterative: z.boolean().optional(),
     extraAttackEligible: z.boolean().optional(),
+    criticalRange: criticalRangeSchema.optional(),
     source: progressionSourceMetadataSchema.optional(),
   });
 export const equipmentDefinitionSchema: z.ZodType<EquipmentDefinition> =
@@ -1561,6 +1912,14 @@ export interface ActionPlanStep {
   modifier: number;
   /** The contextual evaluation behind `modifier`, including exclusions. */
   evaluation: EvaluationResult;
+  /** This step's resolvable roll, with its own context, policy and threat range. */
+  roll: RollPlan;
+  /**
+   * The damage this step deals, when it deals any. It is a roll of the same
+   * action and step, so an action's roll list is complete without the caller
+   * inventing dice or modifiers.
+   */
+  damage?: RollPlan;
 }
 
 /** One weapon's contribution to an action. */
@@ -1581,7 +1940,7 @@ export interface ActionAttackPlan {
 export interface ActionPlan {
   id: string;
   characterId: string;
-  action: "standardAttack" | "fullAttack" | "maneuver";
+  action: ActionKind;
   label: string;
   context: RollContext;
   attacks: ActionAttackPlan[];
@@ -1589,6 +1948,12 @@ export interface ActionPlan {
   evaluation?: EvaluationResult;
   /** Effects filtered out at the action level, with reasons. */
   excluded: ExcludedContribution[];
+  /**
+   * Every roll this action produces, in action order: each step's attack roll
+   * followed by that step's damage roll, flattened for callers that resolve an
+   * action's rolls in sequence rather than by weapon.
+   */
+  rolls: RollPlan[];
 }
 
 export interface DerivedCharacter {

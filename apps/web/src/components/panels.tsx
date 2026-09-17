@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { formatModifier } from "@threepointpf/dice";
 import {
   attackProfileCatalog,
@@ -350,6 +351,28 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
           />
         </div>
         <div className="saves-row">
+          <div className="roll-row" key="initiative">
+            <button
+              className="value-link"
+              onClick={() =>
+                sheet.inspect("Initiative", sheet.derived.initiative)
+              }
+            >
+              <span>initiative</span>
+              <strong>{formatModifier(sheet.derived.initiative.value)}</strong>
+            </button>
+            <button
+              className="roll-button"
+              data-testid="roll-initiative"
+              onClick={() =>
+                sheet.roll("initiative", () =>
+                  sheet.engine.createInitiativeRollPlan(),
+                )
+              }
+            >
+              ROLL d20
+            </button>
+          </div>
           {(["fortitude", "reflex", "will"] as const).map((save) => (
             <div className="roll-row" key={save}>
               <button
@@ -439,35 +462,65 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
               >
                 STANDARD {formatModifier(attack.attack.value)}
               </button>
-              {attack.fullAttack.map((result, index) => (
-                <button
-                  key={index}
-                  className="roll-button"
-                  data-testid={
-                    "roll-attack-" +
-                    attack.definition.id +
-                    (index ? "-" + index : "")
-                  }
-                  title={
-                    attack.action.attacks[0]?.steps[index]?.role ?? "primary"
-                  }
-                  onClick={() =>
-                    sheet.roll(
-                      attack.definition.name + " attack " + (index + 1),
-                      () =>
-                        sheet.engine.createAttackRollPlan(
-                          attack.definition.id,
-                          index,
-                        ),
-                    )
-                  }
-                >
-                  {(
-                    attack.action.attacks[0]?.steps[index]?.role ?? "primary"
-                  ).toUpperCase()}{" "}
-                  {formatModifier(result.value)}
-                </button>
-              ))}
+              {attack.fullAttack.map((result, index) => {
+                // The step carries the damage roll it deals, so the row resolves
+                // the same action-ordered roll list the engine reports.
+                const step = attack.action.attacks[0]?.steps[index];
+                return (
+                  <Fragment key={index}>
+                    <button
+                      className="roll-button"
+                      data-testid={
+                        "roll-attack-" +
+                        attack.definition.id +
+                        (index ? "-" + index : "")
+                      }
+                      title={step?.role ?? "primary"}
+                      onClick={() =>
+                        sheet.roll(
+                          attack.definition.name + " attack " + (index + 1),
+                          () =>
+                            sheet.engine.createAttackRollPlan(
+                              attack.definition.id,
+                              index,
+                            ),
+                        )
+                      }
+                    >
+                      {(step?.role ?? "primary").toUpperCase()}{" "}
+                      {formatModifier(result.value)}
+                    </button>
+                    {step?.damage && (
+                      <button
+                        className="roll-button"
+                        data-testid={
+                          "roll-damage-" +
+                          attack.definition.id +
+                          (index ? "-" + index : "")
+                        }
+                        title={
+                          "Resolve " +
+                          step.damage.label +
+                          " (" +
+                          step.damage.dice
+                            .map((die) => die.count + "d" + die.sides)
+                            .join(" + ") +
+                          ")"
+                        }
+                        onClick={() =>
+                          sheet.roll(step.damage!.label, () => step.damage!)
+                        }
+                      >
+                        DMG{" "}
+                        {step.damage.dice
+                          .map((die) => die.count + "d" + die.sides)
+                          .join("+")}
+                        {formatModifier(step.damage.modifier)}
+                      </button>
+                    )}
+                  </Fragment>
+                );
+              })}
             </div>
           </div>
         ))}

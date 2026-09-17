@@ -133,6 +133,24 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   await expect(page.getByTestId("roll-standard-greatsword")).toContainText("STANDARD");
   await page.getByTestId("roll-maneuver-trip").click();
   await expect(page.locator(".top-actions")).toContainText("trip maneuver");
+  // A roll reports the natural face and the semantic outcome separately, so a
+  // threat that could still miss is never shown as a hit.
+  await expect(page.locator(".top-actions")).toContainText(/trip maneuver: \d+ [+-]\d+ = \d+ · /);
+  await page.getByTestId("roll-standard-greatsword").click();
+  await expect(page.locator(".top-actions")).toContainText(
+    /standard attack: \d+ [+-]\d+ = \d+ · (unresolved|natural 20|natural 1|criticalSuccess)/,
+  );
+  // A step's own damage roll is part of the action's roll list, and a plain
+  // roll reports its total without inventing an outcome.
+  await page.getByTestId("roll-damage-greatsword").click();
+  await expect(page.locator(".top-actions")).toContainText(
+    /damage: \d+(, \d+)* [+-]\d+ = \d+/,
+  );
+  await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  await page.getByTestId("roll-initiative").click();
+  await expect(page.locator(".top-actions")).toContainText(
+    /initiative: \d+ [+-]\d+ = \d+/,
+  );
 });
 
 test("mobile editors fit the viewport while N-track tables scroll within their panel", async ({ page }) => {

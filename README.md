@@ -62,6 +62,8 @@ Only authored `CharacterInput` is persisted. Local storage uses `threepointpf.ch
 
 For Supabase, supply `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with an authenticated client session, apply migrations, and deploy `character-state`, `roll-plan`, and `resolve-roll`. The snapshot migration is included, not applied to any hosted database by this change. Never place a service-role key in the browser.
 
-## Tabletop Simulator
+## Tabletop Simulator (deferred)
+
+**Do this later.** The TTS client is gated off: it is frozen at its MVP scope (saves, one attack member with a standard/full choice, maneuvers, a single physical d20) and new roll families are not wired into it. Its script and tests are kept only so that surface cannot silently rot; see the TTS gate in `docs/open-decisions.md`.
 
 Copy `tts/src/global.lua` and its embedded UI into a TTS global script; configure the function URL, a non-privileged bearer token and character ID. Select an authoritative attack ID and zero-based sequence index. TTS sends physical die faces to `/resolve-roll`; the server reloads authored state and recomputes the plan, ignoring client-supplied modifiers. Browser and Edge use the same injected catalogs and roll-plan code.

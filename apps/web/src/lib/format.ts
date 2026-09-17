@@ -80,5 +80,13 @@ export function describeEffect(effect: Effect): string {
     return "minimum " + effect.value + " → " + labelFor(effect.target);
   if (effect.kind === "maximum")
     return "maximum " + effect.value + " → " + labelFor(effect.target);
+  if (effect.kind === "criticalRange")
+    return (
+      "widen threat range by " +
+      effect.widenBy +
+      " → " +
+      labelFor(effect.target) +
+      (effect.appliesWhen ? " (situational)" : "")
+    );
   return "grant " + effect.grant + " → " + labelFor(effect.target);
 }

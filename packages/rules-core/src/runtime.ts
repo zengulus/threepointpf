@@ -15,6 +15,7 @@ import type {
   ProgressionDefinition,
   ProgressionSourceMetadata,
   RollContext,
+  RollOutcomePolicySet,
   SizeCategory,
   SkillCatalog,
   TargetId,
@@ -68,6 +69,8 @@ export interface RulesRuntime {
   readonly progressionCatalog?: ProgressionCatalog;
   /** Situational flags contributed by enabled features. */
   enabledContextFlags(): string[];
+  /** How raw faces are interpreted, per roll family. */
+  readonly outcomePolicies: RollOutcomePolicySet;
   /** The first-class BAB fact, derived once and consumed everywhere. */
   bab(): EvaluationResult;
   /** Baseline for a target, honoring an authored `replaceBase`. */

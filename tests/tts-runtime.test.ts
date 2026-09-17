@@ -18,7 +18,7 @@ const plan = createCharacterRollPlan(character, { characterId: character.id, kin
 const state = {
   name: character.name, currentHp: derived.currentHp, maxHp: derived.maxHp.value,
   ac: derived.ac.value, bab: derived.bab.value, saves: Object.fromEntries(Object.entries(derived.saves).map(([key, result]) => [key, result.value])),
-  attacks: derived.attacks.map((attack) => ({ id: attack.definition.id, name: attack.definition.name, modifier: attack.attack.value, fullAttack: attack.fullAttack.map((strike) => strike.value) })),
+  attacks: derived.attacks.map((attack) => ({ id: attack.definition.id, name: attack.definition.name, modifier: attack.attack.value, fullAttack: attack.fullAttack.map((strike) => strike.value), steps: attack.action.attacks[0].steps.map((step) => ({ index: step.index, role: step.role, modifier: step.modifier, rollId: step.roll.id, criticalRange: step.roll.criticalRange })) })),
 };
 
 function literal(value: unknown): string {
@@ -76,7 +76,9 @@ describe("executed TTS Lua client", () => {
       assert(string.find(attrs[PANEL_ID .. '-attack:text'], '[2/2]', 1, true))
       rollAttack(player, 'Rapier', 'greatsword')
       local request = requests[#requests].body
-      assert(request.attackId == serverPlan.metadata.attackId and request.attackIndex == 1)
+      assert(request.attackId == serverPlan.context.attackId and request.attackIndex == 1)
+      -- The client sends its situation, never a modifier.
+      assert(request.action == 'fullAttack' and request.defense == nil)
       assert(request.modifier == nil and request.characterId == CHARACTER_ID)
       assert(rollBusy and pendingPlan == serverPlan)
       local requestCount = #requests
@@ -85,9 +87,10 @@ describe("executed TTS Lua client", () => {
       for frame = 1, 15 do onUpdate() end
       local submission = requests[#requests].body
       assert(#submission.faces == 1 and submission.faces[1] == 17)
-      assert(submission.plan.metadata.attackIndex == 1)
+      assert(submission.plan.context.action.sequenceIndex == 1)
       assert(not rollBusy and pendingPlan == nil)
-      assert(attrs[PANEL_ID .. '-status:text'] == 'Rapier: ' .. tostring(serverResult.total))
+      -- The panel reports the natural face and semantic outcome, not just a total.
+      assert(attrs[PANEL_ID .. '-status:text'] == 'Rapier: ' .. tostring(serverResult.total) .. ' · ' .. serverResult.outcome.kind)
     `);
   });
 

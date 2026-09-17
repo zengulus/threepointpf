@@ -1,55 +1,87 @@
 import { resolveRollPlan } from "@threepointpf/dice";
 import { rulesCatalogs } from "@threepointpf/rules-data";
-import { saveIds } from "@threepointpf/rules-schema";
+import type { RollContext } from "@threepointpf/rules-schema";
 import { createCharacterRollPlan, resolveRollRequestSchema, type ResolveRollRequest, type RollPlanRequest } from "../../../packages/shared/src/index.ts";
 import { createClient } from "@supabase/supabase-js";
 import { bearer, json, options } from "../_shared/http.ts";
 import { loadCharacter } from "../_shared/load-character.ts";
 
+/** The two attack-roll actions; a maneuver action is never an attack roll. */
+function isAttackAction(kind: RollContext["action"]["kind"]): kind is "standardAttack" | "fullAttack" {
+  return kind === "standardAttack" || kind === "fullAttack";
+}
+
 /**
- * Rebuilds the request that produced a plan purely from the plan's own
- * metadata, so the submitted raw die faces are resolved against a server-side
- * recomputation of authored state plus context. Client modifiers are ignored.
+ * Rebuilds the request that produced a plan purely from the plan's own declared
+ * context, so the submitted raw die faces are resolved against a server-side
+ * recomputation of authored state plus that context. The submitted modifier and
+ * provenance are ignored: a client cannot influence the outcome's arithmetic.
+ *
+ * A context that this endpoint cannot rebuild (an attack roll belonging to a
+ * maneuver action, or a roll with no identity of its own) returns null rather
+ * than being guessed at.
  */
-function requestForMetadata(characterId: string, plan: ResolveRollRequest["plan"]): RollPlanRequest | null {
-  const metadata = plan.metadata;
-  if (!metadata) return null;
-  if (metadata.kind === "save") {
-    const saveId = saveIds.find((id) => metadata.target === `save.${id}`);
-    return saveId ? { characterId, kind: "save", saveId } : null;
-  }
-  if (metadata.kind === "skill" && metadata.target.startsWith("skill."))
-    return {
-      characterId,
-      kind: "skill",
-      skillId: metadata.target.slice("skill.".length),
-      ...(metadata.flags ? { flags: metadata.flags } : {}),
-      ...(metadata.excludeFlags ? { excludeFlags: metadata.excludeFlags } : {}),
-    };
-  if (metadata.kind === "maneuver")
+function requestForContext(characterId: string, context: RollContext): RollPlanRequest | null {
+  const target = context.target;
+  const shared = {
+    ...(context.flags?.length ? { flags: context.flags } : {}),
+    ...(context.excludeFlags?.length ? { excludeFlags: context.excludeFlags } : {}),
+    ...(target?.defense ? { defense: target.defense } : {}),
+    ...(target && (target.characterId || target.name)
+      ? {
+          target: {
+            ...(target.characterId ? { characterId: target.characterId } : {}),
+            ...(target.name ? { name: target.name } : {}),
+          },
+        }
+      : {}),
+  };
+  if (context.kind === "save")
+    return context.saveId
+      ? { characterId, kind: "save", saveId: context.saveId, ...shared }
+      : null;
+  if (context.kind === "skill")
+    return context.skillId
+      ? { characterId, kind: "skill", skillId: context.skillId, ...shared }
+      : null;
+  if (context.kind === "maneuver")
     return {
       characterId,
       kind: "maneuver",
-      ...(metadata.maneuver ? { maneuver: metadata.maneuver } : {}),
-      ...(metadata.flags ? { flags: metadata.flags } : {}),
-      ...(metadata.excludeFlags ? { excludeFlags: metadata.excludeFlags } : {}),
+      ...(context.maneuver ? { maneuver: context.maneuver } : {}),
+      ...shared,
     };
-  if (metadata.kind === "attack" && metadata.attackId) {
-    // An attack plan records one of the two attack actions. A maneuver action
-    // belongs to a maneuver plan, so this combination cannot rebuild the plan
-    // that was submitted and is rejected rather than reinterpreted.
-    if (metadata.action === "maneuver") return null;
+  if (context.kind === "initiative") {
+    // Initiative is compared against nothing; any defense a submitted plan
+    // carries is rejected by the request schema rather than ignored.
+    return { characterId, kind: "initiative", ...shared };
+  }
+  if (context.kind === "damage") {
+    if (!context.attackId || !isAttackAction(context.action.kind)) return null;
+    return {
+      characterId,
+      kind: "damage",
+      attackId: context.attackId,
+      attackIndex: context.action.sequenceIndex ?? 0,
+      action: context.action.kind,
+      ...(context.action.attackIds ? { attackIds: context.action.attackIds } : {}),
+      ...(context.touch !== undefined ? { touch: context.touch } : {}),
+      ...(context.criticalDamage ? { criticalDamage: true } : {}),
+      ...shared,
+    };
+  }
+  if (context.kind === "attack") {
+    if (!context.attackId || !isAttackAction(context.action.kind)) return null;
     return {
       characterId,
       kind: "attack",
-      attackId: metadata.attackId,
-      attackIndex: metadata.attackIndex ?? 0,
-      ...(metadata.action ? { action: metadata.action } : {}),
-      ...(metadata.attackIds ? { attackIds: metadata.attackIds } : {}),
-      ...(metadata.maneuver ? { maneuver: metadata.maneuver } : {}),
-      ...(metadata.touch !== undefined ? { touch: metadata.touch } : {}),
-      ...(metadata.flags ? { flags: metadata.flags } : {}),
-      ...(metadata.excludeFlags ? { excludeFlags: metadata.excludeFlags } : {}),
+      attackId: context.attackId,
+      attackIndex: context.action.sequenceIndex ?? 0,
+      action: context.action.kind,
+      ...(context.action.attackIds ? { attackIds: context.action.attackIds } : {}),
+      ...(context.touch !== undefined ? { touch: context.touch } : {}),
+      ...(context.maneuver ? { maneuver: context.maneuver } : {}),
+      ...shared,
     };
   }
   return null;
@@ -61,7 +93,7 @@ Deno.serve(async (request) => {
     const token = bearer(request); if (!token) return json({ error: "Authorization required" }, 401);
     const body = resolveRollRequestSchema.parse(await request.json()) as ResolveRollRequest;
     const character = await loadCharacter(body.plan.characterId, token, rulesCatalogs);
-    const rollRequest = requestForMetadata(character.id, body.plan);
+    const rollRequest = requestForContext(character.id, body.plan.context);
     const serverPlan = rollRequest ? createCharacterRollPlan(character, rollRequest, rulesCatalogs) : null;
     if (!serverPlan) return json({ error: "Unsupported roll plan" }, 400);
     const resolved = resolveRollPlan(serverPlan, body.faces);

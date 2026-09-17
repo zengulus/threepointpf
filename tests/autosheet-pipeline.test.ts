@@ -754,7 +754,8 @@ describe("equipment, toggles, and attack profiles", () => {
     expect(sword.fullAttack.map((item) => item.value)).toEqual([12, 12, 7]);
     expect(rules.createAttackRollPlan("equipment.sword", 2).modifier).toBe(7);
     expect(
-      rules.createAttackRollPlan("equipment.sword", 2).metadata?.attackIndex,
+      rules.createAttackRollPlan("equipment.sword", 2).context.action
+        .sequenceIndex,
     ).toBe(2);
     expect(() => rules.createAttackRollPlan("equipment.sword", 3)).toThrow(
       /index/,

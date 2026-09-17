@@ -8,6 +8,8 @@ import {
   type ExcludedContribution,
   type ManeuverId,
   type RollContext,
+  type RollDefense,
+  type TargetContext,
   type TargetId,
 } from "@threepointpf/rules-schema";
 import { sourceContribution } from "./contributions.js";
@@ -142,20 +144,39 @@ export interface ManeuverOptions {
   flags?: string[];
   /** Situational flags withheld for this roll. */
   excludeFlags?: string[];
+  /** The defender's CMD, when the caller knows it. */
+  defense?: RollDefense;
+  target?: TargetContext;
 }
 
 function maneuverContext(
   runtime: RulesRuntime,
   options: ManeuverOptions,
 ): RollContext {
+  const target: TargetContext | undefined =
+    options.target || options.defense
+      ? {
+          ...(options.target ?? {}),
+          ...(options.defense ? { defense: options.defense } : {}),
+        }
+      : undefined;
   return {
     kind: "maneuver",
+    actorCharacterId: runtime.character.id,
+    action: {
+      kind: "maneuver",
+      sequenceId: `action:${runtime.character.id}:maneuver`,
+    },
     ...(options.maneuver ? { maneuver: options.maneuver } : {}),
     flags: resolveContextFlags(
       runtime.enabledContextFlags(),
       options.flags,
       options.excludeFlags,
     ),
+    ...(options.excludeFlags?.length
+      ? { excludeFlags: options.excludeFlags }
+      : {}),
+    ...(target ? { target } : {}),
   };
 }
 

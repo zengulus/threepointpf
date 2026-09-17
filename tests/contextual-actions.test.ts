@@ -520,7 +520,8 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
       touch: true,
     });
     expect(touchStandard.modifier).toBe(10);
-    expect(touchStandard.metadata?.touch).toBe(true);
+    expect(touchStandard.context.touch).toBe(true);
+    expect(touchStandard.context.action.kind).toBe("standardAttack");
   });
 
   it("gates the Combat Expertise tradeoff on its situational flag", () => {
@@ -624,9 +625,12 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
     const rules = engine(character);
     const plain = rules.createSkillRollPlan("perception");
     expect(plain.modifier).toBe(1); // ranks 1 + WIS 0
-    const sightBased = rules.createSkillRollPlan("perception", ["sight-based"]);
+    const sightBased = rules.createSkillRollPlan("perception", {
+      flags: ["sight-based"],
+    });
     expect(sightBased.modifier).toBe(0);
-    expect(sightBased.metadata?.contextFlags).toContain("sight-based");
+    expect(sightBased.context.flags).toContain("sight-based");
+    expect(sightBased.context.action.kind).toBe("skillCheck");
     const evaluated = evaluateSkill(rules, "perception");
     expect((evaluated.total.excluded ?? []).map((item) => item.reason)).toContain(
       "requires flags sight-based",

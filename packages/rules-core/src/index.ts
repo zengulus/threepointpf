@@ -13,12 +13,13 @@
  * - `size`           size categories and movement modes
  * - `equipment`      equipment resolution and equipped-effect collection
  * - `attacks`        contextual attack/damage evaluation and action plans
+ * - `outcomes`       outcome policies and effective critical-range derivation
  * - `experience`     XP eligibility
  * - `advancement`    ordered progression/chassis evaluation
  * - `character`      RulesEngine orchestration and the public evaluation API
  */
 export { RulesEngine, evaluateCharacter, evaluate } from "./character.js";
-export type { RulesEngineOptions } from "./character.js";
+export type { RollRequestOptions, RulesEngineOptions } from "./character.js";
 export {
   abilityModifier,
   reduceContributions,
@@ -44,21 +45,48 @@ export {
   evaluateArmorClass,
   evaluateCombatManeuver,
 } from "./defenses.js";
-export { evaluateInitiative, evaluateSkill, classSkillStatus } from "./skills.js";
+export {
+  classSkillStatus,
+  evaluateInitiative,
+  evaluateSkill,
+  initiativeRollPlan,
+} from "./skills.js";
+export type { InitiativeRollOptions } from "./skills.js";
 export { evaluateMovement, computeSizeResult, sizeAdjustment } from "./size.js";
 export { resolveEquipment, collectEquipmentEffects } from "./equipment.js";
 export {
+  actionExclusions,
+  actionPlanId,
   attackContext,
+  attackModeOf,
   attackRollPlan,
   buildActionPlan,
+  damageRollPlan,
   deriveAttack,
   evaluateAttack,
   evaluateDamage,
   evaluateExtraAttacks,
+  iterativeCount,
   maneuverRollPlan,
-  actionExclusions,
 } from "./attacks.js";
-export type { ActionRequest, AttackRollOptions } from "./attacks.js";
+export type {
+  ActionRequest,
+  AttackContextInput,
+  AttackRollOptions,
+  DamageRollOptions,
+  ExtraAttackEvaluation,
+} from "./attacks.js";
+export {
+  attackCriticalRange,
+  attackOutcomePolicy,
+  evaluateCriticalRange,
+  maneuverOutcomePolicy,
+  outcomePolicyFor,
+  pf1eOutcomePolicies,
+  plainOutcomePolicy,
+  saveOutcomePolicy,
+  skillOutcomePolicy,
+} from "./outcomes.js";
 export { experienceResult } from "./experience.js";
 export type { RulesRuntime, EquipmentEntry, ResultOptions } from "./runtime.js";
 export { evaluateAdvancement, progressionLevel } from "./advancement.js";
@@ -73,9 +101,16 @@ export type {
 
 export {
   acModifierAppliesToCmd,
+  actionKinds,
   cmdExcludedBonusTypes,
+  defaultCriticalRange,
   isContextualTarget,
+  isFullAttackAction,
+  isManeuverAction,
   isSelectorTarget,
+  naturalFaceClassifications,
+  rollDefenseKinds,
+  rollOutcomeKinds,
   selectorTargets,
   maneuverIds,
   attackModes,
@@ -83,6 +118,8 @@ export {
 } from "@threepointpf/rules-schema";
 export type {
   ActionAttackPlan,
+  ActionContext,
+  ActionKind,
   ActionPlan,
   ActionPlanStep,
   AttackMode,
@@ -91,16 +128,30 @@ export type {
   CharacterInput,
   ContextualModifiers,
   Contribution,
+  CriticalRange,
+  CriticalRangeEffect,
+  CriticalRangeEvaluation,
   DamageEvaluation,
   DerivedAttack,
   DerivedCharacter,
   DerivedProgressionFeature,
+  DiceRequirement,
   EffectApplicability,
   EvaluationResult,
   ExcludedContribution,
   ManeuverId,
+  NaturalFacePolicy,
   ProgressionCatalog,
   RollContext,
+  RollDefense,
+  RollDefenseKind,
   RollKind,
+  RollOutcome,
+  RollOutcomeKind,
+  RollOutcomePolicy,
+  RollOutcomePolicySet,
+  RollPlan,
+  RollPlanProvenance,
+  TargetContext,
   TargetId,
 } from "@threepointpf/rules-schema";
