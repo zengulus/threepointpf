@@ -6,7 +6,7 @@ Updated: 2026-09-18 (combat-context pass: CMD derivation, ability penalties, sel
 
 Updated: 2026-09-18 (roll-contract pass: actors/actions/targets in context, per-step roll plans, semantic outcomes, authored critical ranges; damage and initiative plans complete an action's roll list)
 
-Updated: 2026-09-18 (roll-presentation pass: the dice are the result surface, values rise from the landed dice into the visible arithmetic, flourishes and the semantic outcome belong to the dice/result rather than a card)
+Updated: 2026-09-18 (roll-presentation pass: each landed die anchors its value as it rises into the result drawer's arithmetic, and flourishes and the semantic outcome belong to the dice/result rather than a static card)
 
 This review compares the implementation with the supplied `Pathfinder Autosheet v6.2.1` workbook and the current vertical-slice brief. The workbook remains a behavioral reference, not a runtime dependency.
 

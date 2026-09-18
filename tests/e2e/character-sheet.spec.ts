@@ -247,8 +247,11 @@ test("an optional entered DC resolves a check or leaves it unresolved", async ({
   await dismissDice(page);
   await page.getByTestId("roll-dc-skills").fill("1");
   await page.getByTestId("roll-skill-perception").click();
+  // The natural face is reported alongside the outcome, and a natural face is
+  // not an automatic verdict on a skill check: a natural 1 against a low DC is
+  // still a success, and the notice says both.
   await expect(page.locator(".top-actions")).toContainText(
-    /Perception check: \d+ [+-]\d+ = \d+ · (success|failure)/,
+    /Perception check: \d+ [+-]\d+ = \d+ · (natural \d+ · )?(success|failure)/,
   );
   await expect(page.locator(".top-actions")).not.toContainText("unresolved");
   await dismissDice(page);
@@ -293,6 +296,15 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
     /physics|3D dice|reduced motion|animation/,
   );
   await expect(page.getByTestId("dice-overlay-event")).toContainText("·");
+  // The sequence finishes rather than stalling after the values appear: the
+  // modifier, the total and the semantic outcome each arrive on the same line.
+  // A slow throw is allowed for, and the result's own lifetime only starts once
+  // it is on screen.
+  await expect(overlay).toHaveAttribute("data-phase", "outcome", {
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
+  await expect(page.getByTestId("dice-overlay-outcome")).toBeVisible();
   await dismissDice(page);
 
   // Dice preferences persist under their own key and stay out of character state.

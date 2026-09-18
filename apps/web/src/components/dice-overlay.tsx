@@ -23,6 +23,9 @@ import {
   type SequencePhase,
 } from "../lib/dice-sequence";
 
+/** One resolved roll, frozen for presentation. */
+type DiceStage = NonNullable<DicePresentation["stage"]>;
+
 /** Human labels for the resolved outcome; the vocabulary stays in the outcome. */
 const outcomeLabels: Record<RollOutcomeKind, string> = {
   criticalSuccess: "Critical success",
@@ -42,37 +45,50 @@ export function outcomeLabel(kind: RollOutcomeKind): string {
 export const diceOverlayLifetimeMs = 12_000;
 
 /**
- * The browser dice overlay. The dice are the presentation surface: once the
- * physical dice have settled, each authoritative value rises off the die it was
- * rolled on, turns to face the screen, gathers into the visible arithmetic, and
- * the modifier and total are revealed on that same line. Critical and
- * natural-face effects belong to the die (and the result) they happened on, and
- * the semantic outcome is part of the sequence rather than a panel beside it.
+ * The browser dice overlay: the dice table on one side, the result drawer on the
+ * other. Once the physical dice have settled, each authoritative value rises off
+ * the die it was rolled on, turns to face the screen, travels into the drawer's
+ * arithmetic, and the modifier and total are revealed on that same line. Critical
+ * and natural-face effects belong to the die (and the result) they happened on,
+ * and the semantic outcome ends the sequence rather than sitting in a corner.
  *
  * The values are facts from the resolution; the renderer contributes only the
  * screen positions of the dice it was asked to land on.
  */
 export function DiceOverlay({ dice }: { dice: DicePresentation }) {
-  const { stage, presenter, stageRef, settings, dismiss } = dice;
+  const { stage } = dice;
+  if (!stage) return null;
+  // Each roll mounts its own sequence. That is what makes a new roll start from
+  // nothing rather than from the previous roll's revealed beats, and it is why
+  // the timers of an interrupted sequence cannot touch the next one.
+  return <DiceSequence key={stage.id} dice={dice} stage={stage} />;
+}
+
+function DiceSequence({
+  dice,
+  stage,
+}: {
+  dice: DicePresentation;
+  stage: DiceStage;
+}) {
+  const { presenter, stageRef, settings, dismiss } = dice;
   const valueRefs = useRef(new Map<number, HTMLElement>());
+  const timers = useRef<number[]>([]);
+  const scheduled = useRef(false);
   const [report, setReport] = useState<DicePresentationReport | null>(null);
   const [phase, setPhase] = useState<SequencePhase>("pending");
   const [offsets, setOffsets] = useState<(DieOffset | null)[] | null>(null);
 
-  const tokens = stage ? faceTokens(stage) : [];
-  const modifier = stage?.resolved.modifier ?? 0;
+  const tokens = faceTokens(stage);
+  const modifier = stage.resolved.modifier;
   const hasModifier = modifier !== 0;
   // Adding the dice together is only its own step when a modifier follows it.
   const showSum = tokens.length > 1 && hasModifier;
 
-  const stageId = stage?.id;
   useEffect(() => {
-    if (stageId === undefined || !stage) return;
     let active = true;
-    // A new roll starts from nothing: the values wait for the dice to land.
-    setReport(null);
-    setPhase("pending");
-    setOffsets(null);
+    // The values wait for the dice to land: nothing is shown until the throw
+    // reports, and the report is the only thing that can start the sequence.
     void presenter
       .present({
         plan: stage.plan,
@@ -88,9 +104,9 @@ export function DiceOverlay({ dice }: { dice: DicePresentation }) {
     return () => {
       active = false;
     };
-    // Only a new roll re-presents; settings changes apply to the next roll.
+    // One presentation per roll: settings changes apply to the next roll.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageId]);
+  }, []);
 
   /**
    * Anchors the values to the dice that just landed. This runs after layout, so
@@ -101,7 +117,7 @@ export function DiceOverlay({ dice }: { dice: DicePresentation }) {
    * that are not there.
    */
   useLayoutEffect(() => {
-    if (!report || stageId === undefined) return;
+    if (!report) return;
     const anchors = report.mode === "rendered" ? report.anchors : undefined;
     const stageElement = stageRef.current;
     if (!anchors || anchors.length === 0 || !stageElement) {
@@ -121,7 +137,7 @@ export function DiceOverlay({ dice }: { dice: DicePresentation }) {
     }
     setOffsets(next);
     setPhase("die");
-  }, [report, stageId, stageRef]);
+  }, [report, stageRef]);
 
   useEffect(() => {
     if (phase !== "die" || !offsets) return;
@@ -131,30 +147,49 @@ export function DiceOverlay({ dice }: { dice: DicePresentation }) {
     return () => cancelAnimationFrame(frame);
   }, [phase, offsets]);
 
+  /**
+   * Schedules the whole sequence, once, when the values start their rise. The
+   * beats must not be tied to the phase they cause — a cleanup that ran on every
+   * phase change would cancel the later beats the moment the first one landed,
+   * which is a sequence that stops after the values appear.
+   */
   useEffect(() => {
-    if (phase !== "rise") return;
-    const timers = rollSequenceTimeline({ sum: showSum, modifier: hasModifier }).map(
+    if (phase !== "rise" || scheduled.current) return;
+    scheduled.current = true;
+    timers.current = rollSequenceTimeline({ sum: showSum, modifier: hasModifier }).map(
       (step) => window.setTimeout(() => setPhase(step.phase), step.delay),
     );
-    return () => {
-      for (const timer of timers) window.clearTimeout(timer);
-    };
   }, [phase, showSum, hasModifier]);
 
+  // The sequence's own timers live and die with this roll.
+  useEffect(
+    () => () => {
+      for (const timer of timers.current) window.clearTimeout(timer);
+      timers.current = [];
+    },
+    [],
+  );
+
   useEffect(() => {
-    if (stageId === undefined) return;
-    const timer = window.setTimeout(dismiss, diceOverlayLifetimeMs);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") dismiss();
     };
     window.addEventListener("keydown", onKey);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [dismiss, stageId]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dismiss]);
 
-  if (!stage) return null;
+  /**
+   * The result stays up for its own lifetime *after it starts being shown*. A
+   * throw can take seconds to settle, and timing that wait against the roll
+   * would let a slow throw eat the sequence it eventually produced.
+   */
+  const sequenceStarted = phase !== "pending";
+  useEffect(() => {
+    if (!sequenceStarted) return;
+    const timer = window.setTimeout(dismiss, diceOverlayLifetimeMs);
+    return () => window.clearTimeout(timer);
+  }, [dismiss, sequenceStarted]);
+
   const { plan, resolved, presentation, flourish } = stage;
   const diceTotal = diceSum(tokens);
   const outcomeKind = resolved.outcome.kind;
@@ -186,17 +221,17 @@ export function DiceOverlay({ dice }: { dice: DicePresentation }) {
     >
       <div className="dice-stage-wrap">
         <div className="dice-stage" id="dice-stage" ref={stageRef} data-testid="dice-stage" />
+        <span className="dice-stage-note" data-testid="dice-stage-mode">
+          {stageNote}
+        </span>
       </div>
-      <div className="dice-surface">
+      <div className="dice-drawer">
         <div className="dice-topbar">
           <div>
             <span className="eyebrow">
               {plan.context.kind} · {plan.context.action.kind}
             </span>
             <h3 data-testid="dice-overlay-label">{plan.label}</h3>
-            <span className="dice-stage-note" data-testid="dice-stage-mode">
-              {stageNote}
-            </span>
           </div>
           <button
             className="button quiet"

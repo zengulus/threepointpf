@@ -953,29 +953,31 @@ input[type="checkbox"] {
   }
 }
 
-/* Dice presentation. The dice are the surface: an already-resolved roll lands on
-   them, and its values then rise off the dice, gather into the visible
-   arithmetic and reveal the modifier, total and semantic outcome on that line. */
+/* Dice presentation. The dice table sits on the right and the result drawer on
+   the left: an already-resolved roll lands on the dice, and its values then rise
+   off them, travel into the drawer's arithmetic, and reveal the modifier, total
+   and semantic outcome on that line. */
 .dice-overlay {
   --flourish-color: transparent;
   --flourish-intensity: 0.6;
-  --dice-lift: 58px;
-  background: radial-gradient(circle at 50% 28%, rgba(14, 19, 26, 0.94), rgba(5, 8, 12, 0.98));
+  --dice-lift: 44px;
   display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+  grid-template-rows: minmax(0, 1fr) auto;
   inset: 0;
-  padding: 16px;
+  padding: 22px;
   pointer-events: none;
   position: fixed;
   z-index: 40;
 }
-.dice-stage-wrap,
-.dice-surface {
-  grid-area: 1 / 1;
-}
 .dice-stage-wrap {
   background: radial-gradient(circle at 50% 20%, #1c2530 0, rgba(9, 13, 18, 0.96) 72%);
   border: 1px solid #232e3b;
-  border-radius: 14px;
+  border-radius: 12px;
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 220px;
   overflow: hidden;
   pointer-events: auto;
   position: relative;
@@ -989,52 +991,61 @@ input[type="checkbox"] {
   height: 100% !important;
   width: 100% !important;
 }
-.dice-surface {
-  display: flex;
-  flex-direction: column;
-  pointer-events: none;
-  position: relative;
+.dice-stage-note {
+  bottom: 10px;
+  color: #8d99a7;
+  font-size: 10px;
+  left: 12px;
+  letter-spacing: 0.06em;
+  max-width: calc(100% - 24px);
+  position: absolute;
+  text-transform: uppercase;
+}
+/* The drawer is declared after the table so a value travelling out of it is
+   drawn over the stage rather than behind it. */
+.dice-drawer {
+  align-self: end;
+  backdrop-filter: blur(6px);
+  background: rgba(15, 22, 32, 0.96);
+  border: 1px solid #2f3b4a;
+  border-left: 3px solid var(--flourish-color, #f1b66c);
+  border-radius: 10px;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
+  display: grid;
+  gap: 14px;
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+  max-width: 520px;
+  padding: 18px 20px;
+  pointer-events: auto;
 }
 .dice-topbar {
   align-items: flex-start;
   display: flex;
-  gap: 16px;
+  gap: 14px;
   justify-content: space-between;
-  padding: 18px 20px 0;
 }
 .dice-topbar h3 {
   color: #f2f0eb;
   font-size: 19px;
   letter-spacing: -0.03em;
-  margin: 4px 0 5px;
-}
-.dice-topbar .button {
-  pointer-events: auto;
-}
-.dice-stage-note {
-  color: #8d99a7;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin: 5px 0 0;
 }
 .dice-result {
-  align-items: center;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 22px;
-  justify-content: center;
-  padding: 0 20px 40px;
+  display: grid;
+  gap: 16px;
 }
 .dice-sequence {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  justify-content: center;
-  max-width: min(860px, 100%);
-  perspective: 900px;
+  max-width: 100%;
 }
+/* The perspective is part of each chip's own transform rather than a parent's,
+   so a value folded onto a die across the table turns the same way wherever it
+   has travelled to. */
 .dice-value {
   --die-x: 0px;
   --die-y: 0px;
@@ -1051,7 +1062,7 @@ input[type="checkbox"] {
   min-width: 52px;
   padding: 8px 12px 6px;
   position: relative;
-  transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
+  transform: perspective(700px) translate3d(0, 0, 0) rotateX(0deg) scale(1);
   transition:
     transform 660ms cubic-bezier(0.22, 0.8, 0.24, 1),
     opacity 300ms ease;
@@ -1075,13 +1086,15 @@ input[type="checkbox"] {
 .dice-overlay[data-phase="die"] .dice-value {
   opacity: 0;
   transition: none;
-  transform: translate3d(var(--die-x), var(--die-y), 0) rotateX(80deg) scale(0.45);
+  transform: perspective(700px) translate3d(var(--die-x), var(--die-y), 0)
+    rotateX(80deg) scale(0.45);
 }
 /* The rise: up off the die and turned to face the screen. */
 .dice-overlay[data-phase="rise"] .dice-value {
   opacity: 1;
-  transform: translate3d(var(--die-x), calc(var(--die-y) - var(--dice-lift)), 0)
-    rotateX(0deg) scale(1);
+  transform: perspective(700px)
+    translate3d(var(--die-x), calc(var(--die-y) - var(--dice-lift)), 0) rotateX(0deg)
+    scale(1);
 }
 .dice-value[data-natural="true"] {
   border-color: #f1b66c;
@@ -1143,7 +1156,6 @@ input[type="checkbox"] {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  justify-content: center;
 }
 .dice-outcome small {
   letter-spacing: 0.04em;
@@ -1174,18 +1186,13 @@ input[type="checkbox"] {
   border-color: #8d99a7;
 }
 .dice-footer {
-  bottom: 12px;
+  border-top: 1px solid #293440;
   color: #7d8997;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   font-size: 10px;
-  gap: 4px 16px;
-  justify-content: center;
-  left: 0;
+  gap: 5px;
   letter-spacing: 0.06em;
-  padding: 0 20px;
-  position: absolute;
-  right: 0;
+  padding-top: 12px;
   text-transform: uppercase;
 }
 /* Flourish effects belong to the die (or the result) they happened on, so the
@@ -1381,11 +1388,20 @@ input[type="checkbox"] {
 }
 @media (max-width: 900px) {
   .dice-overlay {
-    padding: 10px;
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(150px, 32vh) auto;
+    padding: 12px;
   }
-  .dice-result {
-    gap: 16px;
-    padding: 0 12px 34px;
+  .dice-stage-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dice-drawer {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: stretch;
+    max-width: none;
   }
   .dice-value b,
   .dice-number {
