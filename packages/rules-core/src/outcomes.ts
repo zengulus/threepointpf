@@ -3,7 +3,9 @@ import {
   type AttackDefinition,
   type Contribution,
   type CriticalRange,
+  type CriticalRangeEffect,
   type CriticalRangeEvaluation,
+  type CriticalRangeOperation,
   type ExcludedContribution,
   type RollContext,
   type RollKind,
@@ -42,15 +44,16 @@ export const maneuverOutcomePolicy: RollOutcomePolicy = {
 };
 
 /**
- * PF1e saves have no automatic success or failure: the total is compared with
- * the DC, and a natural 20 that still fails is a failure that happens to be a
- * natural 20. The face stays visible in the outcome either way.
+ * PF1e saving throws: a natural 20 always succeeds and a natural 1 always
+ * fails, whatever the DC. The face also stays visible as a face fact, so
+ * "succeeded because of the DC" and "succeeded because of the natural 20" stay
+ * distinguishable. Neither is a critical outcome.
  */
 export const saveOutcomePolicy: RollOutcomePolicy = {
   id: "pf1e.save",
   kind: "check",
-  natural20: { automatic: false, classification: "natural20" },
-  natural1: { automatic: false, classification: "natural1" },
+  natural20: { automatic: true, classification: "natural20" },
+  natural1: { automatic: true, classification: "natural1" },
   criticalConfirmationRequired: false,
 };
 
@@ -117,10 +120,57 @@ export function attackCriticalRange(
 }
 
 /**
+ * The weapon's or profile's critical damage multiplier; ×2 when nothing authors
+ * one. A weapon's own value wins over the profile it uses, exactly as its threat
+ * range does.
+ */
+export function attackCriticalMultiplier(
+  runtime: RulesRuntime,
+  definition: AttackDefinition,
+): number {
+  const profile = definition.profileId
+    ? lookup(runtime.attackProfileCatalog, definition.profileId)
+    : undefined;
+  return definition.criticalMultiplier ?? profile?.criticalMultiplier ?? 2;
+}
+
+const clampThreatMinimum = (value: number) => Math.max(2, Math.min(20, value));
+
+/**
+ * The minimum face an expansion would leave: `widen` moves by faces, `double`
+ * multiplies the weapon's own range (a 20 threat becomes 19–20, 19–20 becomes
+ * 17–20, 18–20 becomes 15–20).
+ */
+function expandedThreatMinimum(
+  baseMinimum: number,
+  effect: CriticalRangeEffect,
+): number {
+  return (effect.operation ?? "widen") === "double"
+    ? 2 * baseMinimum - 21
+    : baseMinimum - effect.widenBy!;
+}
+
+/**
  * The effective threat range of one attack in one context: the weapon/profile
  * base widened by every eligible `criticalRange` effect. Contributions are
  * *threshold deltas* (a widening is negative), so the displayed evidence sums
  * to the effective range's distance from the base.
+ */
+interface CriticalRangeCandidate {
+  source: string;
+  label: string;
+  operation: CriticalRangeOperation;
+  /** The minimum face this expansion would leave, before clamping. */
+  minimum: number;
+  /** What the expansion would contribute to the threshold. */
+  value: number;
+}
+
+/**
+ * The effective threat range of one attack in one context. Threat-range
+ * expansion is a single nonstacking family, so the most expansive eligible
+ * effect applies and every other eligible one is reported as excluded with the
+ * reason it lost. Effects outside their declared context are excluded too.
  */
 export function evaluateCriticalRange(
   runtime: RulesRuntime,
@@ -146,17 +196,22 @@ export function evaluateCriticalRange(
     ),
   ];
   const excluded: ExcludedContribution[] = [];
+  const candidates: CriticalRangeCandidate[] = [];
   for (const effect of runtime.effects) {
     if (effect.kind !== "criticalRange" || effect.target !== target) continue;
     const source = effect.source?.id ?? "effect";
     const label = effect.source?.label ?? "Effect";
-    const applicability = effect.appliesWhen;
-    if (applicability) {
+    const operation = effect.operation ?? "widen";
+    const minimum = clampThreatMinimum(
+      expandedThreatMinimum(base.minimumNaturalRoll, effect),
+    );
+    const value = minimum - base.minimumNaturalRoll;
+    if (effect.appliesWhen) {
       const match = applicabilityOf(effect, { context });
       if (!match.applies) {
         excluded.push({
           target,
-          value: -effect.widenBy,
+          value,
           label,
           source,
           reason: match.reason ?? "does not apply to this roll",
@@ -164,22 +219,53 @@ export function evaluateCriticalRange(
         continue;
       }
     }
+    candidates.push({ source, label, operation, minimum, value });
+  }
+  // Deterministic winner: the most expansive expansion, ties broken by source
+  // so identical authors never depend on effect order.
+  const winner = [...candidates].sort(
+    (left, right) => left.minimum - right.minimum || left.source.localeCompare(right.source),
+  )[0];
+  for (const candidate of candidates) {
+    if (candidate === winner) continue;
+    excluded.push({
+      target,
+      value: candidate.value,
+      label: candidate.label,
+      source: candidate.source,
+      reason: `threat-range expansions do not stack with ${winner!.label}`,
+    });
+  }
+  if (winner)
     contributions.push(
       sourceContribution(
         target,
-        -effect.widenBy,
-        source,
-        `${label} widens the threat range`,
+        winner.value,
+        winner.source,
+        winner.operation === "double"
+          ? `${winner.label} doubles the threat range`
+          : `${winner.label} widens the threat range`,
         undefined,
-        { note: `Widened by ${effect.widenBy} within its declared context` },
+        {
+          note:
+            winner.operation === "double"
+              ? `Doubles ${base.minimumNaturalRoll}–20 to ${winner.minimum}–20 within its declared context`
+              : `Widened by ${base.minimumNaturalRoll - winner.minimum} within its declared context`,
+        },
       ),
     );
-  }
   const effective: CriticalRange = {
     minimumNaturalRoll: Math.max(
       2,
       Math.min(20, base.minimumNaturalRoll + sum(contributions)),
     ),
   };
-  return { target, base, effective, contributions, excluded };
+  return {
+    target,
+    base,
+    effective,
+    ...(winner ? { operation: winner.operation } : {}),
+    contributions,
+    excluded,
+  };
 }

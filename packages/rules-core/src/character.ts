@@ -1,6 +1,7 @@
 import type { RollPlan } from "@threepointpf/dice";
 import {
   abilityIds,
+  d20CheckDie,
   effectSchema,
   experienceCatalogSchema,
   mergeProgressionCatalogs,
@@ -234,9 +235,15 @@ export class RulesEngine implements RulesRuntime {
             attackTags: profile.attackTags,
             iterative: profile.iterative,
             extraAttackEligible: profile.extraAttackEligible,
-            // A weapon's own threat range wins over the profile it uses.
+            // A weapon's own threat range and multiplier win over the profile's.
             ...(attack.criticalRange ?? profile.criticalRange
               ? { criticalRange: attack.criticalRange ?? profile.criticalRange }
+              : {}),
+            ...(attack.criticalMultiplier ?? profile.criticalMultiplier
+              ? {
+                  criticalMultiplier:
+                    attack.criticalMultiplier ?? profile.criticalMultiplier,
+                }
               : {}),
             attackBonus: (attack.attackBonus ?? 0) + (profile.attackBonus ?? 0),
           }
@@ -896,6 +903,7 @@ export class RulesEngine implements RulesRuntime {
       modifier: evaluation.value,
       context,
       outcomePolicy: this.outcomePolicies.save,
+      primaryCheckDie: d20CheckDie,
       provenance: {
         modifier: evaluation.contributions,
         excluded: evaluation.excluded ?? [],
@@ -974,6 +982,7 @@ export class RulesEngine implements RulesRuntime {
       modifier: skill.total.value,
       context: { ...context, skillId: id },
       outcomePolicy: this.outcomePolicies.skill,
+      primaryCheckDie: d20CheckDie,
       provenance: {
         modifier: skill.total.contributions,
         excluded: skill.total.excluded ?? [],

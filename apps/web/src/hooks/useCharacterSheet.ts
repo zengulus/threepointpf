@@ -28,6 +28,7 @@ import {
   type EvaluationResult,
   type FeatureInstance,
   type ProgressionDefinition,
+  type RollDefense,
 } from "@threepointpf/rules-schema";
 import {
   catalogValues,
@@ -45,6 +46,8 @@ export function useCharacterSheet() {
   );
   const [notice, setNotice] = useState("Local draft ready");
   const [error, setError] = useState<string | null>(null);
+  /** An optional caller-entered DC; blank means "no known DC". */
+  const [rollDc, setRollDc] = useState("");
   const [selected, setSelected] = useState<{
     label: string;
     evaluation: EvaluationResult;
@@ -386,6 +389,15 @@ export function useCharacterSheet() {
       },
       "Added " + definition.name,
     );
+  // The entered DC is a roll defense, exactly like a caller-supplied AC: it
+  // travels through the same plan context and leaves the outcome unresolved
+  // when it is blank.
+  const dcDefense = useMemo<RollDefense | undefined>(() => {
+    const trimmed = rollDc.trim();
+    if (!trimmed) return undefined;
+    const value = Number(trimmed);
+    return Number.isFinite(value) ? { kind: "dc", value } : undefined;
+  }, [rollDc]);
   const roll = async (
     label: string,
     plan: () => ReturnType<RulesEngine["createSaveRollPlan"]>,
@@ -456,6 +468,9 @@ export function useCharacterSheet() {
     validationError: error ?? evaluated.error,
     selected,
     inspect,
+    rollDc,
+    setRollDc,
+    dcDefense,
     update,
     fail,
     updateAbility,

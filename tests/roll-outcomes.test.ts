@@ -7,6 +7,7 @@ import {
 } from "@threepointpf/rules-core";
 import { featureCatalog, rulesCatalogs } from "@threepointpf/rules-data";
 import {
+  effectSchema,
   parseCharacterInput,
   type AttackDefinition,
   type CharacterInput,
@@ -359,41 +360,75 @@ describe("save outcomes", () => {
     defense: { kind: "dc" as const, value },
   });
 
-  it("compares the total with the DC and keeps a natural 20 visible when it fails", () => {
+  it("always succeeds on a natural 20 and always fails on a natural 1", () => {
     const plan = rules.createSaveRollPlan("fortitude", dc(40));
     expect(plan.context.kind).toBe("save");
     expect(plan.context.saveId).toBe("fortitude");
     expect(plan.context.action.kind).toBe("save");
-    // PF1e saves have no automatic success, so a natural 20 can still fail.
-    const resolved = resolveRollPlan(plan, [20]);
-    expect(resolved.outcome.natural20).toBe(true);
-    expect(resolved.outcome.success).toBe(false);
-    expect(resolved.outcome.automaticSuccess).toBe(false);
-    expect(resolved.outcome.kind).toBe("failure");
+    expect(plan.primaryCheckDie).toEqual({ group: 0, sides: 20 });
+    // PF1e: the face decides regardless of the DC, and the face fact stays
+    // visible next to the automatic rule that produced the outcome.
+    const natural20 = resolveRollPlan(plan, [20]);
+    expect(natural20.naturalFace).toBe(20);
+    expect(natural20.outcome).toMatchObject({
+      natural20: true,
+      natural1: false,
+      automaticSuccess: true,
+      automaticFailure: false,
+      success: true,
+      kind: "success",
+    });
+    const natural1 = resolveRollPlan(rules.createSaveRollPlan("will", dc(1)), [1]);
+    expect(natural1.outcome).toMatchObject({
+      natural1: true,
+      automaticFailure: true,
+      automaticSuccess: false,
+      success: false,
+      kind: "failure",
+    });
     expect(plan.criticalRange).toBeUndefined();
   });
 
-  it("does not treat a natural 1 as an automatic save failure", () => {
-    const resolved = resolveRollPlan(rules.createSaveRollPlan("will", dc(1)), [1]);
-    expect(resolved.outcome.natural1).toBe(true);
-    expect(resolved.outcome.automaticFailure).toBe(false);
-    expect(resolved.outcome.success).toBe(true);
-    expect(resolved.outcome.kind).toBe("success");
+  it("compares an ordinary face with the DC using the save's own modifier", () => {
+    const plan = rules.createSaveRollPlan("reflex", dc(20));
+    const face = 12;
+    const beats = face + plan.modifier >= 20;
+    const resolved = resolveRollPlan(plan, [face]);
+    expect(resolved.outcome.natural20).toBe(false);
+    expect(resolved.outcome.automaticSuccess).toBe(false);
+    expect(resolved.outcome.success).toBe(beats);
+    expect(resolved.outcome.kind).toBe(beats ? "success" : "failure");
   });
 
-  it("reports the natural face alone when no DC is known", () => {
-    expect(resolveRollPlan(rules.createSaveRollPlan("reflex"), [20]).outcome.kind).toBe(
-      "natural20",
-    );
-    expect(resolveRollPlan(rules.createSaveRollPlan("reflex"), [1]).outcome.kind).toBe(
-      "natural1",
-    );
-    expect(resolveRollPlan(rules.createSaveRollPlan("reflex"), [12]).outcome.kind).toBe(
-      "unresolved",
-    );
+  it("adds no verdict when no DC is known, but keeps the automatic rule", () => {
+    const unknown = resolveRollPlan(rules.createSaveRollPlan("reflex"), [12]);
+    expect(unknown.outcome.natural20).toBe(false);
+    expect(unknown.outcome.natural1).toBe(false);
+    expect(unknown.outcome.success).toBeUndefined();
+    expect(unknown.outcome.kind).toBe("unresolved");
+    expect(unknown.outcome.defense).toBeUndefined();
+    // A natural 20 needs no DC: PF1e makes it succeed outright.
+    const natural20 = resolveRollPlan(rules.createSaveRollPlan("reflex"), [20]);
+    expect(natural20.outcome).toMatchObject({
+      natural20: true,
+      automaticSuccess: true,
+      success: true,
+      kind: "success",
+    });
   });
 
-  it("honors a campaign policy that assigns automatic save semantics", () => {
+  it("does not give skill checks the save's automatic faces", () => {
+    const plan = rules.createSkillRollPlan("perception", {
+      defense: { kind: "dc", value: 40 },
+    });
+    const resolved = resolveRollPlan(plan, [20]);
+    expect(resolved.outcome.natural20).toBe(true);
+    expect(resolved.outcome.automaticSuccess).toBe(false);
+    expect(resolved.outcome.success).toBe(false);
+    expect(resolved.outcome.kind).toBe("failure");
+  });
+
+  it("honors a campaign policy that assigns a critical classification to save naturals", () => {
     const automatic: RollOutcomePolicy = {
       ...pf1eOutcomePolicies.save,
       id: "campaign.save",
@@ -408,6 +443,10 @@ describe("save outcomes", () => {
     expect(resolved.outcome.success).toBe(true);
     expect(resolved.outcome.kind).toBe("criticalSuccess");
     expect(campaign.outcomePolicies.attack).toEqual(pf1eOutcomePolicies.attack);
+    // The default policy still reports a plain success, not a critical one.
+    expect(
+      resolveRollPlan(rules.createSaveRollPlan("fortitude", dc(40)), [20]).outcome.kind,
+    ).toBe("success");
   });
 });
 
@@ -810,6 +849,53 @@ describe("rejected and contradictory contexts", () => {
     expect(damage.every((roll) => roll.context.target === undefined)).toBe(true);
   });
 
+  it("carries a caller-entered DC through the shared request path", () => {
+    const character = homebrew({});
+    const save = createCharacterRollPlan(
+      character,
+      {
+        characterId: character.id,
+        kind: "save",
+        saveId: "will",
+        defense: { kind: "dc", value: 18 },
+      },
+      rulesCatalogs,
+    );
+    expect(save.context.target?.defense).toEqual({ kind: "dc", value: 18 });
+    // A supplied DC decides an ordinary face; a natural 20 still wins outright.
+    const middle = 10;
+    expect(resolveRollPlan(save, [middle]).outcome.success).toBe(
+      middle + save.modifier >= 18,
+    );
+    expect(resolveRollPlan(save, [20]).outcome.automaticSuccess).toBe(true);
+    const skill = createCharacterRollPlan(
+      character,
+      {
+        characterId: character.id,
+        kind: "skill",
+        skillId: "perception",
+        defense: { kind: "dc", value: 15 },
+      },
+      rulesCatalogs,
+    );
+    expect(skill.context.target?.defense).toEqual({ kind: "dc", value: 15 });
+    expect(resolveRollPlan(skill, [middle]).outcome.success).toBe(
+      middle + skill.modifier >= 15,
+    );
+    // A skill has no automatic faces, so a natural 20 can still fail a DC.
+    expect(
+      resolveRollPlan(skill, [20]).outcome.success,
+    ).toBe(20 + skill.modifier >= 15);
+    // The same request without a DC leaves the verdict out entirely.
+    const unknown = createCharacterRollPlan(
+      character,
+      { characterId: character.id, kind: "skill", skillId: "perception" },
+      rulesCatalogs,
+    );
+    expect(unknown.context.target).toBeUndefined();
+    expect(resolveRollPlan(unknown, [middle]).outcome.success).toBeUndefined();
+  });
+
   it("keeps touch and non-touch attack contexts apart at the plan level", () => {
     const character = homebrew({
       attacks: [ranged("bow"), ranged("ray", { attackTags: ["weapon.ranged", "weapon.touch"] })],
@@ -830,5 +916,265 @@ describe("rejected and contradictory contexts", () => {
       reason: "does not apply to touch attacks",
     });
     expect(exclusion?.label).toContain("Deadly Aim");
+  });
+});
+
+describe("primary check dice", () => {
+  it("declares the check die on every check and no die on damage", () => {
+    const character = homebrew({
+      attacks: [melee("sword", { baseDamage: { count: 1, sides: 20 } })],
+    });
+    const rules = engine(character);
+    const checkDie = { group: 0, sides: 20 };
+    expect(
+      rules.createAttackRollPlan("sword", 0, { action: "standardAttack" })
+        .primaryCheckDie,
+    ).toEqual(checkDie);
+    expect(rules.createManeuverRollPlan("trip").primaryCheckDie).toEqual(
+      checkDie,
+    );
+    expect(rules.createSaveRollPlan("will").primaryCheckDie).toEqual(checkDie);
+    expect(rules.createInitiativeRollPlan().primaryCheckDie).toEqual(checkDie);
+    expect(rules.createSkillRollPlan("perception").primaryCheckDie).toEqual(
+      checkDie,
+    );
+    // Damage is not a check, so it declares no check die at all.
+    expect(
+      rules.createDamageRollPlan("sword", { action: "standardAttack" })
+        .primaryCheckDie,
+    ).toBeUndefined();
+  });
+
+  it("never reads a natural face out of a damage die, even a d20", () => {
+    const character = homebrew({
+      attacks: [melee("d20-damage", { baseDamage: { count: 1, sides: 20 } })],
+    });
+    const rules = engine(character);
+    const damage = rules.createDamageRollPlan("d20-damage", {
+      action: "standardAttack",
+    });
+    expect(damage.dice).toEqual([{ sides: 20, count: 1 }]);
+    const resolved = resolveRollPlan(damage, [20]);
+    expect(resolved.naturalFace).toBeUndefined();
+    expect(resolved.outcome).not.toHaveProperty("natural20");
+    expect(resolved.outcome).not.toHaveProperty("natural1");
+    expect(resolved.outcome).not.toHaveProperty("inCriticalRange");
+    expect(resolved.outcome.kind).toBe("unresolved");
+    // The same dice rolled as an attack do carry natural-face semantics.
+    const attack = rules.createAttackRollPlan("d20-damage", 0, {
+      action: "standardAttack",
+      defense: { kind: "ac", value: 1 },
+    });
+    expect(resolveRollPlan(attack, [20]).outcome.natural20).toBe(true);
+  });
+
+  it("does not repeat a natural-face classification in a display label", () => {
+    const resolved = resolveRollPlan(
+      engine(homebrew({})).createSkillRollPlan("perception"),
+      [1],
+    );
+    expect(resolved.outcome.kind).toBe("natural1");
+    expect(formatRollOutcome(resolved.outcome)).toBe("natural 1");
+  });
+
+  it("rejects a declared check die the plan's dice do not have", () => {
+    const plan = engine(homebrew({ attacks: [melee("sword")] })).createAttackRollPlan(
+      "sword",
+      0,
+      { action: "standardAttack" },
+    );
+    expect(() =>
+      resolveRollPlan({ ...plan, primaryCheckDie: { group: 4, sides: 20 } }, [10]),
+    ).toThrow(/unknown check-die group/);
+    expect(() =>
+      resolveRollPlan(
+        { ...plan, primaryCheckDie: { group: 0, index: 3, sides: 20 } },
+        [10],
+      ),
+    ).toThrow(/out-of-range check die/);
+  });
+});
+
+describe("threat-range expansion (Improved Critical and Keen)", () => {
+  const expansion = (
+    overrides: Partial<Extract<Effect, { kind: "criticalRange" }>> = {},
+  ): Effect => ({
+    kind: "criticalRange",
+    target: "attack.melee",
+    operation: "double",
+    appliesWhen: { modes: ["melee"] },
+    source: { id: "homebrew.improved-critical", label: "Improved Critical" },
+    ...overrides,
+  });
+
+  it("doubles a weapon's own range instead of adding a flat number of faces", () => {
+    const character = homebrew({
+      attacks: [
+        melee("longsword", { criticalRange: { minimumNaturalRoll: 19 }, iterative: false }),
+        melee("plain-sword", { iterative: false }),
+        melee("high-threat", { criticalRange: { minimumNaturalRoll: 18 }, iterative: false }),
+      ],
+      features: [
+        { id: "improved-critical", name: "Improved Critical", enabled: true, effects: [expansion()] },
+      ],
+    });
+    const rules = engine(character);
+    const range = (attackId: string) =>
+      rules.createAttackRollPlan(attackId, 0, { action: "standardAttack" });
+    // 19–20 → 17–20, 20 → 19–20, 18–20 → 15–20.
+    expect(range("longsword").criticalRange).toEqual({ minimumNaturalRoll: 17 });
+    expect(range("plain-sword").criticalRange).toEqual({ minimumNaturalRoll: 19 });
+    expect(range("high-threat").criticalRange).toEqual({ minimumNaturalRoll: 15 });
+    const evidence = range("longsword").provenance?.criticalRange;
+    expect(evidence?.operation).toBe("double");
+    expect(evidence?.base).toEqual({ minimumNaturalRoll: 19 });
+    expect(evidence?.effective).toEqual({ minimumNaturalRoll: 17 });
+    expect(
+      evidence?.contributions.map((item) => [item.source, item.value]),
+    ).toEqual([
+      ["critical-range.base", 0],
+      ["homebrew.improved-critical", -2],
+    ]);
+    expect(evidence?.contributions[1]?.note).toContain("Doubles 19–20 to 17–20");
+  });
+
+  it("applies only to the weapons it names", () => {
+    const character = homebrew({
+      attacks: [melee("scimitar"), melee("club")],
+      features: [
+        {
+          id: "improved-critical-scimitar",
+          name: "Improved Critical (scimitar)",
+          enabled: true,
+          effects: [
+            expansion({
+              appliesWhen: { modes: ["melee"], attackIds: ["scimitar"] },
+              source: {
+                id: "homebrew.improved-critical-scimitar",
+                label: "Improved Critical (scimitar)",
+              },
+            }),
+          ],
+        },
+      ],
+    });
+    const rules = engine(character);
+    expect(
+      rules.createAttackRollPlan("scimitar", 0, { action: "standardAttack" })
+        .criticalRange,
+    ).toEqual({ minimumNaturalRoll: 19 });
+    const club = rules.createAttackRollPlan("club", 0, {
+      action: "standardAttack",
+    });
+    expect(club.criticalRange).toEqual({ minimumNaturalRoll: 20 });
+    expect(club.provenance?.criticalRange?.excluded[0]).toMatchObject({
+      source: "homebrew.improved-critical-scimitar",
+      reason: "requires weapon scimitar",
+    });
+  });
+
+  it("does not stack: the most expansive expansion applies and the rest say why", () => {
+    const keen: Effect = expansion({
+      source: { id: "homebrew.keen-weapon", label: "Keen" },
+    });
+    const character = homebrew({
+      attacks: [
+        melee("keen-longsword", { criticalRange: { minimumNaturalRoll: 19 }, iterative: false }),
+        melee("short-sword", { criticalRange: { minimumNaturalRoll: 19 }, iterative: false }),
+      ],
+      features: [
+        { id: "improved-critical", name: "Improved Critical", enabled: true, effects: [expansion()] },
+        { id: "keen", name: "Keen weapon", enabled: true, effects: [keen] },
+      ],
+    });
+    const rules = engine(character);
+    const plan = rules.createAttackRollPlan("keen-longsword", 0, {
+      action: "standardAttack",
+    });
+    // One doubling, not two: 19–20 stays 17–20 rather than becoming 15–20.
+    expect(plan.criticalRange).toEqual({ minimumNaturalRoll: 17 });
+    expect(plan.provenance?.criticalRange?.excluded).toEqual([
+      expect.objectContaining({
+        source: "homebrew.keen-weapon",
+        value: -2,
+        reason: "threat-range expansions do not stack with Improved Critical",
+      }),
+    ]);
+    // Keen alone is enough to double the weapon's range.
+    const keenOnly = engine(
+      homebrew({
+        attacks: [melee("short-sword", { criticalRange: { minimumNaturalRoll: 19 }, iterative: false })],
+        features: [{ id: "keen", name: "Keen weapon", enabled: true, effects: [keen] }],
+      }),
+    ).createAttackRollPlan("short-sword", 0, { action: "standardAttack" });
+    expect(keenOnly.criticalRange).toEqual({ minimumNaturalRoll: 17 });
+  });
+
+  it("lets a wider flat expansion beat a doubling, and keeps the threat a threat", () => {
+    const character = homebrew({
+      attacks: [melee("longsword", { criticalRange: { minimumNaturalRoll: 19 }, iterative: false })],
+      features: [
+        { id: "improved-critical", name: "Improved Critical", enabled: true, effects: [expansion()] },
+        {
+          id: "wide-expansion",
+          name: "Wider threat",
+          enabled: true,
+          effects: [
+            expansion({
+              operation: "widen",
+              widenBy: 5,
+              source: { id: "homebrew.wide-expansion", label: "Wider threat" },
+            }),
+          ],
+        },
+      ],
+    });
+    const rules = engine(character);
+    const plan = rules.createAttackRollPlan("longsword", 0, {
+      action: "standardAttack",
+      defense: { kind: "ac", value: MELEE_MODIFIER + 18 },
+    });
+    // 19–20 widened by 5 is 14–20, which is more expansive than 17–20.
+    expect(plan.criticalRange).toEqual({ minimumNaturalRoll: 14 });
+    expect(plan.provenance?.criticalRange?.operation).toBe("widen");
+    expect(plan.provenance?.criticalRange?.excluded[0]?.source).toBe(
+      "homebrew.improved-critical",
+    );
+    // Being in a doubled or widened range is never an automatic hit.
+    const resolved = resolveRollPlan(plan, [14]);
+    expect(resolved.outcome.inCriticalRange).toBe(true);
+    expect(resolved.outcome.automaticHit).toBe(false);
+    expect(resolved.outcome.hit).toBe(false);
+    expect(resolved.outcome.critical).toBe(false);
+    expect(resolved.outcome.kind).toBe("failure");
+  });
+
+  it("validates the operation/argument combination at parse time", () => {
+    expect(() =>
+      effectSchema.parse({ kind: "criticalRange", target: "attack.melee" }),
+    ).toThrow(/requires widenBy/);
+    expect(() =>
+      effectSchema.parse({
+        kind: "criticalRange",
+        target: "attack.melee",
+        operation: "double",
+        widenBy: 2,
+      }),
+    ).toThrow(/takes no widenBy/);
+    expect(
+      effectSchema.parse({
+        kind: "criticalRange",
+        target: "attack.melee",
+        operation: "double",
+        appliesWhen: { attackIds: ["equipment.rapier"] },
+      }),
+    ).toMatchObject({ operation: "double" });
+    expect(
+      effectSchema.parse({
+        kind: "criticalRange",
+        target: "attack.melee",
+        widenBy: 1,
+      }),
+    ).toMatchObject({ widenBy: 1 });
   });
 });

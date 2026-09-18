@@ -153,6 +153,31 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   );
 });
 
+test("an optional entered DC resolves a check or leaves it unresolved", async ({ page }) => {
+  await page.goto("/");
+  // A skill check has no automatic face rule and no known DC, so nothing is
+  // resolved: the face facts are reported and no verdict is invented.
+  await page.getByTestId("roll-skill-perception").click();
+  await expect(page.locator(".top-actions")).toContainText(
+    /Perception check: \d+ [+-]\d+ = \d+ · /,
+  );
+  await expect(page.locator(".top-actions")).not.toContainText("success");
+  await expect(page.locator(".top-actions")).not.toContainText("failure");
+  await page.getByTestId("roll-dc-skills").fill("1");
+  await page.getByTestId("roll-skill-perception").click();
+  await expect(page.locator(".top-actions")).toContainText(
+    /Perception check: \d+ [+-]\d+ = \d+ · (success|failure)/,
+  );
+  await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  // Saves use the defense field in the defenses panel the same way.
+  await page.getByTestId("roll-dc-saves").fill("1");
+  await page.getByTestId("roll-fortitude").click();
+  await expect(page.locator(".top-actions")).toContainText(
+    /fortitude save: \d+ [+-]\d+ = \d+ · /,
+  );
+  await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+});
+
 test("mobile editors fit the viewport while N-track tables scroll within their panel", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

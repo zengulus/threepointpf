@@ -34,7 +34,7 @@ export interface ResolvedRoll {
   faces: number[];
   modifier: number;
   total: number;
-  /** The raw d20 that drove the outcome, when the plan rolls one. */
+  /** The face of the plan's primary check die, when the plan declares one. */
   naturalFace?: number;
   outcome: RollOutcome;
 }
@@ -74,17 +74,25 @@ export function validateFaces(plan: RollPlan, faces: readonly number[]): void {
 }
 
 /**
- * The natural face is the first face of the plan's first d20 group, which is
- * how every d20 roll family declares its primary die. A plan with no d20 has no
- * natural face and therefore no natural-face semantics.
+ * The face of the plan's declared primary check die. The die is never discovered
+ * by scanning for a d20: a damage roll that happens to use d20s declares no
+ * check die and therefore has no natural face at all.
  */
-export function naturalFaceOf(plan: RollPlan, faces: readonly number[]): number | undefined {
-  let index = 0;
-  for (const group of plan.dice) {
-    if (group.sides === 20) return faces[index];
-    index += group.count;
-  }
-  return undefined;
+export function primaryCheckFaceOf(
+  plan: RollPlan,
+  faces: readonly number[],
+): number | undefined {
+  const die = plan.primaryCheckDie;
+  if (!die) return undefined;
+  if (!Number.isInteger(die.group) || die.group < 0 || die.group >= plan.dice.length)
+    throw new Error(`Roll plan ${plan.id} declares an unknown check-die group`);
+  let offset = 0;
+  for (let index = 0; index < die.group; index += 1)
+    offset += plan.dice[index]!.count;
+  const within = die.index ?? 0;
+  if (!Number.isInteger(within) || within < 0 || within >= plan.dice[die.group]!.count)
+    throw new Error(`Roll plan ${plan.id} declares an out-of-range check die`);
+  return faces[offset + within];
 }
 
 function attackKind(
@@ -142,6 +150,9 @@ export function evaluateRollOutcome(
   total: number,
 ): RollOutcome {
   const policy = plan.outcomePolicy;
+  // A roll with no declared check die has no natural-face semantics, so the
+  // facts are absent rather than false.
+  const hasCheckDie = naturalFace !== undefined;
   const natural20 = naturalFace === 20;
   const natural1 = naturalFace === 1;
   const defense = plan.context.target?.defense;
@@ -152,8 +163,7 @@ export function evaluateRollOutcome(
       : undefined;
   const outcome: RollOutcome = {
     kind: "unresolved",
-    natural20,
-    natural1,
+    ...(hasCheckDie ? { natural20, natural1 } : {}),
     ...(defense ? { defense } : {}),
     ...(range && naturalFace !== undefined
       ? { criticalRange: range, inCriticalRange }
@@ -205,7 +215,7 @@ export function evaluateRollOutcome(
 export function resolveRollPlan(plan: RollPlan, faces: readonly number[]): ResolvedRoll {
   validateFaces(plan, faces);
   const total = faces.reduce((sum, face) => sum + face, 0) + plan.modifier;
-  const naturalFace = naturalFaceOf(plan, faces);
+  const naturalFace = primaryCheckFaceOf(plan, faces);
   return {
     planId: plan.id,
     label: plan.label,
@@ -223,7 +233,10 @@ export function formatRollOutcome(outcome: RollOutcome): string {
   if (outcome.natural20) parts.push("natural 20");
   else if (outcome.natural1) parts.push("natural 1");
   if (outcome.automaticHit || outcome.automaticSuccess) parts.push("automatic");
-  parts.push(outcome.kind);
+  // A natural-face classification is the face fact itself, so it is not
+  // repeated as a second label ("natural 1 · natural1").
+  if (outcome.kind !== "natural20" && outcome.kind !== "natural1")
+    parts.push(outcome.kind);
   if (outcome.criticalRange && outcome.inCriticalRange !== undefined)
     parts.push(
       `threat ${outcome.criticalRange.minimumNaturalRoll}–20${

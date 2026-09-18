@@ -691,6 +691,16 @@ const rollPlanSchema = z.object({
   modifier: z.number(),
   context: rollContextSchema,
   outcomePolicy: rollOutcomePolicySchema,
+  // Checked for shape only, like the rest of a submitted plan: resolution uses
+  // the server's own rebuild, including its declared primary check die.
+  primaryCheckDie: z
+    .object({
+      group: z.number().int().nonnegative(),
+      index: z.number().int().nonnegative().optional(),
+      sides: z.number().int().min(2),
+    })
+    .strict()
+    .optional(),
   criticalRange: criticalRangeSchema.optional(),
   provenance: z.unknown().optional(),
 });

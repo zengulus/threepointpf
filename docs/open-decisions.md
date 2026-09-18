@@ -26,10 +26,12 @@ repeated here.
 Settled by the roll-contract pass, and no longer open: the roll/action contract
 itself, per-action roll plans, deterministic outcome classification with
 distinct natural-face and critical facts, no critical confirmation, and critical
-ranges authored on weapons/profiles and widened by contextual effects. Also
+ranges authored on weapons/profiles and expanded by contextual effects. Also
 settled since: damage and initiative are first-class roll plans, an action's
-roll list carries each step's damage roll, and a critical hit is that damage
-plan rolled twice instead of client-side doubling.
+roll list carries each step's damage roll, PF1e save naturals are automatic, the
+critical multiplier is authored per weapon/profile, a plan declares its own
+primary check die, and threat-range expansion covers Improved Critical/Keen
+doubling with weapon scoping and nonstacking.
 
 ## Rule semantics
 
@@ -40,14 +42,13 @@ plan rolled twice instead of client-side doubling.
    at the modifiers plus an author reminder, or add a `ManeuverResolution` that
    carries both contexts. Today a maneuver is a contextual CMB plan compared
    against the caller's CMD and the table adjudicates the rest.
-2. **Critical damage and precision damage.** A critical damage plan rolls the
-   damage twice (`criticalDamage`: doubled dice and doubled modifier), so the
-   doubling is server-computed and a damage roll is part of its action's roll
-   list. What is not modelled: precision damage (sneak attack, a ranger's
-   favored-enemy dice) should not be multiplied, and nothing yet offers the
-   critical variant automatically after a `criticalSuccess` — the caller decides
-   when the attack crit. Both remain a rules decision, not an implementation
-   detail.
+2. **Precision damage and automatic critical damage.** A critical damage plan
+   applies the weapon's or profile's authored `criticalMultiplier` (default ×2),
+   so the multiplication is content and the arithmetic is server-side. What is
+   not modelled: precision damage (sneak attack, a ranger's favored-enemy dice)
+   should not be multiplied, and nothing yet offers the critical variant
+   automatically after a `criticalSuccess` — the caller decides when the attack
+   crit. Both remain a rules decision, not an implementation detail.
 3. **Multiple extra-attack sources.** Haste grants exactly one extra attack per
    full-attack action (decided, and covered by tests). Whether Rapid Shot, Haste
    and a future *speed* weapon stack, or whether extra attacks of the same class
@@ -105,12 +106,14 @@ plan rolled twice instead of client-side doubling.
     forced through a single "declare action, then select weapons" flow, or keep
     per-weapon shortcuts (which must always carry the action explicitly, as the
     request does now), is a UX decision with rules consequences.
-12. **How much of an outcome to show.** Rolls now report the natural face, the
-    threat-range verdict and the semantic outcome, and no defense is supplied
-    from the sheet, so an ordinary attack roller mostly reads
-    "unresolved". Whether the sheet should ask for a target defense, remember a
-    last-used one, or keep the table's numbers out of the app is the next
-    presentation decision.
+12. **How much of an outcome to show.** Rolls report the natural face, the
+    threat-range verdict and the semantic outcome. The sheet now has one optional
+    caller-entered Target DC that saves and skill checks use, so a DC-checked
+    roll resolves while a blank field leaves it unresolved rather than assuming a
+    number. Still open: whether the sheet should also take a target AC/CMD, remember a
+    last-used value per character, or keep the table's numbers out of the app,
+    and whether the attack roller should keep reporting "unresolved" until the
+    table supplies an AC.
 13. **Exclusion display volume.** Every filtered effect is reported with a
     reason, and the sheet shows them for the inspected target. If players need
     "why is my ray not getting Deadly Aim" without inspecting, the plan needs a

@@ -1,14 +1,15 @@
 import type { RollPlan } from "@threepointpf/dice";
-import type {
-  Contribution,
-  DerivedSkill,
-  EvaluationResult,
-  RollContext,
-  RollDefense,
-  SkillConfiguration,
-  SkillId,
-  TargetContext,
-  TargetId,
+import {
+  d20CheckDie,
+  type Contribution,
+  type DerivedSkill,
+  type EvaluationResult,
+  type RollContext,
+  type RollDefense,
+  type SkillConfiguration,
+  type SkillId,
+  type TargetContext,
+  type TargetId,
 } from "@threepointpf/rules-schema";
 import { base, lookup, sourceContribution } from "./contributions.js";
 import { defaultSkillAbilities, skillLabel } from "./labels.js";
@@ -277,6 +278,7 @@ export function initiativeRollPlan(
     modifier: evaluation.value,
     context,
     outcomePolicy: runtime.outcomePolicies.plain,
+    primaryCheckDie: d20CheckDie,
     provenance: {
       modifier: evaluation.contributions,
       excluded: evaluation.excluded ?? [],

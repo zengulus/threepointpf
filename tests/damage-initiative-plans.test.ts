@@ -237,6 +237,85 @@ describe("damage roll plans", () => {
   });
 });
 
+describe("authored critical multipliers", () => {
+  it("defaults to x2 and lets a weapon author its own multiplier", () => {
+    const character = homebrew({
+      attacks: [
+        melee("plain", { baseDamage: { count: 1, sides: 8 } }),
+        melee("axe", {
+          baseDamage: { count: 1, sides: 8 },
+          criticalMultiplier: 3,
+        }),
+      ],
+    });
+    const rules = engine(character);
+    const derived = (id: string) =>
+      rules.derive().attacks.find((attack) => attack.definition.id === id)!
+        .damage;
+    expect(derived("plain").criticalMultiplier).toBe(2);
+    expect(derived("axe").criticalMultiplier).toBe(3);
+    const plain = rules.createDamageRollPlan("plain", {
+      action: "standardAttack",
+      criticalDamage: true,
+    });
+    const axe = rules.createDamageRollPlan("axe", {
+      action: "standardAttack",
+      criticalDamage: true,
+    });
+    const axeOrdinary = rules.createDamageRollPlan("axe", {
+      action: "standardAttack",
+    });
+    expect(plain.dice).toEqual([{ sides: 8, count: 2 }]);
+    expect(axe.dice).toEqual([{ sides: 8, count: 3 }]);
+    expect(axe.modifier).toBe(axeOrdinary.modifier * 3);
+    expect(sumOf(axe.provenance!.modifier)).toBe(axe.modifier);
+    expect(axe.label).toContain("(critical ×3)");
+    expect(axeOrdinary.label).not.toContain("critical");
+  });
+
+  it("prefers the weapon's multiplier over the profile's", () => {
+    const profile = {
+      id: "test.axe-profile",
+      name: "Axe profile",
+      attackAbility: "str" as const,
+      damageAbility: "str" as const,
+      mode: "melee" as const,
+      attackTags: ["weapon.melee" as const],
+      criticalMultiplier: 4,
+    };
+    const character = homebrew({
+      attacks: [
+        melee("profile-axe", {
+          baseDamage: { count: 1, sides: 8 },
+          profileId: profile.id,
+        }),
+        melee("own-multiplier", {
+          baseDamage: { count: 1, sides: 8 },
+          profileId: profile.id,
+          criticalMultiplier: 3,
+        }),
+      ],
+    });
+    const rules = new RulesEngine(character, {
+      ...rulesCatalogs,
+      attackProfileCatalog: { [profile.id]: profile },
+    });
+    expect(rules.derive().attacks[0]!.damage.criticalMultiplier).toBe(4);
+    expect(rules.derive().attacks[1]!.damage.criticalMultiplier).toBe(3);
+    const critical = rules.createDamageRollPlan("profile-axe", {
+      action: "standardAttack",
+      criticalDamage: true,
+    });
+    expect(critical.dice).toEqual([{ sides: 8, count: 4 }]);
+    expect(critical.context.criticalDamage).toBe(true);
+    // An ordinary hit is unaffected by the multiplier.
+    expect(
+      rules.createDamageRollPlan("profile-axe", { action: "standardAttack" })
+        .dice,
+    ).toEqual([{ sides: 8, count: 1 }]);
+  });
+});
+
 describe("initiative roll plans", () => {
   it("plans initiative as a d20 with the derived modifier and no comparison", () => {
     const character = homebrew({

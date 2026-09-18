@@ -1,5 +1,6 @@
 import type { RollPlan } from "@threepointpf/dice";
 import {
+  d20CheckDie,
   type ActionAttackPlan,
   type ActionKind,
   type ActionPlan,
@@ -22,7 +23,10 @@ import { base, lookup, sourceContribution } from "./contributions.js";
 import { babContribution, evaluateCombatManeuver } from "./defenses.js";
 import { attackModeOf, resolveContextFlags } from "./effects.js";
 import { labelForTarget } from "./labels.js";
-import { evaluateCriticalRange } from "./outcomes.js";
+import {
+  attackCriticalMultiplier,
+  evaluateCriticalRange,
+} from "./outcomes.js";
 import type { RulesRuntime } from "./runtime.js";
 
 export { attackModeOf };
@@ -278,6 +282,7 @@ export function evaluateDamage(
     formula: `${definition.baseDamage.count}d${definition.baseDamage.sides}${modifier === 0 ? "" : modifier > 0 ? ` + ${modifier}` : ` - ${Math.abs(modifier)}`}`,
     dice: definition.baseDamage,
     modifier,
+    criticalMultiplier: attackCriticalMultiplier(runtime, definition),
     contributions: damageResult.contributions,
     ...(damageResult.excluded ? { excluded: damageResult.excluded } : {}),
   };
@@ -293,7 +298,9 @@ export interface DamageRollOptions {
   touch?: boolean;
   flags?: string[];
   excludeFlags?: string[];
-  /** Roll the damage twice and add it together, for a critical hit. */
+  /**
+   * This is the critical damage roll: the weapon's authored multiplier applies.
+   */
   criticalDamage?: boolean;
 }
 
@@ -324,32 +331,37 @@ function damagePlanFrom(
   const step = context.action.sequenceIndex ?? 0;
   const standard = context.action.kind === "standardAttack";
   const suffix = standard ? ":standard" : step ? `:${step}` : "";
+  // The multiplier is authored on the weapon or its profile; nothing here
+  // hardcodes a doubling.
+  const times = criticalDamage ? evaluation.criticalMultiplier : 1;
   return {
     id: `damage:${runtime.character.id}:${definition.id}${suffix}${criticalDamage ? ":critical" : ""}`,
     characterId: runtime.character.id,
-    label: `${definition.name} damage${standard || step === 0 ? "" : ` ${step + 1}`}${criticalDamage ? " (critical)" : ""}`,
+    label: `${definition.name} damage${standard || step === 0 ? "" : ` ${step + 1}`}${criticalDamage ? ` (critical ×${times})` : ""}`,
     dice: [
       {
         sides: definition.baseDamage.sides,
-        count: definition.baseDamage.count * (criticalDamage ? 2 : 1),
+        count: definition.baseDamage.count * times,
       },
     ],
-    modifier: evaluation.modifier * (criticalDamage ? 2 : 1),
+    modifier: evaluation.modifier * times,
     context,
     outcomePolicy: runtime.outcomePolicies.plain,
     provenance: {
-      // A critical hit rolls the damage again, so the contributions gain one
-      // more copy of the modifier and still sum to the plan's modifier.
+      // A critical hit rolls the damage once more per multiplier step, so the
+      // contributions gain the extra copies and still sum to the plan modifier.
       modifier: criticalDamage
         ? [
             ...evaluation.contributions,
             sourceContribution(
               target,
-              evaluation.modifier,
+              evaluation.modifier * (times - 1),
               "damage.critical",
-              "Critical hit",
+              `Critical hit ×${times}`,
               undefined,
-              { note: "The damage is rolled a second time and added" },
+              {
+                note: `The weapon's authored ×${times} multiplier rolls the damage ${times} times and adds it`,
+              },
             ),
           ]
         : evaluation.contributions,
@@ -558,6 +570,7 @@ function attackRollFor(
     modifier: evaluation.value,
     context,
     outcomePolicy: runtime.outcomePolicies.attack,
+    primaryCheckDie: d20CheckDie,
     criticalRange: criticalRange.effective,
     provenance: {
       modifier: evaluation.contributions,
@@ -753,6 +766,7 @@ function maneuverActionPlan(
     modifier: evaluation.value,
     context,
     outcomePolicy: runtime.outcomePolicies.maneuver,
+    primaryCheckDie: d20CheckDie,
     provenance: {
       modifier: evaluation.contributions,
       excluded: evaluation.excluded ?? [],

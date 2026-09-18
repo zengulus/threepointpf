@@ -275,6 +275,35 @@ export function ExperiencePanel({ sheet }: { sheet: CharacterSheet }) {
   );
 }
 
+/**
+ * An optional caller-entered DC for rolls checked against one. It is the same
+ * defense context a caller-supplied AC uses, so a blank field leaves the
+ * outcome unresolved instead of assuming a number.
+ */
+function RollDcField({
+  sheet,
+  label,
+  testId,
+}: {
+  sheet: CharacterSheet;
+  label: string;
+  testId: string;
+}) {
+  return (
+    <label className="field roll-dc">
+      <span>{label}</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        placeholder="blank = unresolved"
+        data-testid={testId}
+        value={sheet.rollDc}
+        onChange={(event) => sheet.setRollDc(event.target.value)}
+      />
+    </label>
+  );
+}
+
 export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
   return (
       <section className="panel">
@@ -351,6 +380,7 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
           />
         </div>
         <div className="saves-row">
+          <RollDcField sheet={sheet} label="Target DC" testId="roll-dc-saves" />
           <div className="roll-row" key="initiative">
             <button
               className="value-link"
@@ -387,7 +417,10 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
                 data-testid={"roll-" + save}
                 onClick={() =>
                   sheet.roll(save + " save", () =>
-                    sheet.engine.createSaveRollPlan(save),
+                    sheet.engine.createSaveRollPlan(
+                      save,
+                      sheet.dcDefense ? { defense: sheet.dcDefense } : {},
+                    ),
                   )
                 }
               >
@@ -590,9 +623,11 @@ export function SkillsPanel({ sheet }: { sheet: CharacterSheet }) {
             <h2>Catalog skills</h2>
           </div>
           <span className="helper">
-            Automatic metadata + optional override
+            Automatic metadata + optional override · rolls use the Target DC
+            below
           </span>
         </div>
+        <RollDcField sheet={sheet} label="Target DC" testId="roll-dc-skills" />
         <div className="skills-grid">
           {Object.values(sheet.derived.skills).map((skill) => {
             const override =
@@ -616,6 +651,20 @@ export function SkillsPanel({ sheet }: { sheet: CharacterSheet }) {
                     {skill.classSkill ? " · class" : ""}
                   </em>
                   <b>{formatModifier(skill.total.value)}</b>
+                </button>
+                <button
+                  className="roll-button"
+                  data-testid={"roll-skill-" + skill.id}
+                  onClick={() =>
+                    sheet.roll(skill.label + " check", () =>
+                      sheet.engine.createSkillRollPlan(
+                        skill.id,
+                        sheet.dcDefense ? { defense: sheet.dcDefense } : {},
+                      ),
+                    )
+                  }
+                >
+                  ROLL d20
                 </button>
                 <label className="rank-input">
                   <span>ranks</span>

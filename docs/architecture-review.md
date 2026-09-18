@@ -122,7 +122,9 @@ Full-attack membership is derived from the action (`isFullAttackAction`) instead
 
 `RollPlan` carries everything resolution needs and nothing a client may author: `dice`, `modifier`, the `context` above, the `outcomePolicy` that interprets faces, the effective `criticalRange`, and `provenance` (the modifier contributions, the contextual exclusions with reasons, and how the threat range was reached). Plans are ephemeral; they are not written into authored character state, and only `roll_history` keeps a plan/result snapshot.
 
-Every attack step also carries the damage roll it deals (`ActionPlanStep.damage`), so `ActionPlan.rolls` is the complete action-ordered list — each step's attack roll followed by its damage roll — and a caller resolves the whole action without inventing dice. A damage plan's dice are the weapon's own base dice, its modifier is the contextual damage evaluation, and a critical hit is the same plan rolled twice (`criticalDamage`, dice count and modifier both doubled) rather than client-side arithmetic. Damage and initiative are *plain* rolls: they are compared against nothing, so they carry no defense and resolution adds no success or failure. Initiative is planned the same way and requested by its own kind, with the same contextual flags its evaluation used. A maneuver still produces only its check: maneuver damage is not modeled.
+Every attack step also carries the damage roll it deals (`ActionPlanStep.damage`), so `ActionPlan.rolls` is the complete action-ordered list — each step's attack roll followed by its damage roll — and a caller resolves the whole action without inventing dice. A damage plan's dice are the weapon's own base dice and its modifier is the contextual damage evaluation; a critical hit is the same plan rolled with the weapon's authored `criticalMultiplier` (`criticalDamage`), so the ×2/×3/×4 is content, not a hardcoded doubling, and the provenance gains the extra copies of the modifier instead of the caller doing arithmetic. Damage and initiative are *plain* rolls: they are compared against nothing, so they carry no defense and resolution adds no success or failure. Initiative is planned the same way and requested by its own kind, with the same contextual flags its evaluation used. A maneuver still produces only its check: maneuver damage is not modeled.
+
+Which die is the *check* die is declared, never discovered: `RollPlan.primaryCheckDie` names the group and die that carry natural-face semantics. Attacks, saves, skills, maneuvers and initiative declare a d20; damage declares none, so a weapon that rolls d20s for damage can never have its damage roll read as a "natural 20". Resolution returns the check face as `ResolvedRoll.naturalFace`, and the outcome's `natural20` / `natural1` facts are present only when the plan declared a check die.
 
 `ActionPlan` gains `rolls`, the flattened list of its steps' own `roll` plans. One action therefore produces many self-describing rolls, and multiple weapons still stay separate members: their sequences are never concatenated, and an action-level extra (Haste) attaches to the primary weapon only, so it can never be counted once per weapon.
 
@@ -140,7 +142,8 @@ Attack outcomes distinguish four independent facts: whether the raw face was a 2
 | --- | --- | --- | --- |
 | attack | automatic hit | automatic miss, classified `criticalFailure` | total vs AC, threats crit without confirmation |
 | maneuver | automatic success | automatic failure | total vs CMD |
-| save, skill | no special semantics | no special semantics | total vs DC |
+| save | automatic success | automatic failure | total vs DC (the automatic rule applies without one) |
+| skill | no special semantics | no special semantics | total vs DC |
 | plain (damage, initiative and similar) | reported, not classified | reported, not classified | none |
 
 Policies are one small, overridable layer (`RollOutcomePolicySet`, PF1e defaults in `outcomes.ts`); a campaign supplies only the families it changes. `criticalConfirmationRequired` exists for compatibility and is **false** for this campaign: the resolver emits no second roll, and a policy that required confirmation would still show `inCriticalRange` while `critical` stayed unresolved rather than inventing a confirmation die.
@@ -149,7 +152,9 @@ Policies are one small, overridable layer (`RollOutcomePolicySet`, PF1e defaults
 
 A threat range belongs to the weapon or profile (`CriticalRange { minimumNaturalRoll }`; default 20) and is never inferred from a weapon's name or from the d20 system. The curated longsword, greatsword, dagger and light crossbow carry 19–20 and the rapier 18–20 as ordinary data.
 
-The *effective* range is derived through the same machinery as other facts: a `criticalRange` effect on an attack-scoped target widens it, `appliesWhen` decides whether that widening is in context, excluded widenings are reported with reasons, and contributions sum to the distance from the base (clamped to 2–20). `evaluateCriticalRange` returns base, effective, contributions and exclusions, and the plan carries both `criticalRange` and that provenance. A widened range is still only a threat: `tests/roll-outcomes.test.ts` pins that a 15–20 weapon misses a high AC on a natural 15 without becoming a critical hit.
+The *effective* range is derived through the same machinery as other facts: a `criticalRange` effect on an attack-scoped target expands it, `appliesWhen` decides whether that expansion is in context, and contributions sum to the distance from the base (clamped to 2–20). `evaluateCriticalRange` returns base, effective, the winning `operation`, contributions and exclusions, and the plan carries both `criticalRange` and that provenance.
+
+An expansion declares how it works: `widenBy` adds faces, while `operation: "double"` multiplies the weapon's own range, which is what **Improved Critical** and **Keen** actually do (19–20 → 17–20, a 20 threat → 19–20, 18–20 → 15–20). Weapon-specificity comes from `appliesWhen.attackIds`, matched against the roll's authored attack identity, so a feat that names one weapon or a `keen` property on one item applies exactly there. Threat-range expansion is one **nonstacking** family: when several qualify, only the most expansive one contributes and the rest are excluded with `threat-range expansions do not stack with <winner>`, so Improved Critical plus Keen is one doubling rather than two. Every one of these cases is pinned in `tests/roll-outcomes.test.ts`, including that a doubled or widened range is still only a threat: a 14–20 weapon misses a high AC on a natural 14 without becoming a critical hit.
 
 ### Request contracts and server authority
 
@@ -195,6 +200,6 @@ The core remains small and auditable, with advancement isolated in its dedicated
 1. Resolve opposed maneuvers: size-limited maneuver legality, maneuver defense DCs and grappled/entangled action restrictions on top of the existing `RollContext.maneuver`.
 2. Model concealment, cover and miss chance as explicit defense/roll contexts rather than modifier guesses.
 3. Derive off-hand and two-weapon sequence limits so a selected off-hand weapon stops being authored as a full independent sequence.
-4. Let an action offer its critical damage plan automatically: the doubling exists (`criticalDamage`), but a caller must still ask for it after resolving a `criticalSuccess`, and precision damage is currently doubled with everything else.
+4. Let an action offer its critical damage plan automatically: the authored `criticalMultiplier` exists (`criticalDamage`), but a caller must still ask for it after resolving a `criticalSuccess`, and precision damage is currently multiplied with everything else.
 5. Expand validated progression content and add HP-from-HD without changing the global-level/track aggregation contract.
 6. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary.

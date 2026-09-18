@@ -162,6 +162,8 @@ function describeApplicability(applicability: EffectApplicability): string {
     );
   if (applicability.maneuvers)
     parts.push(`maneuvers ${applicability.maneuvers.join(", ")}`);
+  if (applicability.attackIds)
+    parts.push(`weapons ${applicability.attackIds.join(", ")}`);
   if (applicability.requiredTags)
     parts.push(`tags ${applicability.requiredTags.join(", ")}`);
   if (applicability.excludedTags)
@@ -252,6 +254,14 @@ export function applicabilityOf(
     return {
       applies: false,
       reason: `maneuvers ${applicability.maneuvers.join(", ")} only`,
+    };
+  if (
+    applicability.attackIds &&
+    (!context.attackId || !applicability.attackIds.includes(context.attackId))
+  )
+    return {
+      applies: false,
+      reason: `requires weapon ${applicability.attackIds.join(", ")}`,
     };
   const flags = context.flags ?? [];
   if (

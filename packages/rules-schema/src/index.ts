@@ -314,6 +314,8 @@ export interface EffectApplicability {
   /** `true` requires full-attack membership; `false` requires a standard attack. */
   fullAttack?: boolean;
   maneuvers?: ManeuverId[];
+  /** Named attacks only, matched against the roll's authored attack identity. */
+  attackIds?: string[];
   requiredFlags?: string[];
   excludedFlags?: string[];
 }
@@ -334,21 +336,37 @@ export interface CriticalRangeEvaluation {
   target: TargetId;
   base: CriticalRange;
   effective: CriticalRange;
+  /** How the effective range was reached, when an expansion applied. */
+  operation?: CriticalRangeOperation;
   contributions: Contribution[];
   excluded: ExcludedContribution[];
 }
 
 /**
- * Widens the threatening range of eligible attacks. Critical range is an
+ * How an expansion changes a threat range. `widen` adds faces; `double`
+ * multiplies the weapon's own range, which is what Improved Critical and Keen
+ * do (a 19–20 longsword becomes 17–20, a 20 threat becomes 19–20).
+ */
+export const criticalRangeOperations = ["widen", "double"] as const;
+export type CriticalRangeOperation = (typeof criticalRangeOperations)[number];
+
+/**
+ * Expands the threatening range of an eligible attack. Critical range is an
  * attack property that contextual rules may modify, so it stays derivable
  * through ordinary rules machinery instead of being baked into resolution.
+ *
+ * Threat-range expansion is one nonstacking family: when several expansions
+ * apply to the same attack, only the most expansive one contributes and the
+ * others are reported as excluded provenance rather than silently added.
  */
 export interface CriticalRangeEffect {
   kind: "criticalRange";
   /** An attack-scoped target such as `attack.melee`. */
   target: ConcreteEffectTargetId;
   /** Faces to widen by: 1 turns a 20 threat range into 19–20. */
-  widenBy: number;
+  widenBy?: number;
+  /** Doubles the weapon's own range; defaults to widening by `widenBy`. */
+  operation?: CriticalRangeOperation;
   appliesWhen?: EffectApplicability;
   source?: SourceReference;
 }
@@ -428,10 +446,13 @@ export interface RollOutcomePolicySet {
  */
 export interface RollOutcome {
   kind: RollOutcomeKind;
-  /** True when the raw d20 showed 20 (a face fact, not a rule outcome). */
-  natural20: boolean;
-  /** True when the raw d20 showed 1 (a face fact, not a rule outcome). */
-  natural1: boolean;
+  /**
+   * True when the roll's primary check die showed 20 (a face fact, not a rule
+   * outcome). Absent when the roll has no check die at all, as damage does not.
+   */
+  natural20?: boolean;
+  /** True when the primary check die showed 1. Absent without a check die. */
+  natural1?: boolean;
   /** Attacks: the roll beat the defense (or an automatic rule applied). */
   hit?: boolean;
   /** Checks: the total beat the defense (or an automatic rule applied). */
@@ -458,6 +479,30 @@ export interface RollOutcome {
 export interface DiceRequirement {
   sides: number;
   count: number;
+}
+
+/**
+ * The raw die whose face carries natural-20 / natural-1 semantics. A plan
+ * declares it explicitly instead of resolution discovering "a d20" by scanning
+ * the dice it requires. Attacks, saves, skills, maneuvers and initiative are
+ * checks and declare one; a damage roll declares none and therefore has no
+ * natural-face semantics at all, even when it happens to roll a d20.
+ */
+export interface PrimaryCheckDie {
+  /** Index into `RollPlan.dice` of the group holding the check die. */
+  group: number;
+  /** Which die inside that group; defaults to its first. */
+  index?: number;
+  /** The die's sides. Only a d20 face is a natural 20 or a natural 1. */
+  sides: number;
+}
+
+/** The declaration every d20 check plan carries. */
+export const d20CheckDie: PrimaryCheckDie = { group: 0, sides: 20 };
+
+/** Whether a plan's faces carry natural-face semantics at all. */
+export function hasPrimaryCheckDie(plan: RollPlan): boolean {
+  return plan.primaryCheckDie !== undefined;
 }
 
 /**
@@ -489,6 +534,12 @@ export interface RollPlan {
   context: RollContext;
   /** How raw faces become a semantic outcome for this roll family. */
   outcomePolicy: RollOutcomePolicy;
+  /**
+   * The die whose face carries natural-face semantics, when this roll is a
+   * check. Damage declares none, so a d20 damage die never becomes a "natural
+   * 20" by accident.
+   */
+  primaryCheckDie?: PrimaryCheckDie;
   /** The effective threat range, for rolls that can crit. */
   criticalRange?: CriticalRange;
   provenance?: RollPlanProvenance;
@@ -756,6 +807,8 @@ export interface AttackDefinition {
   extraAttackEligible?: boolean;
   /** This weapon's threat range; the profile's range applies when omitted. */
   criticalRange?: CriticalRange;
+  /** Damage multiplier on a critical hit; the profile's value applies when omitted, default ×2. */
+  criticalMultiplier?: number;
   source?: ProgressionSourceMetadata;
 }
 
@@ -773,6 +826,8 @@ export interface AttackProfileDefinition {
   extraAttackEligible?: boolean;
   /** Threat range shared by weapons using this profile; defaults to 20. */
   criticalRange?: CriticalRange;
+  /** Critical damage multiplier shared by weapons using this profile; default ×2. */
+  criticalMultiplier?: number;
   source?: ProgressionSourceMetadata;
 }
 export type AttackProfileCatalog = Record<string, AttackProfileDefinition>;
@@ -977,6 +1032,7 @@ const applicabilitySchema = z
     touch: z.boolean().optional(),
     fullAttack: z.boolean().optional(),
     maneuvers: z.array(maneuverIdSchema).min(1).optional(),
+    attackIds: z.array(z.string().min(1)).min(1).optional(),
     requiredFlags: z.array(flagSchema).min(1).optional(),
     excludedFlags: z.array(flagSchema).min(1).optional(),
   })
@@ -1001,6 +1057,9 @@ const scalingSchema = z.object({
  * A threat range is a natural-face threshold: 20 crits on a natural 20, 19 on
  * 19 or 20, and so on. It belongs to the weapon/profile, never to the d20.
  */
+/** A critical hit multiplies damage by at least 2; 3 and 4 are ordinary values. */
+export const criticalMultiplierSchema = z.number().int().min(2);
+
 export const criticalRangeSchema: z.ZodType<CriticalRange> = z
   .object({ minimumNaturalRoll: z.number().int().min(2).max(20) })
   .strict();
@@ -1062,8 +1121,8 @@ export const rollOutcomePolicySchema: z.ZodType<RollOutcomePolicy> = z.object({
 });
 export const rollOutcomeSchema: z.ZodType<RollOutcome> = z.object({
   kind: z.enum(rollOutcomeKinds),
-  natural20: z.boolean(),
-  natural1: z.boolean(),
+  natural20: z.boolean().optional(),
+  natural1: z.boolean().optional(),
   hit: z.boolean().optional(),
   success: z.boolean().optional(),
   automaticHit: z.boolean().optional(),
@@ -1145,7 +1204,8 @@ export const effectSchema: z.ZodType<Effect> = z
     z.object({
       kind: z.literal("criticalRange"),
       target: attackScopedTargetSchema,
-      widenBy: z.number().int().min(1).max(18),
+      widenBy: z.number().int().min(1).max(18).optional(),
+      operation: z.enum(criticalRangeOperations).optional(),
       appliesWhen: applicabilitySchema.optional(),
       source: sourceReferenceSchema.optional(),
     }),
@@ -1161,6 +1221,21 @@ export const effectSchema: z.ZodType<Effect> = z
         context.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Size-relative effects require integer category steps",
+        });
+    }
+    if (effect.kind === "criticalRange") {
+      const operation = effect.operation ?? "widen";
+      if (operation === "double" && effect.widenBy !== undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["widenBy"],
+          message: "A doubling threat-range expansion takes no widenBy",
+        });
+      if (operation === "widen" && effect.widenBy === undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["widenBy"],
+          message: "A widening threat-range expansion requires widenBy",
         });
     }
     if (effect.kind === "modifier") {
@@ -1237,6 +1312,7 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   iterative: z.boolean().optional(),
   extraAttackEligible: z.boolean().optional(),
   criticalRange: criticalRangeSchema.optional(),
+  criticalMultiplier: criticalMultiplierSchema.optional(),
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 export const progressionFeatureDefinitionSchema: z.ZodType<ProgressionFeatureDefinition> =
@@ -1291,6 +1367,7 @@ export const attackProfileDefinitionSchema: z.ZodType<AttackProfileDefinition> =
     iterative: z.boolean().optional(),
     extraAttackEligible: z.boolean().optional(),
     criticalRange: criticalRangeSchema.optional(),
+    criticalMultiplier: criticalMultiplierSchema.optional(),
     source: progressionSourceMetadataSchema.optional(),
   });
 export const equipmentDefinitionSchema: z.ZodType<EquipmentDefinition> =
@@ -1845,6 +1922,8 @@ export interface DamageEvaluation {
   formula: string;
   dice: DiceExpression;
   modifier: number;
+  /** The weapon's or profile's critical multiplier; 2 when nothing authors one. */
+  criticalMultiplier: number;
   contributions: Contribution[];
   /** Contextual filtering provenance for damage effects. */
   excluded?: ExcludedContribution[];
