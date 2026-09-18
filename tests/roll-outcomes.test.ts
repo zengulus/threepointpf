@@ -993,6 +993,55 @@ describe("primary check dice", () => {
       ),
     ).toThrow(/out-of-range check die/);
   });
+
+  // The declared die must describe the dice the plan actually rolls: claiming a
+  // d20 over a 2d6 group would invent natural-face semantics out of nothing.
+  it("rejects a declared check die whose sides do not match its group", () => {
+    const plan = engine(homebrew({ attacks: [melee("sword")] })).createAttackRollPlan(
+      "sword",
+      0,
+      { action: "standardAttack" },
+    );
+    expect(() =>
+      resolveRollPlan({ ...plan, primaryCheckDie: { group: 0, sides: 6 } }, [10]),
+    ).toThrow(/declares a d6 check die for a d20 group/);
+    const damage = engine(
+      homebrew({ attacks: [melee("sword")] }),
+    ).createDamageRollPlan("sword");
+    expect(() =>
+      resolveRollPlan({ ...damage, primaryCheckDie: { group: 0, sides: 20 } }, [4]),
+    ).toThrow(/declares a d20 check die for a d\d+ group/);
+  });
+
+  it("rejects a submitted plan whose check die contradicts its dice", () => {
+    const plan = engine(homebrew({ attacks: [melee("sword")] })).createAttackRollPlan(
+      "sword",
+      0,
+      { action: "standardAttack" },
+    );
+    expect(() =>
+      resolveRollRequestSchema.parse({
+        plan: { ...plan, primaryCheckDie: { group: 0, sides: 6 } },
+        faces: [10],
+      }),
+    ).toThrow(/declares d6 but its group rolls d20/);
+    expect(() =>
+      resolveRollRequestSchema.parse({
+        plan: { ...plan, primaryCheckDie: { group: 3, sides: 20 } },
+        faces: [10],
+      }),
+    ).toThrow(/must reference one of the plan's dice groups/);
+    expect(() =>
+      resolveRollRequestSchema.parse({
+        plan: { ...plan, primaryCheckDie: { group: 0, index: 2, sides: 20 } },
+        faces: [10],
+      }),
+    ).toThrow(/inside its group/);
+    // A self-consistent declaration still travels.
+    expect(
+      resolveRollRequestSchema.parse({ plan, faces: [10] }).plan.id,
+    ).toBe(plan.id);
+  });
 });
 
 describe("threat-range expansion (Improved Critical and Keen)", () => {

@@ -2,12 +2,26 @@
 
 A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics live in `rules-core`; imported and authored content is injected by callers.
 
+## Try the demo
+
+The sheet is published as a static demo on GitHub Pages (`.github/workflows/pages.yml`), and **demo mode is the default presentation**: it needs no server, no sign-in and no configuration. The published build sets `VITE_DEMO_MODE=true` explicitly, so a credential that happens to exist in the build environment can never turn it into a database client.
+
+Opening it lands on a **level 1 fighter sample** — elite array, Power Attack and Weapon Focus with a greatsword, Toughness, a chain shirt, one level of the fighter progression — and a second sample holds the multi-level showcase sheet. Everything is authored state: the engine recomputes every number, saves stay in that browser's storage, and switching samples is a fresh start.
+
+```bash
+corepack pnpm build:demo   # static demo build, relative base path for Pages
+corepack pnpm dev          # local development, also in demo mode
+```
+
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to leave demo mode; anything else stays in it.
+
 ## Run and verify
 
 ```bash
 corepack pnpm install
 corepack pnpm test
 corepack pnpm build
+corepack pnpm build:demo
 corepack pnpm rules:check-autosheet
 corepack pnpm check:edge
 corepack pnpm exec playwright install chromium
@@ -23,8 +37,9 @@ CI runs installation, unit/integration tests, build, generated-data freshness, D
 - Open **Author a local class** to create any named class or copy an imported one. Supply its HD, BAB/saves, class skills, skill points, optional explicit cumulative chart, and level-gated features/effects. Local definitions are saved with the character; imported definitions are not overwritten.
 - Class skills derive from all classes actually advanced. Ranks trigger the +3 bonus once. Each skill also has an explicit class-skill override for homebrew/manual use.
 - Set abilities, HP state, size and five movement modes. Add catalog conditions, armor/shields/weapons, or structured custom effects/items. Inspect combat values, abilities, damage, movement, skills and class levels for their dependency/source trails.
+- Start from a sample character (the panel at the top of the sheet). Samples are ordinary authored state, so every derived number is recomputed; **Reset sample** reloads the pristine version, and the browser remembers which sample you were on. Invalid edits retain the last valid character and show an error.
 - Optionally select an XP track. XP reports eligibility; advancing classes remains an explicit edit. Age-category adjustments are optional catalog features, not inferred from a character's race.
-- **Save character** persists a local draft across reloads. Invalid edits retain the last valid character and show an error.
+- **Save character** persists the sheet across reloads: to Supabase in cloud mode, and to this browser's storage in demo mode. Invalid edits retain the last valid character and show an error.
 
 ## Autosheet ingestion
 
@@ -58,7 +73,7 @@ Catalog IDs distinguish sources (`pf1e.paizo.fighter`, third-party namespaces, `
 
 Numeric order: replace the intrinsic baseline → typed additive stacking → multipliers → strongest minimum → strongest maximum. Operations contribute deltas with source evidence. Conflicting replacements/bounds and non-finite results fail explicitly. Catalog effects and custom effects use the same pipeline.
 
-Only authored `CharacterInput` is persisted. Local storage uses `threepointpf.character.<id>`. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
+Only authored `CharacterInput` is persisted. Local storage uses `threepointpf.character.<id>`. User-facing presentation choices have their own keys and never enter character state: `threepointpf.dice.presentation` for dice skins, flourishes, sound and reduced motion, and `threepointpf.sheet.sample` for the sample being viewed. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
 
 For Supabase, supply `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with an authenticated client session, apply migrations, and deploy `character-state`, `roll-plan`, and `resolve-roll`. The snapshot migration is included, not applied to any hosted database by this change. Never place a service-role key in the browser.
 

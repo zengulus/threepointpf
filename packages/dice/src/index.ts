@@ -5,6 +5,17 @@ import type {
   RollOutcomePolicy,
   RollPlan,
 } from "@threepointpf/rules-schema";
+import {
+  primaryCheckFaceOf,
+  validateFaces,
+  validatePrimaryCheckDie,
+} from "./faces.js";
+
+// Presentation only ever animates faces that were already resolved; preference
+// persistence keeps user display settings out of authored character state.
+export * from "./faces.js";
+export * from "./presentation.js";
+export * from "./preferences.js";
 
 // The plan and its context are shared domain vocabulary, so they live in
 // `rules-schema` and are re-exported here where consumers already import them.
@@ -47,53 +58,6 @@ export function formatModifier(value: number): string {
   return value >= 0 ? `+${value}` : `${value}`;
 }
 
-export function formatDiceExpression(dice: DiceRequirement): string {
-  return `${dice.count}d${dice.sides}`;
-}
-
-export function parseDiceExpression(value: string): DiceRequirement {
-  const match = /^\s*(\d+)\s*d\s*(\d+)\s*$/i.exec(value);
-  if (!match) throw new Error(`Invalid dice expression: ${value}`);
-  const count = Number(match[1]);
-  const sides = Number(match[2]);
-  if (!Number.isInteger(count) || count < 1 || !Number.isInteger(sides) || sides < 1) throw new Error(`Invalid dice expression: ${value}`);
-  return { count, sides };
-}
-
-export function validateFaces(plan: RollPlan, faces: readonly number[]): void {
-  const required = plan.dice.reduce((sum, group) => sum + group.count, 0);
-  if (faces.length !== required) throw new Error(`Roll plan ${plan.id} requires ${required} face(s), received ${faces.length}`);
-  let index = 0;
-  for (const group of plan.dice) {
-    for (let i = 0; i < group.count; i += 1) {
-      const face = faces[index];
-      if (face === undefined || !Number.isInteger(face) || face < 1 || face > group.sides) throw new Error(`Invalid d${group.sides} face: ${face}`);
-      index += 1;
-    }
-  }
-}
-
-/**
- * The face of the plan's declared primary check die. The die is never discovered
- * by scanning for a d20: a damage roll that happens to use d20s declares no
- * check die and therefore has no natural face at all.
- */
-export function primaryCheckFaceOf(
-  plan: RollPlan,
-  faces: readonly number[],
-): number | undefined {
-  const die = plan.primaryCheckDie;
-  if (!die) return undefined;
-  if (!Number.isInteger(die.group) || die.group < 0 || die.group >= plan.dice.length)
-    throw new Error(`Roll plan ${plan.id} declares an unknown check-die group`);
-  let offset = 0;
-  for (let index = 0; index < die.group; index += 1)
-    offset += plan.dice[index]!.count;
-  const within = die.index ?? 0;
-  if (!Number.isInteger(within) || within < 0 || within >= plan.dice[die.group]!.count)
-    throw new Error(`Roll plan ${plan.id} declares an out-of-range check die`);
-  return faces[offset + within];
-}
 
 function attackKind(
   outcome: RollOutcome,
@@ -214,6 +178,7 @@ export function evaluateRollOutcome(
 /** Resolves raw faces against a plan. Identical plan plus identical faces always produce the same result. */
 export function resolveRollPlan(plan: RollPlan, faces: readonly number[]): ResolvedRoll {
   validateFaces(plan, faces);
+  validatePrimaryCheckDie(plan);
   const total = faces.reduce((sum, face) => sum + face, 0) + plan.modifier;
   const naturalFace = primaryCheckFaceOf(plan, faces);
   return {

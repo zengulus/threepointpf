@@ -1,6 +1,9 @@
 import { formatModifier } from "@threepointpf/dice";
 import { AdvancementEditor, AdvancementSummary } from "./components/advancement";
 import { CustomClassEditor } from "./components/custom-class-editor";
+import { DiceOverlay } from "./components/dice-overlay";
+import { DiceSettingsPanel } from "./components/dice-settings";
+import { SamplePanel } from "./components/sample-panel";
 import { Breakdown } from "./components/primitives";
 import {
   AttacksPanel,
@@ -61,6 +64,11 @@ export function App() {
             Select imported content by name, then author only the local facts
             you need. Every edit is validated before it changes the sheet.
           </p>
+          <p className="hero-mode">
+            {sheet.mode === "demo"
+              ? "Demo mode · no server, no sign-in, edits stay in this browser"
+              : "Cloud mode · characters save to this campaign's Supabase project"}
+          </p>
         </div>
         <div className="hero-meta">
           <span>CAMPAIGN</span>
@@ -77,6 +85,7 @@ export function App() {
       </section>
       <div className="layout">
         <div className="main-column">
+          <SamplePanel sheet={sheet} />
           <InputsPanel sheet={sheet} />
           <AdvancementEditor
             slots={character.advancementSlots}
@@ -105,6 +114,7 @@ export function App() {
         </div>
         <aside className="side-column">
           <Breakdown selected={sheet.selected} />
+          <DiceSettingsPanel dice={sheet.dice} />
           <FeaturesPanel sheet={sheet} />
           {derived.grants.length > 0 && (
             <section className="panel">
@@ -133,6 +143,7 @@ export function App() {
           </div>
         </aside>
       </div>
+      <DiceOverlay dice={sheet.dice} />
     </main>
   );
 }

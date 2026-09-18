@@ -916,3 +916,420 @@ input[type="checkbox"] {
     padding: 7px 4px;
   }
 }
+
+/* Samples and demo mode. Demo mode is the default presentation, so the panel
+   that says so is the first thing on the sheet. */
+.sample-panel {
+  border-left: 3px solid #f1b66c;
+}
+.sample-row {
+  align-items: flex-end;
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+.sample-row .field {
+  max-width: 420px;
+}
+.sample-panel select {
+  background: #101720;
+  border: 1px solid #344252;
+  border-radius: 4px;
+  color: #e4e8eb;
+  min-width: 0;
+  padding: 9px 10px;
+}
+.hero-mode {
+  color: #f1b66c;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-top: 12px !important;
+  text-transform: uppercase;
+}
+@media (max-width: 760px) {
+  .sample-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* Dice presentation. The overlay shows a roll that is already decided: the card
+   reports the resolved facts, the stage only animates the faces it was given. */
+.dice-overlay {
+  --flourish-color: transparent;
+  --flourish-intensity: 0.6;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  inset: 0;
+  padding: 22px;
+  pointer-events: none;
+  position: fixed;
+  z-index: 40;
+}
+.dice-overlay[data-event="critical-success"] {
+  --flourish-color: rgba(241, 182, 108, 0.9);
+}
+.dice-overlay[data-event="critical-failure"] {
+  --flourish-color: rgba(223, 117, 79, 0.9);
+}
+.dice-overlay[data-event="natural-20"] {
+  --flourish-color: rgba(241, 182, 108, 0.6);
+}
+.dice-overlay[data-event="natural-1"] {
+  --flourish-color: rgba(141, 153, 167, 0.6);
+}
+.dice-flourish {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+.dice-flourish[data-motion="none"] {
+  display: none;
+}
+.dice-stage-wrap {
+  background: radial-gradient(circle at 50% 20%, #1c2530 0, rgba(12, 17, 23, 0.9) 70%);
+  border: 1px solid #2a3543;
+  border-radius: 12px;
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 220px;
+  overflow: hidden;
+  pointer-events: auto;
+  position: relative;
+}
+.dice-stage {
+  inset: 0;
+  position: absolute;
+}
+.dice-stage canvas {
+  display: block;
+  height: 100% !important;
+  width: 100% !important;
+}
+.dice-stage-note {
+  bottom: 10px;
+  color: #8d99a7;
+  font-size: 10px;
+  left: 12px;
+  letter-spacing: 0.06em;
+  position: absolute;
+  text-transform: uppercase;
+}
+.dice-card {
+  align-self: end;
+  backdrop-filter: blur(6px);
+  background: rgba(15, 22, 32, 0.96);
+  border: 1px solid #2f3b4a;
+  border-left: 3px solid var(--flourish-color, #f1b66c);
+  border-radius: 10px;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
+  display: grid;
+  gap: 12px;
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+  max-width: 520px;
+  padding: 18px 20px;
+  pointer-events: auto;
+}
+.dice-card-head {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+.dice-card h3 {
+  color: #f2f0eb;
+  font-size: 19px;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+.dice-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.dice-face-group {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+.dice-face-die {
+  color: #8d99a7;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.dice-face {
+  background: #101720;
+  border: 1px solid #344252;
+  border-radius: 6px;
+  color: #e4e8eb;
+  display: inline-block;
+  font-size: 17px;
+  min-width: 34px;
+  padding: 6px 8px;
+  text-align: center;
+}
+.dice-face[data-natural="true"] {
+  border-color: #f1b66c;
+  box-shadow: 0 0 0 1px rgba(241, 182, 108, 0.35) inset;
+  color: #f6d6a8;
+}
+.dice-total {
+  align-items: baseline;
+  color: #aab4c0;
+  display: flex;
+  font-size: 14px;
+  gap: 12px;
+}
+.dice-total b {
+  color: #f7f4ee;
+  font-size: 24px;
+  letter-spacing: -0.05em;
+}
+.dice-outcome {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+.dice-outcome-chip {
+  border: 1px solid #40505d;
+  border-radius: 99px;
+  color: #cbd3dc;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+.dice-outcome-chip[data-kind="criticalSuccess"] {
+  border-color: #f1b66c;
+  color: #f6d6a8;
+}
+.dice-outcome-chip[data-kind="criticalFailure"] {
+  border-color: #df754f;
+  color: #f0a184;
+}
+.dice-outcome-chip[data-kind="success"] {
+  border-color: #79b98a;
+  color: #a9dcb6;
+}
+.dice-outcome-chip[data-kind="failure"] {
+  border-color: #8d99a7;
+}
+.dice-detail {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.dice-detail div {
+  display: flex;
+  gap: 10px;
+}
+.dice-detail dt {
+  color: #7d8997;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  min-width: 96px;
+  text-transform: uppercase;
+}
+.dice-detail dd {
+  color: #cbd3dc;
+  font-size: 12px;
+  margin: 0;
+}
+/* Flourishes. Each motion is a keyframe pair driven by --flourish-intensity. */
+.dice-flourish[data-motion="pulse"] {
+  animation: dice-pulse 900ms ease-out 1 both;
+  background: radial-gradient(
+    circle at 62% 34%,
+    var(--flourish-color) 0,
+    transparent 42%
+  );
+}
+.dice-flourish[data-motion="sparks"] {
+  animation: dice-sparks 1100ms ease-out 1 both;
+  background:
+    radial-gradient(circle at 62% 34%, var(--flourish-color) 0, transparent 3%),
+    radial-gradient(circle at 24% 48%, var(--flourish-color) 0, transparent 2.4%),
+    radial-gradient(circle at 78% 66%, var(--flourish-color) 0, transparent 2.4%),
+    radial-gradient(circle at 46% 74%, var(--flourish-color) 0, transparent 2%),
+    radial-gradient(circle at 88% 28%, var(--flourish-color) 0, transparent 2%);
+}
+.dice-flourish[data-motion="impact"] {
+  animation: dice-impact 620ms ease-out 1 both;
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--flourish-color) 0,
+    transparent 60%
+  );
+}
+.dice-flourish[data-motion="flare"] {
+  animation: dice-flare 1400ms ease-out 1 both;
+  background: radial-gradient(
+    ellipse at 30% 88%,
+    var(--flourish-color) 0,
+    transparent 52%
+  );
+}
+.dice-flourish[data-motion="shards"] {
+  animation: dice-shards 1300ms ease-out 1 both;
+  background-image: repeating-linear-gradient(
+    115deg,
+    var(--flourish-color) 0 2px,
+    transparent 2px 44px
+  );
+}
+@keyframes dice-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(calc(0.5 + var(--flourish-intensity) * 0.2));
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(calc(1 + var(--flourish-intensity) * 0.6));
+  }
+}
+@keyframes dice-sparks {
+  0% {
+    background-size: 0 0, 0 0, 0 0, 0 0, 0 0;
+    opacity: 1;
+  }
+  100% {
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    opacity: 0;
+  }
+}
+@keyframes dice-impact {
+  0% {
+    opacity: calc(0.2 + var(--flourish-intensity) * 0.5);
+    transform: translateX(calc(var(--flourish-intensity) * -6px));
+  }
+  40% {
+    transform: translateX(calc(var(--flourish-intensity) * 6px));
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+}
+@keyframes dice-flare {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: calc(0.3 + var(--flourish-intensity) * 0.7);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes dice-shards {
+  0% {
+    background-position: 50% -40%;
+    opacity: 0;
+  }
+  25% {
+    opacity: calc(0.2 + var(--flourish-intensity) * 0.6);
+  }
+  100% {
+    background-position: 50% 140%;
+    opacity: 0;
+  }
+}
+/* Dice settings */
+.dice-settings-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dice-settings-panel select {
+  background: #101720;
+  border: 1px solid #344252;
+  border-radius: 4px;
+  color: #e4e8eb;
+  min-width: 0;
+  padding: 9px 10px;
+}
+.dice-colors {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+}
+.dice-color {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto auto;
+}
+.dice-color input[type="color"] {
+  background: #101720;
+  border: 1px solid #344252;
+  border-radius: 4px;
+  height: 30px;
+  padding: 2px;
+  width: 46px;
+}
+.dice-color input[type="color"]:disabled {
+  opacity: 0.4;
+}
+.dice-color code,
+.dice-intensity code {
+  color: #8d99a7;
+  font-size: 11px;
+}
+.dice-toggles {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+.dice-intensity {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto auto;
+}
+.checkbox-field {
+  align-items: center;
+  color: #cbd3dc;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+}
+@media (max-width: 900px) {
+  .dice-overlay {
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(150px, 32vh) auto;
+    padding: 12px;
+  }
+  .dice-stage-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dice-card {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: stretch;
+    max-width: none;
+  }
+  .dice-settings-grid,
+  .dice-colors,
+  .dice-toggles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice-flourish {
+    animation: none !important;
+    display: none;
+  }
+}

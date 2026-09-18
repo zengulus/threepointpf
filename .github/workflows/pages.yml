@@ -1,0 +1,52 @@
+name: Demo (GitHub Pages)
+
+# Publishes the sheet as a static demo. The build is explicitly in demo mode, so
+# the published site never talks to a database even if credentials happen to be
+# present in the build environment, and it is built with a relative base so it
+# works from the project subpath GitHub Pages serves it from.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install
+        run: corepack pnpm install --frozen-lockfile
+      - name: Test
+        run: corepack pnpm test
+      - name: Build the demo
+        env:
+          VITE_DEMO_MODE: "true"
+        run: corepack pnpm build:demo
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -23,6 +23,14 @@ repeated here.
    `/roll-plan` and `/resolve-roll` keep accepting exactly what TTS sends; they
    are simply not extended for it.
 
+Settled by the demo/presentation pass, and no longer open: demo mode is the
+**default** backing mode (cloud only when both public credentials are present and
+no demo flag was set), the published Pages build is explicitly demo and
+unauthenticated, samples are ordinary authored state with a pinned level 1
+fighter as the landing sheet, and user-facing presentation choices (dice skins,
+flourishes, sound, reduced motion, selected sample) live under their own storage
+keys and never enter character state.
+
 Settled by the roll-contract pass, and no longer open: the roll/action contract
 itself, per-action roll plans, deterministic outcome classification with
 distinct natural-face and critical facts, no critical confirmation, and critical
@@ -32,6 +40,32 @@ roll list carries each step's damage roll, PF1e save naturals are automatic, the
 critical multiplier is authored per weapon/profile, a plan declares its own
 primary check die, and threat-range expansion covers Improved Critical/Keen
 doubling with weapon scoping and nonstacking.
+
+## Product decisions
+
+1. **Character creation for samples.** Samples are hand-authored
+   `CharacterInput` values, including the level 1 fighter's ability assignment
+   (elite array with the human +2 already applied) and its three feats. There is
+   no point-buy, race or feat-picker subsystem, so nothing currently *generates*
+   a legal character; changing the sample means editing data. Options: keep
+   hand-authored samples as documentation of what the sheet can represent, or
+   add a small creation assistant (ability generation, race/class choice, feat
+   slots) that emits authored state. The sheet itself does not need the
+   assistant: it validates and derives whatever it is given.
+2. **Sample selection scope.** The selected sample is browser-scoped
+   (`threepointpf.sheet.sample`), not per character and not synced. A reload
+   returns to the same sample, but a second browser starts on the default. If
+   samples become cloud content, the selection belongs to the account instead.
+3. **Demo save semantics.** Demo mode saves to browser storage and offers no
+   accounts, sharing or export. That is deliberate for a public showcase; if the
+   demo needs to be handed over (a file, a link, a campaign), export/import and
+   an account boundary would have to be designed together with cloud-mode auth,
+   which is still open below.
+4. **Cloud authentication.** Cloud mode still relies on deployment-side
+   credentials and policies (short-lived tokens, row-level policy review,
+   rate limiting, deployment secrets) as recorded in
+   `docs/architecture-review.md`. Demo mode is not a substitute for that work and
+   is not meant to become an unauthenticated cloud client.
 
 ## Rule semantics
 

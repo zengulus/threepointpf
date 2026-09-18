@@ -3,8 +3,14 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc -p tsconfig.json && vite build", "preview": "vite preview" },
+  "scripts": {
+    "dev": "node ../../scripts/copy-dice-assets.mjs && vite",
+    "build": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && vite build",
+    "build:pages": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && vite build --base=./",
+    "preview": "vite preview"
+  },
   "dependencies": {
+    "@3d-dice/dice-box-threejs": "^0.0.12",
     "@supabase/supabase-js": "^2.49.1",
     "@threepointpf/dice": "workspace:*",
     "@threepointpf/rules-core": "workspace:*",
@@ -15,5 +21,9 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
-  "devDependencies": { "@types/react": "^18.3.18", "@types/react-dom": "^18.3.5", "vite": "^6.0.7" }
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "vite": "^6.0.7"
+  }
 }

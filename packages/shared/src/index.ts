@@ -703,6 +703,34 @@ const rollPlanSchema = z.object({
     .optional(),
   criticalRange: criticalRangeSchema.optional(),
   provenance: z.unknown().optional(),
+}).superRefine((plan, context) => {
+  // A submitted check die must point at a real group whose dice it describes:
+  // a plan claiming a d20 while rolling 2d6 would otherwise invent natural-face
+  // semantics out of nothing. Resolution rebuilds the plan anyway, so this only
+  // rejects malformed input at the boundary.
+  const die = plan.primaryCheckDie;
+  if (!die) return;
+  const group = plan.dice[die.group];
+  if (!group) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["primaryCheckDie", "group"],
+      message: "The primary check die must reference one of the plan's dice groups",
+    });
+    return;
+  }
+  if (group.sides !== die.sides)
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["primaryCheckDie", "sides"],
+      message: `The primary check die declares d${die.sides} but its group rolls d${group.sides}`,
+    });
+  if ((die.index ?? 0) >= group.count)
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["primaryCheckDie", "index"],
+      message: "The primary check die must reference a die inside its group",
+    });
 });
 export const resolveRollRequestSchema = z.object({
   plan: rollPlanSchema,

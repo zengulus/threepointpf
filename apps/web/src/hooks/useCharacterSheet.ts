@@ -37,14 +37,40 @@ import {
   nextId,
   slug,
 } from "../lib/format";
-import { activeCatalog, repository } from "../lib/repository";
-import { demoCharacter } from "../lib/demo-character";
+import { activeCatalog, repositoryFor } from "../lib/repository";
+import {
+  defaultSample,
+  sampleCharacter,
+  sampleCharacters,
+} from "../lib/sample-characters";
+import { activeSheetEnvironment, sheetModeFor } from "../lib/sheet-mode";
+import {
+  loadSelectedSampleId,
+  saveSelectedSampleId,
+} from "../lib/sheet-session";
+import { useDicePresentation } from "./useDicePresentation";
 
 export function useCharacterSheet() {
+  // Dice appearance and flourishes are display preferences owned by this hook,
+  // which persists them under their own key; they never enter character state.
+  const dice = useDicePresentation();
+  // Demo mode is the default and needs no server: it is the published demo and
+  // the fallback whenever no Supabase credentials are configured.
+  const environment = useMemo(() => activeSheetEnvironment(), []);
+  const mode = sheetModeFor(environment);
+  // The sample this browser last looked at, so a reload comes back to it. A
+  // saved snapshot may replace it once, at mount; later sample switches are
+  // explicit choices and are never overwritten by a load.
+  const startingSampleId = useRef(loadSelectedSampleId()).current;
+  const [sampleId, setSampleId] = useState(startingSampleId);
   const [character, setCharacter] = useState<CharacterInput>(() =>
-    clone(demoCharacter),
+    clone(sampleCharacter(startingSampleId).character),
   );
-  const [notice, setNotice] = useState("Local draft ready");
+  const [notice, setNotice] = useState(
+    mode === "demo"
+      ? "Demo mode · " + sampleCharacter(startingSampleId).label + " loaded"
+      : "Local draft ready",
+  );
   const [error, setError] = useState<string | null>(null);
   /** An optional caller-entered DC; blank means "no known DC". */
   const [rollDc, setRollDc] = useState("");
@@ -73,17 +99,19 @@ export function useCharacterSheet() {
   const [weaponAttackAdjustment, setWeaponAttackAdjustment] = useState("0");
   const [weaponStrengthRating, setWeaponStrengthRating] = useState("");
   const [profileId, setProfileId] = useState("");
-  const [repo] = useState(repository);
+  const [repo] = useState(() => repositoryFor(mode, environment));
   const editRevision = useRef(0);
   useEffect(() => {
     let active = true;
     void repo
-      .load(demoCharacter.id)
+      .load(sampleCharacter(startingSampleId).character.id)
       .then((saved) => {
         if (!active || !saved || editRevision.current !== 0) return;
         new RulesEngine(saved, rulesCatalogs).derive();
         setCharacter(saved);
-        setNotice("Saved character loaded");
+        setNotice(
+          mode === "demo" ? "Demo mode · reloaded your saved sheet" : "Saved character loaded",
+        );
       })
       .catch((failure) => {
         if (active) setError(errorText(failure));
@@ -91,7 +119,7 @@ export function useCharacterSheet() {
     return () => {
       active = false;
     };
-  }, [repo]);
+  }, [startingSampleId, mode, repo]);
   const catalog = useMemo(
     () => activeCatalog(character),
     [character.customProgressions],
@@ -101,7 +129,7 @@ export function useCharacterSheet() {
       const engine = new RulesEngine(character, rulesCatalogs);
       return { engine, derived: engine.derive(), error: null as string | null };
     } catch (failure) {
-      const engine = new RulesEngine(demoCharacter, rulesCatalogs);
+      const engine = new RulesEngine(defaultSample().character, rulesCatalogs);
       return { engine, derived: engine.derive(), error: errorText(failure) };
     }
   }, [character]);
@@ -379,6 +407,18 @@ export function useCharacterSheet() {
     );
     if (added) setCustomWeaponName("");
   };
+  /**
+   * Loads a sample from scratch. It is authored state, never a saved snapshot:
+   * switching samples is a fresh start, and saving afterwards is what persists.
+   */
+  const loadSample = (id: string) => {
+    const sample = sampleCharacter(id);
+    apply(clone(sample.character), "Sample loaded: " + sample.label);
+    setSelected(null);
+    setSampleId(id);
+    saveSelectedSampleId(id);
+  };
+  const resetSample = () => loadSample(sampleId);
   const addCustomClass = (definition: ProgressionDefinition) =>
     update(
       {
@@ -409,6 +449,9 @@ export function useCharacterSheet() {
         dice: value.dice,
       });
       const result = resolveRollPlan(value, raw.faces);
+      // The authoritative faces already decided the result; the overlay is only
+      // asked to land the dice on them.
+      dice.present(value, result);
       // The natural face and the semantic outcome are reported separately, so a
       // threat outside the automatic rule is never shown as a hit. A plan with
       // no comparison of its own (damage, initiative) reports its total only.
@@ -433,9 +476,9 @@ export function useCharacterSheet() {
       await repo.save(character);
       setError(null);
       setNotice(
-        import.meta.env.VITE_SUPABASE_URL
+        mode === "cloud"
           ? "Saved to Supabase"
-          : "Saved locally",
+          : "Saved in this browser (demo mode)",
       );
     } catch (failure) {
       fail("Save failed: " + errorText(failure));
@@ -458,6 +501,12 @@ export function useCharacterSheet() {
     }
   };
   return {
+    dice,
+    mode,
+    samples: sampleCharacters,
+    sampleId,
+    loadSample,
+    resetSample,
     character,
     catalog,
     derived,

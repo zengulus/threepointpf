@@ -1,7 +1,29 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+/**
+ * The dice overlay is a result panel; it is dismissed before the next click so a
+ * long roll sequence keeps exercising the sheet rather than the overlay.
+ */
+async function dismissDice(page: Page) {
+  const overlay = page.getByTestId("dice-overlay");
+  if ((await overlay.count()) === 0) return;
+  await page.getByTestId("dice-overlay-close").click();
+  await expect(overlay).toHaveCount(0);
+}
+
+/**
+ * Loads a sample character. The demo build opens on the level 1 fighter, so a
+ * test that exercises deeper content says so instead of depending on the
+ * landing sample.
+ */
+async function loadSample(page: Page, id: string) {
+  await page.getByTestId("sample-character").selectOption(id);
+  await expect(page.getByTestId("sample-character")).toHaveValue(id);
+}
 
 test("character sheet recomputes toggles and exposes provenance", async ({ page }) => {
   await page.goto("/");
+  await loadSample(page, "showcase");
   await expect(page.getByTestId("stat-ac")).toContainText("12");
   await expect(page.getByTestId("stat-max-hp")).toContainText("52");
   await expect(page.getByTestId("stat-current-hp")).toContainText("47 / 52");
@@ -18,6 +40,7 @@ test("character sheet recomputes toggles and exposes provenance", async ({ page 
 
 test("N-track advancement editor persists ordered choices and exposes a shared BAB fact", async ({ page }) => {
   await page.goto("/");
+  await loadSample(page, "showcase");
   await page.getByTestId("advancement-start").click();
   await page.getByTestId("advancement-add-track").click();
   await page.getByLabel("Level 1 track 2 progression").selectOption("pf1e.paizo.wizard");
@@ -45,6 +68,7 @@ test("custom classes, granted effects, equipment and movement survive browser re
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
+  await loadSample(page, "showcase");
   await page.locator(".custom-content-panel summary").click();
   await page.getByLabel("Class name", { exact: true }).fill("Star Knight");
   await page.getByLabel("Custom class BAB progression").selectOption("full");
@@ -82,6 +106,7 @@ test("custom classes, granted effects, equipment and movement survive browser re
 
 test("invalid custom charts produce a visible error and preserve the prior character", async ({ page }) => {
   await page.goto("/");
+  await loadSample(page, "showcase");
   await page.locator(".custom-content-panel summary").click();
   await page.getByLabel("Class name", { exact: true }).fill("Broken Chart");
   await page.getByRole("button", { name: "+ Chart row" }).click();
@@ -94,6 +119,7 @@ test("invalid custom charts produce a visible error and preserve the prior chara
 
 test("custom armor and profile-based weapons persist with inspectable numeric effects", async ({ page }) => {
   await page.goto("/");
+  await loadSample(page, "showcase");
   await page.getByText("Custom armor, shield or magic item", { exact: true }).click();
   await page.getByLabel("Custom item name", { exact: true }).fill("Rune coat");
   await page.getByLabel("Item bonus", { exact: true }).fill("5");
@@ -119,6 +145,7 @@ test("custom armor and profile-based weapons persist with inspectable numeric ef
 
 test("contextual actions expose step roles, exclusions and maneuver plans", async ({ page }) => {
   await page.goto("/");
+  await loadSample(page, "showcase");
   // The curated Power Attack declares contextual damage variants; the demo
   // greatsword is two-handed, so the one-handed and off-hand variants are
   // authored but excluded, and that exclusion is visible.
@@ -133,6 +160,7 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   await expect(page.getByTestId("roll-standard-greatsword")).toContainText("STANDARD");
   await page.getByTestId("roll-maneuver-trip").click();
   await expect(page.locator(".top-actions")).toContainText("trip maneuver");
+  await dismissDice(page);
   // A roll reports the natural face and the semantic outcome separately, so a
   // threat that could still miss is never shown as a hit.
   await expect(page.locator(".top-actions")).toContainText(/trip maneuver: \d+ [+-]\d+ = \d+ · /);
@@ -140,6 +168,7 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   await expect(page.locator(".top-actions")).toContainText(
     /standard attack: \d+ [+-]\d+ = \d+ · (unresolved|natural 20|natural 1|criticalSuccess)/,
   );
+  await dismissDice(page);
   // A step's own damage roll is part of the action's roll list, and a plain
   // roll reports its total without inventing an outcome.
   await page.getByTestId("roll-damage-greatsword").click();
@@ -147,13 +176,59 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
     /damage: \d+(, \d+)* [+-]\d+ = \d+/,
   );
   await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  await dismissDice(page);
   await page.getByTestId("roll-initiative").click();
   await expect(page.locator(".top-actions")).toContainText(
     /initiative: \d+ [+-]\d+ = \d+/,
   );
+  await dismissDice(page);
+});
+
+test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
+  await page.goto("/");
+  // No server and no credentials: the build reports demo mode and lands on the
+  // sample character rather than an empty sheet.
+  await expect(page.getByTestId("sheet-mode")).toHaveText("DEMO");
+  await expect(page.getByTestId("sample-character")).toHaveValue("level-1-fighter");
+  await expect(page.getByTestId("stat-bab")).toContainText("+1");
+  await expect(page.getByTestId("stat-ac")).toContainText("15");
+  await expect(page.getByTestId("stat-current-hp")).toContainText("15 / 15");
+  await expect(page.getByTestId("stat-cmb")).toContainText("+3");
+  await expect(page.getByTestId("stat-cmd")).toContainText("15");
+  // Power Attack is on: +4 to hit, and the two-handed greatsword takes the
+  // two-handed damage variant while the others are shown as excluded.
+  await expect(
+    page.getByTestId("roll-standard-equipment.greatsword"),
+  ).toContainText("+4");
+  await expect(page.getByTestId("roll-damage-equipment.greatsword")).toContainText(
+    /2d6\+7/,
+  );
+  await page.getByRole("button", { name: "Inspect Greatsword damage" }).click();
+  await expect(page.locator(".breakdown")).toContainText("EXCLUDED BY CONTEXT");
+  await expect(page.locator(".breakdown")).toContainText("Power Attack");
+  await expect(page.locator(".breakdown")).toContainText(
+    "excluded for tags weapon.two-handed, weapon.off-hand",
+  );
+  // Saving in demo mode keeps the sheet in this browser and reloads it.
+  await page.getByRole("button", { name: "Save character" }).click();
+  await expect(page.locator(".top-actions")).toContainText(
+    "Saved in this browser",
+  );
+  await page.reload();
+  await expect(page.getByTestId("stat-ac")).toContainText("15");
+  // Switching samples re-derives the whole sheet from different authored state.
+  await loadSample(page, "showcase");
+  await expect(page.getByTestId("stat-bab")).toContainText("+6");
+  await expect(page.getByTestId("roll-standard-greatsword")).toBeVisible();
+  await page.getByTestId("sample-reset").click();
+  await expect(page.getByTestId("stat-bab")).toContainText("+6");
+  await expect(page.locator(".top-actions")).toContainText(
+    "Sample loaded: Showcase",
+  );
 });
 
 test("an optional entered DC resolves a check or leaves it unresolved", async ({ page }) => {
+  // This one deliberately runs on the demo build's landing sample.
   await page.goto("/");
   // A skill check has no automatic face rule and no known DC, so nothing is
   // resolved: the face facts are reported and no verdict is invented.
@@ -163,12 +238,20 @@ test("an optional entered DC resolves a check or leaves it unresolved", async ({
   );
   await expect(page.locator(".top-actions")).not.toContainText("success");
   await expect(page.locator(".top-actions")).not.toContainText("failure");
+  // A skill check has no automatic face rule, so its presentation is the
+  // natural-face one rather than a combat critical.
+  await expect(page.getByTestId("dice-overlay")).toHaveAttribute(
+    "data-event",
+    /natural-20|natural-1|none/,
+  );
+  await dismissDice(page);
   await page.getByTestId("roll-dc-skills").fill("1");
   await page.getByTestId("roll-skill-perception").click();
   await expect(page.locator(".top-actions")).toContainText(
     /Perception check: \d+ [+-]\d+ = \d+ · (success|failure)/,
   );
   await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  await dismissDice(page);
   // Saves use the defense field in the defenses panel the same way.
   await page.getByTestId("roll-dc-saves").fill("1");
   await page.getByTestId("roll-fortitude").click();
@@ -176,11 +259,76 @@ test("an optional entered DC resolves a check or leaves it unresolved", async ({
     /fortitude save: \d+ [+-]\d+ = \d+ · /,
   );
   await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  // Saves are combat rolls, so a natural face takes the combat presentation,
+  // while anything else takes the ordinary one.
+  await expect(page.getByTestId("dice-overlay")).toHaveAttribute(
+    "data-event",
+    /critical-success|critical-failure|none/,
+  );
+  await dismissDice(page);
+});
+
+test("the dice overlay shows a resolved roll and remembers dice preferences", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await page.getByTestId("roll-standard-greatsword").click();
+  const overlay = page.getByTestId("dice-overlay");
+  await expect(overlay).toBeVisible();
+  // The card reports the resolved roll; the renderer only animates its faces.
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Greatsword");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
+  await expect(page.getByTestId("dice-face-0")).toHaveAttribute(
+    "data-natural",
+    "true",
+  );
+  await expect(overlay).toHaveAttribute("data-mode", /rendered|fallback|skipped/);
+  await expect(overlay).toHaveAttribute(
+    "data-event",
+    /critical-success|critical-failure|natural-20|natural-1|none/,
+  );
+  await expect(page.getByTestId("dice-stage-mode")).toContainText(
+    /physics|3D dice|reduced motion|animation/,
+  );
+  await expect(page.getByTestId("dice-overlay-event")).toContainText("·");
+  await dismissDice(page);
+
+  // Dice preferences persist under their own key and stay out of character state.
+  await page.getByTestId("dice-skin").selectOption("arcane");
+  await page.getByTestId("dice-flourish-natural-1").selectOption("shards");
+  await page.getByTestId("dice-sound").uncheck();
+  await page.getByRole("button", { name: "Save character" }).click();
+  const keys = await page.evaluate(() => Object.keys(localStorage));
+  expect(keys).toContain("threepointpf.dice.presentation");
+  const characterBlobs = await page.evaluate(() =>
+    Object.entries(localStorage)
+      .filter(([key]) => key.startsWith("threepointpf.character."))
+      .map(([, value]) => value)
+      .join(" "),
+  );
+  expect(characterBlobs).not.toContain("arcane");
+  expect(characterBlobs).not.toContain("shards");
+
+  await page.reload();
+  await expect(page.getByTestId("dice-skin")).toHaveValue("arcane");
+  await expect(page.getByTestId("dice-flourish-natural-1")).toHaveValue("shards");
+  await expect(page.getByTestId("dice-sound")).not.toBeChecked();
+  await expect(page.getByTestId("dice-overlay")).toHaveCount(0);
+
+  // Reduced motion still shows the authoritative result, just without a throw.
+  await page.getByTestId("dice-reduced-motion").check();
+  await page.getByTestId("roll-standard-greatsword").click();
+  await expect(page.getByTestId("dice-stage-mode")).toContainText("reduced motion");
+  await expect(overlay).toHaveAttribute("data-mode", "skipped");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
+  await dismissDice(page);
 });
 
 test("mobile editors fit the viewport while N-track tables scroll within their panel", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await loadSample(page, "showcase");
   await page.locator(".custom-content-panel summary").click();
   await page.getByTestId("advancement-start").click();
   await page.getByTestId("advancement-add-track").click();
