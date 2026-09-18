@@ -1,14 +1,20 @@
 import {
   diceNotationFor,
   physicalFacesSupported,
+  type DiceDieValuePresentation,
+  type DiceDieValueRequest,
   type DiceFlourish,
-  type DicePresentationAnchor,
   type DicePresentationReport,
   type DicePresentationRequest,
   type DicePresentationSettings,
   type DicePresenter,
   type DiceSkin,
 } from "@threepointpf/dice";
+import {
+  presentSceneValues,
+  type SceneMeshLike,
+  type SceneObject3D,
+} from "./dice-scene";
 
 /**
  * The browser 3D dice renderer, behind the `DicePresenter` boundary.
@@ -62,6 +68,15 @@ export interface DiceBoxOptions {
   iterationLimit: number;
 }
 
+/**
+ * Hooks the presenter supplies when it asks for a die-local value presentation.
+ * The scene reports when the values have actually been attached to their dice,
+ * which is when a flourish cue belongs — not when the throw was requested.
+ */
+export interface DiceValueHooks {
+  onValueShown?: () => void;
+}
+
 /** The subset of the renderer this app uses. */
 export interface DiceBoxHandle {
   initialize(): Promise<void>;
@@ -73,11 +88,15 @@ export interface DiceBoxHandle {
    */
   dispose?(): void;
   /**
-   * Where the dice that last landed sit on screen, normalized within the stage.
-   * Position only — the faces themselves always come from the resolution, so a
-   * renderer that cannot project (or a test double) simply reports `null`.
+   * Shows the landed values as objects inside the renderer's own scene, parented
+   * to the dice that rolled them, and returns the running presentation. `null`
+   * when there is no scene to attach to (a test double, or a throw that never
+   * rendered), in which case the result is shown without a die-local phase.
    */
-  landedDieAnchors?(): DicePresentationAnchor[] | null;
+  presentDieValues?(
+    request: DiceDieValueRequest,
+    hooks?: DiceValueHooks,
+  ): DiceDieValuePresentation | null;
 }
 
 export interface DiceBoxInit {
@@ -151,27 +170,26 @@ export function diceBoxOptions(
  * `clearDice()` but no `clear()`, so both are accepted and a missing teardown is
  * never allowed to fail a throw.
  *
- * The remaining fields exist only so disposal can reach the resources upstream
- * never releases; none of them is read for a game fact.
+ * `scene`, `camera`, `diceList` and `renderer.render` are what a die-local
+ * presentation attaches through: the values join the renderer's own scene graph
+ * as children of the dice meshes, and the render drives its own draw loop while
+ * they are on screen (the renderer's loop has already stopped by then). The
+ * remaining fields exist only so disposal can reach the resources upstream never
+ * releases. None of them is ever read for a game fact.
  */
-interface RendererDie {
-  /**
-   * A three.js `Vector3` in world space. Only `clone().project(camera)` is used,
-   * so reading a position never moves the die it describes.
-   */
-  position?: unknown;
-}
-
 interface RendererInstance {
   initialize(): Promise<void>;
   roll(notation: string): Promise<unknown>;
   clear?(): void;
   clearDice?(): void;
-  /** The dice meshes the renderer keeps; their order is the flattened face order. */
-  diceList?: RendererDie[];
-  /** The camera the dice are drawn with, used only to project a landed die. */
-  camera?: unknown;
+  /** The dice meshes the renderer keeps; their index is the reported die id. */
+  diceList?: SceneMeshLike[];
+  /** The scene root the dice and their presentation objects are parented to. */
+  scene?: SceneObject3D;
+  /** The camera the dice are drawn with, used for the view's own axes. */
+  camera?: SceneObject3D;
   renderer?: {
+    render?(scene: unknown, camera: unknown): void;
     domElement?: {
       parentNode?: { removeChild?(node: unknown): void } | null;
       remove?(): void;
@@ -279,11 +297,26 @@ async function loadDiceBoxModule() {
 
 export type DiceBoxModuleLoader = typeof loadDiceBoxModule;
 
+/**
+ * The browser facilities a die-local value presentation needs. They are
+ * injectable so the boundary can be exercised without WebGL, a document or an
+ * animation frame loop, and so a runtime without them simply gets no die-local
+ * phase instead of an exception.
+ */
+export interface DiceValueEnvironment {
+  createCanvas?: () => HTMLCanvasElement | null;
+  now?: () => number;
+  requestFrame?: (callback: () => void) => number;
+  cancelFrame?: (handle: number) => void;
+}
+
 export interface DiceBoxRendererOptions {
   /** Injectable so tests never load three.js, cannon-es or WebGL. */
   loadModule?: DiceBoxModuleLoader;
   /** The target the renderer subscribes to; `window` in a browser. */
   resizeTarget?: ResizeListenerTarget;
+  /** The scene presentation's environment; the browser's own by default. */
+  dieValueEnvironment?: DiceValueEnvironment;
 }
 
 /**
@@ -300,11 +333,12 @@ export function createDiceBoxRenderer(
   const loadModule = options.loadModule ?? loadDiceBoxModule;
   const resizeTarget =
     options.resizeTarget ?? (globalThis as unknown as ResizeListenerTarget);
+  const dieValueEnvironment = options.dieValueEnvironment ?? {};
 
   return (init) => {
     let box: RendererInstance | null = null;
     let resizeListeners: ResizeListener[] = [];
-    /** The last completed throw, kept only so its dice can be projected. */
+    /** The last completed throw, kept only so its dice can be paired to faces. */
     let lastResults: unknown = null;
     return {
       async initialize() {
@@ -340,9 +374,29 @@ export function createDiceBoxRenderer(
           // Clearing the table is cosmetic; the next throw removes stale dice itself.
         }
       },
-      landedDieAnchors() {
+      presentDieValues(request, hooks) {
         if (!box) return null;
-        return readLandedDieAnchors(lastResults, box.diceList, box.camera);
+        const dice = landedDice(lastResults, box.diceList);
+        const scene = box.scene;
+        const camera = box.camera;
+        const canvas = box.renderer;
+        const draw = canvas?.render;
+        if (!dice || !scene || !camera || typeof draw !== "function")
+          return null;
+        return presentSceneValues({
+          request,
+          dice,
+          scene,
+          camera,
+          // Bound to its own renderer: the presentation drives the draw loop
+          // itself, because the renderer's loop has already stopped by the time
+          // the dice have landed.
+          renderer: {
+            render: (target, view) => draw.call(canvas, target, view),
+          },
+          ...dieValueEnvironment,
+          ...(hooks?.onValueShown ? { onValueShown: hooks.onValueShown } : {}),
+        });
       },
       dispose() {
         const instance = box;
@@ -408,52 +462,25 @@ export function reportedDieIds(results: unknown): number[] | null {
 }
 
 /**
- * Projects one landed die onto the stage, normalized to `0`–`1` with the origin
- * at the top-left. Projection goes through the die's own `clone().project()` so
- * a three.js `Vector3` is copied rather than mutated — mutating it would move
- * the die on the table. Anything that cannot project is skipped: this is a
- * screen position, and no game fact ever depends on it.
+ * The landed dice meshes in the plan's flattened face order: each reported roll
+ * carries the index of the mesh that rolled it, so a face and the die it was
+ * rolled on line up without any screen-space projection. A response that is not
+ * the documented shape reports nothing rather than guessing at a pairing.
  */
-function projectDieToStage(position: unknown, camera: unknown): { x: number; y: number } | null {
-  if (!position || typeof position !== "object") return null;
-  const clone = (position as { clone?: unknown }).clone;
-  if (typeof clone !== "function") return null;
-  const copy = clone.call(position) as { project?: unknown };
-  if (!copy || typeof copy.project !== "function") return null;
-  const projected = copy.project(camera) as { x?: unknown; y?: unknown } | undefined;
-  if (typeof projected?.x !== "number" || typeof projected?.y !== "number") return null;
-  if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y)) return null;
-  return {
-    x: clampUnit((projected.x + 1) / 2),
-    y: clampUnit((1 - projected.y) / 2),
-  };
-}
-
-function clampUnit(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-/**
- * Pairs each reported die with its landed screen position. The face index is the
- * flattened index resolution used, so the overlay can anchor an authoritative
- * value to the die it was rolled on without reading a value from the renderer.
- */
-export function readLandedDieAnchors(
+export function landedDice(
   results: unknown,
-  diceList: readonly RendererDie[] | undefined,
-  camera: unknown,
-): DicePresentationAnchor[] | null {
-  if (!diceList || diceList.length === 0 || !camera) return null;
+  diceList: readonly SceneMeshLike[] | undefined,
+): SceneMeshLike[] | null {
+  if (!diceList || diceList.length === 0) return null;
   const ids = reportedDieIds(results);
   if (!ids || ids.length === 0) return null;
-  const anchors: DicePresentationAnchor[] = [];
-  for (let faceIndex = 0; faceIndex < ids.length; faceIndex += 1) {
-    const die = diceList[ids[faceIndex]!];
-    if (!die) continue;
-    const point = projectDieToStage(die.position, camera);
-    if (point) anchors.push({ faceIndex, x: point.x, y: point.y });
+  const dice: SceneMeshLike[] = [];
+  for (const id of ids) {
+    const die = diceList[id];
+    if (!die) return null;
+    dice.push(die);
   }
-  return anchors.length > 0 ? anchors : null;
+  return dice;
 }
 
 function handoffOf(
@@ -560,6 +587,20 @@ export function createDiceBoxPresenter(
   let settings = options.settings;
   let handle: DiceBoxHandle | null = null;
   let appliedKey: string | null = null;
+  /** The die-local presentation in flight, released on a new throw or teardown. */
+  let activeDieValues: DiceDieValuePresentation | null = null;
+
+  const releaseDieValues = () => {
+    const active = activeDieValues;
+    activeDieValues = null;
+    try {
+      // Disposal also settles the presentation's `done`, so a caller waiting on
+      // the handoff is never left hanging.
+      active?.dispose();
+    } catch {
+      // A presentation whose scene is already gone needs no release.
+    }
+  };
 
   const clearStage = () => {
     const stage = options.stage?.();
@@ -576,6 +617,7 @@ export function createDiceBoxPresenter(
   const disposeHandle = () => {
     const previous = handle;
     const inFlight = abandon;
+    releaseDieValues();
     handle = null;
     appliedKey = null;
     appliedStage = null;
@@ -643,6 +685,9 @@ export function createDiceBoxPresenter(
   const render = async (
     request: DicePresentationRequest,
   ): Promise<DicePresentationReport> => {
+    // A new throw clears the table, which takes any presentation objects still
+    // riding on the old dice with it.
+    releaseDieValues();
     if (settings.reducedMotion)
       return {
         mode: "skipped",
@@ -662,8 +707,6 @@ export function createDiceBoxPresenter(
         reason: failure instanceof Error ? failure.message : String(failure),
       };
     }
-    if (options.playCue) options.playCue(request.flourish, settings);
-    else playFlourishCue(request.flourish, settings);
     try {
       const box = await ensure(request.skin, settings);
       // Remove the previous throw so each roll starts from a clear table. A
@@ -686,15 +729,13 @@ export function createDiceBoxPresenter(
             mode: "skipped",
             reason: "the throw was stopped before the dice landed",
           };
-        // The dice have settled, so their screen positions are final and can
-        // anchor the authoritative values. A renderer that reports none simply
-        // gets an unanchored result instead of a guessed-at position.
-        const anchors = box.landedDieAnchors?.() ?? null;
+        // The dice have landed. Where their values are shown from here is the
+        // caller's business: `presentDieValues` attaches them to the dice meshes
+        // once the landed mesh is visually still.
         return {
           mode: "rendered",
           notation,
           handoff: handoffOf(request.faces, outcome),
-          ...(anchors ? { anchors } : {}),
         };
       } finally {
         abandon = null;
@@ -708,9 +749,31 @@ export function createDiceBoxPresenter(
     }
   };
 
+  const cue = (flourish: DiceFlourish) => {
+    if (options.playCue) options.playCue(flourish, settings);
+    else playFlourishCue(flourish, settings);
+  };
+
   return {
     configure(next: DicePresentationSettings) {
       settings = next;
+    },
+    presentDieValues(request: DiceDieValueRequest) {
+      releaseDieValues();
+      const started = handle?.presentDieValues?.(request, {
+        // The cue belongs to the moment the values leave the dice, not to the
+        // throw that produced them.
+        onValueShown: () => cue(request.flourish),
+      });
+      if (!started) return null;
+      activeDieValues = started;
+      // Releasing on completion keeps a finished presentation from outliving
+      // the values it showed.
+      void started.done.then(
+        () => undefined,
+        () => undefined,
+      );
+      return started;
     },
     present(request: DicePresentationRequest): Promise<DicePresentationReport> {
       const next = queue.then(

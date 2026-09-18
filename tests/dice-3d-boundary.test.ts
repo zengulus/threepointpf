@@ -15,6 +15,7 @@ import {
   activeDiceSkin,
   resolveRollPlan,
   updateDicePresentationSettings,
+  type DiceDieValueRequest,
   type DiceFlourish,
   type DicePresentationSettings,
   type RollPresentationEvent,
@@ -24,15 +25,25 @@ import {
   createDiceBoxRenderer,
   diceBoxOptions,
   diceSkinKey,
+  landedDice,
   playFlourishCue,
   diceStageSelector,
-  readLandedDieAnchors,
   renderedFaceValues,
   reportedDieIds,
   type DiceBoxFactory,
   type DiceBoxInit,
 } from "../apps/web/src/lib/dice-3d";
-import type { DicePresentationAnchor } from "@threepointpf/dice";
+import { valueStableFrames } from "../apps/web/src/lib/dice-scene";
+import {
+  FakeObject3D,
+  asCanvas,
+  fakeCamera,
+  fakeCanvas,
+  fakeDie,
+  fakeFrameLoop,
+  worldPositionOf,
+  type FakeMesh,
+} from "./helpers/fake-three";
 
 /**
  * The renderer boundary is mocked here: no WebGL, no physics and no assets run
@@ -77,8 +88,6 @@ interface FakeRenderer {
   factory: DiceBoxFactory;
   results: unknown;
   failInitialize: boolean;
-  /** What the renderer reports for the dice that landed, when it can. */
-  anchors?: DicePresentationAnchor[] | null;
   /** Lets a test hold a throw open, so an overlap is real rather than assumed. */
   onRoll?: (notation: string) => Promise<unknown>;
 }
@@ -102,9 +111,6 @@ function fakeRenderer(results: unknown = undefined): FakeRenderer {
           if (state.onRoll) return state.onRoll(notation);
           return state.results;
         },
-        landedDieAnchors() {
-          return state.anchors ?? null;
-        },
         clear() {
           state.cleared += 1;
         },
@@ -119,6 +125,95 @@ function fakeRenderer(results: unknown = undefined): FakeRenderer {
 
 function stageElement(): HTMLElement {
   return { innerHTML: "stale canvas" } as unknown as HTMLElement;
+}
+
+function optionsFor() {
+  return diceBoxOptions(
+    activeDiceSkin(defaultDicePresentationSettings),
+    defaultDicePresentationSettings,
+  );
+}
+
+function dieValueRequest(
+  faces: number[],
+  overrides: Partial<DiceDieValueRequest> = {},
+): DiceDieValueRequest {
+  return {
+    faces,
+    naturalFaceIndex: -1,
+    event: "none",
+    flourish: findDiceFlourish("pulse"),
+    settings: defaultDicePresentationSettings,
+    ...overrides,
+  };
+}
+
+/**
+ * A renderer that keeps its scene, camera and dice meshes the way upstream does,
+ * with the die-local presentation's environment supplied from the fake three.js
+ * fixture. Everything the adapter attaches therefore goes onto real (if small)
+ * scene-graph objects, so "parented to the die" can actually be checked.
+ */
+function sceneRenderer(results: unknown, diceCount = 1) {
+  const loop = fakeFrameLoop();
+  const sceneRoot = new FakeObject3D();
+  const viewCamera = fakeCamera();
+  const canvases: ReturnType<typeof fakeCanvas>[] = [];
+  const dice: FakeMesh[] = Array.from({ length: diceCount }, () => fakeDie());
+  dice.forEach((die, index) => die.position.set(index * 200, 0, 0));
+  sceneRoot.add(...dice);
+  sceneRoot.add(viewCamera);
+  let renders = 0;
+
+  class SceneBox {
+    camera = viewCamera;
+    scene = sceneRoot;
+    diceList = dice;
+    renderer = {
+      render: () => {
+        renders += 1;
+      },
+    };
+    constructor(_selector: string, _options: unknown) {}
+    async initialize() {}
+    async roll() {
+      return results;
+    }
+    clearDice() {}
+  }
+
+  const factory = createDiceBoxRenderer({
+    loadModule: async () => SceneBox as never,
+    resizeTarget: { addEventListener() {}, removeEventListener() {} },
+    dieValueEnvironment: {
+      createCanvas: () => {
+        const canvas = fakeCanvas();
+        canvases.push(canvas);
+        return asCanvas(canvas);
+      },
+      now: () => loop.now,
+      requestFrame: loop.requestFrame,
+      cancelFrame: loop.cancelFrame,
+    },
+  });
+  return {
+    factory,
+    loop,
+    dice,
+    scene: sceneRoot,
+    canvases,
+    renders: () => renders,
+    advance(frames: number) {
+      for (let frame = 0; frame < frames; frame += 1) {
+        loop.now += 16;
+        loop.step();
+      }
+    },
+    texts: () =>
+      canvases.flatMap((canvas) =>
+        canvas.context.texts.map((text) => text.text),
+      ),
+  };
 }
 
 /**
@@ -410,25 +505,26 @@ describe("skins and settings reach the renderer", () => {
     expect(renderer.inits).toHaveLength(2);
   });
 
-  it("plays the flourish's own cue for each throw", async () => {
+  it("plays the flourish's own cue when the values leave the dice", async () => {
     const cues: DiceFlourish[] = [];
+    const scene = sceneRenderer(rendererResult([{ sides: 20, values: [17] }]));
     const presenter = createDiceBoxPresenter({
       settings: defaultDicePresentationSettings,
-      factory: fakeRenderer().factory,
+      factory: scene.factory,
       playCue: (flourish) => cues.push(flourish),
     });
     const plan = engine().createAttackRollPlan("blade", 0);
     await presenter.present(requestFor(plan, [17]));
-    await presenter.present(
-      requestFor(
-        plan,
-        [20],
-        defaultDicePresentationSettings,
-        "critical-success",
-        findDiceFlourish("sparks"),
-      ),
-    );
-    expect(cues.map((flourish) => flourish.id)).toEqual(["pulse", "sparks"]);
+    // The throw landing is not the moment the flourish happens: nothing has been
+    // shown yet.
+    expect(cues).toEqual([]);
+    const presentation = presenter.presentDieValues?.(dieValueRequest([17]));
+    expect(presentation).not.toBeNull();
+    expect(cues).toEqual([]);
+    // The cue belongs to the values appearing on the dice.
+    scene.advance(valueStableFrames);
+    expect(cues.map((flourish) => flourish.id)).toEqual(["pulse"]);
+    presentation!.dispose();
   });
 
   it("is a no-op cue without Web Audio", () => {
@@ -443,11 +539,11 @@ describe("skins and settings reach the renderer", () => {
 
 describe("presentation classification crosses the boundary", () => {
   it("carries the event the resolution produced into the request", async () => {
-    const renderer = fakeRenderer(rendererResult([{ sides: 20, values: [20] }]));
+    const scene = sceneRenderer(rendererResult([{ sides: 20, values: [20] }]));
     const seen: RollPresentationEvent[] = [];
     const presenter = createDiceBoxPresenter({
       settings: defaultDicePresentationSettings,
-      factory: renderer.factory,
+      factory: scene.factory,
       playCue: (flourish) => seen.push(flourish.id as RollPresentationEvent),
     });
     const plan = engine().createAttackRollPlan("blade", 0, {
@@ -461,7 +557,19 @@ describe("presentation classification crosses the boundary", () => {
     );
     expect(presentation.event).toBe("critical-success");
     expect(report.mode).toBe("rendered");
+    // Landing the dice makes no sound of its own; the flourish's cue belongs to
+    // the moment the critical face produces its effect.
+    expect(seen).toEqual([]);
+    presenter.presentDieValues?.(
+      dieValueRequest(resolved.faces, {
+        naturalFaceIndex: 0,
+        event: presentation.event,
+        flourish,
+      }),
+    );
+    scene.advance(valueStableFrames);
     expect(seen).toEqual(["sparks"]);
+    presenter.dispose();
   });
 
   it("loads the renderer lazily so importing the adapter costs nothing", () => {
@@ -832,79 +940,150 @@ describe("the renderer wrapper releases what upstream keeps", () => {
   });
 });
 
-/**
- * A landed die mesh is only ever projected, never read for a value: the fixture
- * exposes `clone().project()` and nothing else, which is exactly the surface the
- * adapter is allowed to use.
- */
-function fakeDie(ndc: { x: number; y: number }) {
-  return {
-    position: {
-      clone: () => ({
-        project: () => ({ x: ndc.x, y: ndc.y, z: 0 }),
-      }),
-    },
-  };
-}
-
-function anchorOptions() {
-  return diceBoxOptions(
-    activeDiceSkin(defaultDicePresentationSettings),
-    defaultDicePresentationSettings,
-  );
-}
-
-describe("landed dice expose a position for the values to rise from", () => {
-  it("pairs each reported die with its projected screen position", () => {
-    const results = rendererResult([
-      { sides: 20, values: [17] },
-      { sides: 6, values: [4, 3] },
-    ]);
-    // The ids are the renderer's own flattened die order, which is the order the
-    // faces were applied in.
-    expect(reportedDieIds(results)).toEqual([0, 100, 101]);
-    const diceList: { position?: unknown }[] = [];
-    diceList[0] = fakeDie({ x: 0, y: 0 });
-    diceList[100] = fakeDie({ x: -0.5, y: 0.5 });
-    diceList[101] = fakeDie({ x: 1.4, y: -1.2 });
-    expect(readLandedDieAnchors(results, diceList, {})).toEqual([
-      { faceIndex: 0, x: 0.5, y: 0.5 },
-      { faceIndex: 1, x: 0.25, y: 0.25 },
-      { faceIndex: 2, x: 1, y: 1 },
-    ]);
+describe("each landed face is paired with the die mesh that rolled it", () => {
+  it("uses the renderer's own die ids, in the flattened face order", () => {
+    const results = rendererResult([{ sides: 6, values: [4, 3] }]);
+    expect(reportedDieIds(results)).toEqual([0, 1]);
+    const dice = [fakeDie(), fakeDie()];
+    const landed = landedDice(results, dice);
+    expect(landed).toHaveLength(2);
+    expect(landed![0]).toBe(dice[0]);
+    expect(landed![1]).toBe(dice[1]);
   });
 
-  it("is a position only — never a value, and never a guess", () => {
-    // A response the adapter has no reason to trust reports no positions at all.
-    expect(reportedDieIds({ sets: [{ rolls: [{ value: 17 }] }] })).toBeNull();
-    expect(reportedDieIds(undefined)).toBeNull();
-    expect(reportedDieIds({ sets: [{ sides: 20, dice: [{ value: 17 }] }] })).toBeNull();
-    const results = rendererResult([{ sides: 20, values: [17] }]);
-    const diceList = [fakeDie({ x: 0, y: 0 })];
-    expect(readLandedDieAnchors(results, undefined, {})).toBeNull();
-    expect(readLandedDieAnchors(results, [], {})).toBeNull();
-    expect(readLandedDieAnchors(results, diceList, undefined)).toBeNull();
-    const anchor = readLandedDieAnchors(results, diceList, {})![0]!;
-    expect(Object.keys(anchor).sort()).toEqual(["faceIndex", "x", "y"]);
+  it("never guesses a pairing it cannot trust", () => {
+    const dice = [fakeDie(), fakeDie()];
+    expect(landedDice({ sets: [{ rolls: [{ value: 17 }] }] }, dice)).toBeNull();
+    expect(landedDice(undefined, dice)).toBeNull();
+    expect(landedDice(rendererResult([{ sides: 6, values: [4, 3] }]), undefined)).toBeNull();
+    expect(landedDice(rendererResult([{ sides: 6, values: [4, 3] }]), [])).toBeNull();
+    // An id the renderer no longer has cannot be paired with anything.
+    expect(
+      landedDice(rendererResult([{ sides: 6, values: [4, 3] }]), [dice[0]!]),
+    ).toBeNull();
+  });
+});
+
+describe("the values live in the renderer's scene, on the dice", () => {
+  it("parents each authoritative value to the die that rolled it", async () => {
+    const scene = sceneRenderer(rendererResult([{ sides: 6, values: [4, 3] }]), 2);
+    const handle = scene.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    await handle.roll("2d6@4,3");
+
+    const materials = scene.dice.map((die) => (die.material as unknown[])[0]);
+    const presentation = handle.presentDieValues?.(dieValueRequest([4, 3]));
+    expect(presentation).not.toBeNull();
+    // Nothing appears until the landed die has held still for consecutive frames.
+    expect(scene.dice[0]!.children).toHaveLength(0);
+    expect(scene.texts()).toEqual([]);
+
+    scene.advance(valueStableFrames);
+    const [first, second] = scene.dice.map((die) => die.children[0]!);
+    expect(first).toBeDefined();
+    expect(first!.parent).toBe(scene.dice[0]);
+    expect(second!.parent).toBe(scene.dice[1]);
+    // The values drawn are the resolved faces, drawn once per die.
+    expect(scene.texts()).toEqual(["4", "3"]);
+    // The die keeps its own material and its shared texture: the presentation
+    // only ever wears a clone.
+    scene.dice.forEach((die, index) => {
+      expect((die.material as unknown[])[0]).toBe(materials[index]);
+    });
+    presentation!.dispose();
   });
 
-  it("keeps the face a die belongs to when another die cannot be projected", () => {
-    const results = rendererResult([
-      { sides: 20, values: [17] },
-      { sides: 6, values: [4, 3] },
-    ]);
-    const diceList: { position?: unknown }[] = [];
-    diceList[0] = fakeDie({ x: 0, y: 0 });
-    // A die the renderer no longer has, and a position that cannot project.
-    diceList[101] = { position: { clone: () => ({}) } };
-    expect(readLandedDieAnchors(results, diceList, {})).toEqual([
-      { faceIndex: 0, x: 0.5, y: 0.5 },
-    ]);
+  it("moves the values with their dice, with no projection step", () => {
+    const scene = sceneRenderer(rendererResult([{ sides: 20, values: [17] }]));
+    const handle = scene.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    return handle.initialize().then(async () => {
+      await handle.roll("1d20@17");
+      const presentation = handle.presentDieValues?.(dieValueRequest([17]));
+      scene.advance(valueStableFrames);
+      const value = scene.dice[0]!.children[0]!;
+      const before = worldPositionOf(value);
+
+      // Translating the die mesh translates the value: it is in the scene graph,
+      // not positioned by a stored screen coordinate.
+      scene.dice[0]!.position.set(75, -25, 10);
+      const after = worldPositionOf(value);
+      expect(after.x).toBeCloseTo(before.x + 75);
+      expect(after.y).toBeCloseTo(before.y - 25);
+      presentation!.dispose();
+    });
   });
 
-  it("carries the landed positions into the presentation report", async () => {
+  it("drives the draw loop itself, because the renderer's has stopped", async () => {
+    const scene = sceneRenderer(rendererResult([{ sides: 20, values: [17] }]));
+    const handle = scene.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    await handle.roll("1d20@17");
+    const presentation = handle.presentDieValues?.(dieValueRequest([17]));
+    scene.advance(valueStableFrames);
+    const drawn = scene.renders();
+    expect(drawn).toBeGreaterThan(0);
+    scene.advance(2);
+    expect(scene.renders()).toBeGreaterThan(drawn);
+    presentation!.dispose();
+  });
+
+  it("releases every scene object the presentation created", async () => {
+    const scene = sceneRenderer(rendererResult([{ sides: 20, values: [17] }]));
+    const handle = scene.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    await handle.roll("1d20@17");
+    const presentation = handle.presentDieValues?.(dieValueRequest([17], {
+      naturalFaceIndex: 0,
+      event: "critical-success",
+      flourish: findDiceFlourish("sparks"),
+    }));
+    scene.advance(valueStableFrames);
+    // Two objects on the die: the value and the flourish it emitted.
+    expect(scene.dice[0]!.children).toHaveLength(2);
+    const dieMesh = scene.dice[0]!;
+    const dieMaterial = (dieMesh.material as { emissive: { r: number } }[])[0]!;
+    expect(dieMaterial.emissive.r).toBeGreaterThan(0);
+    presentation!.dispose();
+    expect(scene.dice[0]!.children).toHaveLength(0);
+    // The flourish is over, so the die stops glowing.
+    expect(dieMaterial.emissive.r).toBe(0);
+    await expect(presentation!.done).resolves.toBeUndefined();
+  });
+
+  it("drops a running presentation when the next throw clears the table", async () => {
+    const scene = sceneRenderer(rendererResult([{ sides: 20, values: [17] }]));
+    const presenter = createDiceBoxPresenter({
+      settings: defaultDicePresentationSettings,
+      factory: scene.factory,
+      playCue: () => {},
+    });
+    const plan = engine().createAttackRollPlan("blade", 0);
+    await presenter.present(requestFor(plan, [17]));
+    const presentation = presenter.presentDieValues?.(dieValueRequest([17]));
+    scene.advance(valueStableFrames);
+    expect(scene.dice[0]!.children).toHaveLength(1);
+
+    await presenter.present(requestFor(plan, [17]));
+    // The old dice are gone from the table, so nothing may ride on them.
+    expect(scene.dice[0]!.children).toHaveLength(0);
+    await expect(presentation!.done).resolves.toBeUndefined();
+  });
+
+  it("declines when the throw never rendered, so the result is shown plainly", async () => {
+    // A test double with no scene at all.
     const renderer = fakeRenderer(rendererResult([{ sides: 20, values: [17] }]));
-    renderer.anchors = [{ faceIndex: 0, x: 0.4, y: 0.7 }];
     const presenter = createDiceBoxPresenter({
       settings: defaultDicePresentationSettings,
       factory: renderer.factory,
@@ -913,50 +1092,24 @@ describe("landed dice expose a position for the values to rise from", () => {
     const plan = engine().createAttackRollPlan("blade", 0);
     const report = await presenter.present(requestFor(plan, [17]));
     expect(report.mode).toBe("rendered");
-    expect(report.anchors).toEqual([{ faceIndex: 0, x: 0.4, y: 0.7 }]);
+    expect(presenter.presentDieValues?.(dieValueRequest([17]))).toBeNull();
   });
 
-  it("reports no anchors when the renderer cannot project the dice", async () => {
-    const presenter = createDiceBoxPresenter({
-      settings: defaultDicePresentationSettings,
-      factory: () => ({
-        async initialize() {},
-        async roll() {
-          return rendererResult([{ sides: 20, values: [17] }]);
-        },
-        clear() {},
-        dispose() {},
-      }),
-      playCue: () => {},
-    });
-    const plan = engine().createAttackRollPlan("blade", 0);
-    const report = await presenter.present(requestFor(plan, [17]));
-    // The result is still shown; it is only the anchoring that is unavailable.
-    expect(report).toMatchObject({ mode: "rendered", handoff: "matched" });
-    expect(report.anchors).toBeUndefined();
-  });
-
-  it("projects the dice the wrapper actually rolled", async () => {
-    /** A renderer that keeps its dice meshes and camera the way upstream does. */
-    class ProjectedBox {
-      camera = {};
-      diceList = [fakeDie({ x: 0, y: 0 })];
-      constructor(_selector: string, _options: unknown) {}
-      async initialize() {}
-      async roll() {
-        return rendererResult([{ sides: 20, values: [17] }]);
-      }
-      clearDice() {}
-    }
-    const handle = createDiceBoxRenderer({
-      loadModule: async () => ProjectedBox,
-      // The wrapper captures the renderer's own resize subscription.
-      resizeTarget: { addEventListener() {}, removeEventListener() {} },
-    })({ selector: diceStageSelector, options: anchorOptions() });
-    await handle.initialize();
-    // Nothing has landed yet, so there is nothing to anchor to.
-    expect(handle.landedDieAnchors?.()).toBeNull();
-    await handle.roll("1d20@17");
-    expect(handle.landedDieAnchors?.()).toEqual([{ faceIndex: 0, x: 0.5, y: 0.5 }]);
+  it("keeps the value out of the document entirely", () => {
+    // Guards against a regression to the previous approach, where a DOM chip
+    // was positioned over a die and merely looked like it was on it.
+    const overlay = readFileSync(
+      new URL("../apps/web/src/components/dice-overlay.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(overlay).toMatch(/presentDieValues/);
+    expect(overlay).not.toMatch(/dice-burst/);
+    expect(overlay).not.toMatch(/--die-x|--die-y/);
+    const stylesheet = readFileSync(
+      new URL("../apps/web/src/styles.css", import.meta.url),
+      "utf8",
+    );
+    expect(stylesheet).not.toMatch(/dice-burst/);
+    expect(stylesheet).not.toMatch(/--die-x|--die-y|--dice-lift/);
   });
 });

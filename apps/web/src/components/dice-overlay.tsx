@@ -1,13 +1,13 @@
 import {
   Fragment,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
 import {
   activeDiceSkin,
+  flourishColor,
   formatRollOutcome,
   type DicePresentationReport,
   type RollOutcomeKind,
@@ -15,11 +15,10 @@ import {
 import type { DicePresentation } from "../hooks/useDicePresentation";
 import {
   diceSum,
-  dieAnchorOffset,
   faceTokens,
+  naturalFaceIndex,
   revealedAt,
   rollSequenceTimeline,
-  type DieOffset,
   type SequencePhase,
 } from "../lib/dice-sequence";
 
@@ -46,14 +45,18 @@ export const diceOverlayLifetimeMs = 12_000;
 
 /**
  * The browser dice overlay: the dice table on one side, the result drawer on the
- * other. Once the physical dice have settled, each authoritative value rises off
- * the die it was rolled on, turns to face the screen, travels into the drawer's
- * arithmetic, and the modifier and total are revealed on that same line. Critical
- * and natural-face effects belong to the die (and the result) they happened on,
- * and the semantic outcome ends the sequence rather than sitting in a corner.
+ * other.
  *
- * The values are facts from the resolution; the renderer contributes only the
- * screen positions of the dice it was asked to land on.
+ * The die-local half of the sequence is not drawn here at all. Once the landed
+ * dice are visually still, `presentDieValues` puts each authoritative value into
+ * the renderer's own scene as an object parented to the die that rolled it, so a
+ * value rises out of its die with a flourish emitted by that die — and follows
+ * the die through the scene graph rather than being re-projected into CSS. When
+ * those values have left their dice, they hand off to the drawer's arithmetic:
+ * `17 → 17 + 8 → 25`, with the semantic outcome ending the sequence.
+ *
+ * Everything shown here is a fact from the resolution. No DOM element is ever
+ * positioned over a die.
  */
 export function DiceOverlay({ dice }: { dice: DicePresentation }) {
   const { stage } = dice;
@@ -72,12 +75,10 @@ function DiceSequence({
   stage: DiceStage;
 }) {
   const { presenter, stageRef, settings, dismiss } = dice;
-  const valueRefs = useRef(new Map<number, HTMLElement>());
   const timers = useRef<number[]>([]);
   const scheduled = useRef(false);
   const [report, setReport] = useState<DicePresentationReport | null>(null);
   const [phase, setPhase] = useState<SequencePhase>("pending");
-  const [offsets, setOffsets] = useState<(DieOffset | null)[] | null>(null);
 
   const tokens = faceTokens(stage);
   const modifier = stage.resolved.modifier;
@@ -87,6 +88,7 @@ function DiceSequence({
 
   useEffect(() => {
     let active = true;
+    let dieValues: { done: Promise<void>; dispose(): void } | null = null;
     // The values wait for the dice to land: nothing is shown until the throw
     // reports, and the report is the only thing that can start the sequence.
     void presenter
@@ -99,62 +101,50 @@ function DiceSequence({
         settings,
       })
       .then((result) => {
-        if (active) setReport(result);
+        if (!active) return;
+        setReport(result);
+        // Only a renderer with a live scene can put the values on the dice. With
+        // no scene — reduced motion, a fallback, a test double — the same values,
+        // arithmetic and outcome are shown directly instead.
+        const started =
+          result.mode === "rendered"
+            ? (presenter.presentDieValues?.({
+                faces: stage.resolved.faces,
+                naturalFaceIndex: naturalFaceIndex(stage.plan),
+                event: stage.presentation.event,
+                flourish: stage.flourish,
+                settings,
+              }) ?? null)
+            : null;
+        if (!started) {
+          setPhase("settled");
+          return;
+        }
+        dieValues = started;
+        setPhase("scene");
+        // The handoff: the values have left their dice and the drawer's
+        // arithmetic picks them up.
+        void started.done.then(() => {
+          if (active) setPhase("values");
+        });
       });
     return () => {
       active = false;
+      // Dismissing mid-sequence must take the scene objects it created with it.
+      dieValues?.dispose();
     };
     // One presentation per roll: settings changes apply to the next roll.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
-   * Anchors the values to the dice that just landed. This runs after layout, so
-   * each chip is still at its slot in the arithmetic when it is measured and the
-   * offset is exactly the distance to its die. With no anchors — a renderer that
-   * could not report positions, or reduced motion, where there is no throw at
-   * all — the sequence is shown settled instead of pretending to move from dice
-   * that are not there.
-   */
-  useLayoutEffect(() => {
-    if (!report) return;
-    const anchors = report.mode === "rendered" ? report.anchors : undefined;
-    const stageElement = stageRef.current;
-    if (!anchors || anchors.length === 0 || !stageElement) {
-      setOffsets(null);
-      setPhase("settled");
-      return;
-    }
-    const stageRect = stageElement.getBoundingClientRect();
-    // Indexed by face, not by anchor order: a renderer that could only project
-    // some of the dice must not shift the values it did report.
-    const next: (DieOffset | null)[] = [];
-    for (const anchor of anchors) {
-      const chip = valueRefs.current.get(anchor.faceIndex);
-      next[anchor.faceIndex] = chip
-        ? dieAnchorOffset(anchor, chip.getBoundingClientRect(), stageRect)
-        : null;
-    }
-    setOffsets(next);
-    setPhase("die");
-  }, [report, stageRef]);
-
-  useEffect(() => {
-    if (phase !== "die" || !offsets) return;
-    // One frame with the values folded onto their dice, so the rise is a
-    // transition that can be seen rather than an instant jump.
-    const frame = requestAnimationFrame(() => setPhase("rise"));
-    return () => cancelAnimationFrame(frame);
-  }, [phase, offsets]);
-
-  /**
-   * Schedules the whole sequence, once, when the values start their rise. The
-   * beats must not be tied to the phase they cause — a cleanup that ran on every
-   * phase change would cancel the later beats the moment the first one landed,
-   * which is a sequence that stops after the values appear.
+   * Schedules the whole sequence, once, when the values arrive in the drawer.
+   * The beats must not be tied to the phase they cause — a cleanup that ran on
+   * every phase change would cancel the later beats the moment the first one
+   * landed, which is a sequence that stops after the values appear.
    */
   useEffect(() => {
-    if (phase !== "rise" || scheduled.current) return;
+    if (phase !== "values" || scheduled.current) return;
     scheduled.current = true;
     timers.current = rollSequenceTimeline({ sum: showSum, modifier: hasModifier }).map(
       (step) => window.setTimeout(() => setPhase(step.phase), step.delay),
@@ -215,6 +205,9 @@ function DiceSequence({
       data-outcome={outcomeKind}
       style={
         {
+          // The one place the presentation colour is defined; the stylesheet and
+          // the scene's own emissive glow both read it.
+          "--flourish-color": flourishColor(presentation.event),
           "--flourish-intensity": String(settings.intensity / 100),
         } as CSSProperties
       }
@@ -248,41 +241,20 @@ function DiceSequence({
                 {position > 0 && (
                   <span
                     className="dice-term dice-reveal"
-                    data-revealed={revealedAt(phase, "combine")}
+                    data-revealed={revealedAt(phase, "values")}
                     aria-hidden="true"
                   >
                     <em className="dice-op">+</em>
                   </span>
                 )}
                 <span
-                  className="dice-value"
+                  className="dice-value dice-reveal"
                   data-testid={"dice-face-" + token.index}
                   data-natural={token.natural}
-                  ref={(element) => {
-                    if (element) valueRefs.current.set(token.index, element);
-                    else valueRefs.current.delete(token.index);
-                  }}
-                  style={
-                    {
-                      ...(offsets?.[token.index]
-                        ? {
-                            "--die-x": `${offsets[token.index]!.x}px`,
-                            "--die-y": `${offsets[token.index]!.y}px`,
-                          }
-                        : {}),
-                      "--value-delay": `${Math.min(token.index, 5) * 60}ms`,
-                    } as CSSProperties
-                  }
+                  data-revealed={revealedAt(phase, "values")}
                 >
                   <b>{token.value}</b>
                   <i>d{token.sides}</i>
-                  {token.natural && flourish.motion !== "none" && !settings.reducedMotion && (
-                    <span
-                      className="dice-burst"
-                      data-motion={flourish.motion}
-                      aria-hidden="true"
-                    />
-                  )}
                 </span>
               </Fragment>
             ))}

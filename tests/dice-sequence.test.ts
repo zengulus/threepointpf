@@ -8,22 +8,21 @@ import type {
 } from "@threepointpf/rules-schema";
 import { classifyRollPresentation, resolveRollPlan } from "@threepointpf/dice";
 import {
-  combineDurationMs,
   diceSum,
-  dieAnchorOffset,
   faceTokens,
   revealedAt,
-  riseDurationMs,
   rollSequenceTimeline,
   sequencePhases,
+  valuesBeatMs,
   type SequenceStage,
 } from "../apps/web/src/lib/dice-sequence";
 
 /**
  * The result sequence is presentation arithmetic: which face belongs to which
- * die, which beat is revealed when, and where a value has to be drawn to sit
- * over its die. None of it is a game fact, and none of it reads a value from the
- * renderer — the faces always come from the resolution.
+ * die and which beat of the derivation is revealed when. None of it is a game
+ * fact, and none of it reads a value from the renderer — the faces always come
+ * from the resolution. The die-local phase is not here at all: it is the
+ * renderer's own scene, and this module only owns the handoff that follows it.
  */
 
 function homebrew(overrides: Partial<CharacterInput> = {}): CharacterInput {
@@ -110,12 +109,31 @@ describe("the values shown are the resolved faces, per die", () => {
 
 describe("the beats of the sequence", () => {
   it("reveals nothing before the dice land, and everything when settled", () => {
-    expect(revealedAt("pending", "rise")).toBe(false);
+    expect(revealedAt("pending", "values")).toBe(false);
     expect(revealedAt("pending", "total")).toBe(false);
-    expect(revealedAt("die", "rise")).toBe(false);
-    expect(revealedAt("rise", "combine")).toBe(false);
+    // While the values are on their dice nothing is in the document at all.
+    expect(revealedAt("scene", "values")).toBe(false);
+    expect(revealedAt("scene", "outcome")).toBe(false);
+    // The handoff shows the values; the arithmetic follows from there.
+    expect(revealedAt("values", "values")).toBe(true);
+    expect(revealedAt("values", "sum")).toBe(false);
+    expect(revealedAt("values", "total")).toBe(false);
     expect(revealedAt("settled", "outcome")).toBe(true);
-    expect(revealedAt("settled", "rise")).toBe(true);
+    expect(revealedAt("settled", "values")).toBe(true);
+  });
+
+  it("puts the die-local phase before the handoff, and the arithmetic after it", () => {
+    // The order is the choreography: on the dice, then in the drawer.
+    expect(sequencePhases.indexOf("scene")).toBeLessThan(
+      sequencePhases.indexOf("values"),
+    );
+    for (const beat of ["sum", "modifier", "total", "outcome"] as const)
+      expect(sequencePhases.indexOf("values")).toBeLessThan(
+        sequencePhases.indexOf(beat),
+      );
+    expect(sequencePhases.indexOf("total")).toBeLessThan(
+      sequencePhases.indexOf("outcome"),
+    );
   });
 
   it("keeps every revealed beat revealed", () => {
@@ -130,61 +148,42 @@ describe("the beats of the sequence", () => {
 
   it("schedules the sum only when a modifier follows it", () => {
     expect(rollSequenceTimeline({ sum: true, modifier: true }).map((step) => step.phase)).toEqual([
-      "combine",
       "sum",
       "modifier",
       "total",
       "outcome",
     ]);
     expect(rollSequenceTimeline({ sum: false, modifier: true }).map((step) => step.phase)).toEqual([
-      "combine",
       "modifier",
       "total",
       "outcome",
     ]);
     expect(rollSequenceTimeline({ sum: false, modifier: false }).map((step) => step.phase)).toEqual([
-      "combine",
       "total",
       "outcome",
     ]);
   });
 
-  it("runs the beats in order, after the rise, never overlapping", () => {
+  it("runs the beats in order, after the handoff, never overlapping", () => {
     const steps = rollSequenceTimeline({ sum: true, modifier: true });
-    expect(steps[0]!.delay).toBe(riseDurationMs);
+    expect(steps[0]!.delay).toBe(valuesBeatMs);
     expect(steps[0]!.delay).toBeGreaterThan(0);
     const delays = steps.map((step) => step.delay);
     expect([...delays].sort((left, right) => left - right)).toEqual(delays);
     for (const step of steps)
       expect(sequencePhases.indexOf(step.phase)).toBeGreaterThan(
-        sequencePhases.indexOf("rise"),
+        sequencePhases.indexOf("values"),
       );
     // The sum has to be readable before the modifier is applied to it.
-    expect(steps[1]!.delay).toBeGreaterThanOrEqual(riseDurationMs + combineDurationMs);
-  });
-});
-
-describe("anchoring a value to the die it was rolled on", () => {
-  it("centres a chip on the die's point on the stage", () => {
-    const stage = { left: 0, top: 0, width: 400, height: 300 };
-    expect(
-      dieAnchorOffset({ x: 0.5, y: 0.5 }, { left: 180, top: 140, width: 40, height: 24 }, stage),
-    ).toEqual({ x: 0, y: -2 });
+    expect(steps[1]!.delay).toBeGreaterThanOrEqual(valuesBeatMs);
   });
 
-  it("accounts for a stage that is not at the origin", () => {
-    const stage = { left: 40, top: 20, width: 200, height: 100 };
-    expect(
-      dieAnchorOffset({ x: 0.25, y: 0.75 }, { left: 0, top: 0, width: 20, height: 10 }, stage),
-    ).toEqual({ x: 80, y: 90 });
-  });
-
-  it("moves the chip rather than the arithmetic", () => {
-    // A chip already at the die's point needs no movement at all, so the offset
-    // is what carries the value away from its layout slot.
-    const stage = { left: 0, top: 0, width: 100, height: 100 };
-    expect(
-      dieAnchorOffset({ x: 0, y: 0 }, { left: -10, top: -5, width: 20, height: 10 }, stage),
-    ).toEqual({ x: 0, y: 0 });
+  it("always ends on the semantic outcome", () => {
+    for (const sum of [true, false])
+      for (const modifier of [true, false]) {
+        const steps = rollSequenceTimeline({ sum, modifier });
+        expect(steps.at(-1)!.phase).toBe("outcome");
+        expect(steps.map((step) => step.phase)).toContain("total");
+      }
   });
 });

@@ -26,6 +26,23 @@ export const rollPresentationEvents = [
 ] as const;
 export type RollPresentationEvent = (typeof rollPresentationEvents)[number];
 
+/**
+ * One colour per presentation slot, as six-digit hex so a JS scene effect, a
+ * DOM fallback and the stylesheet can all read the same value. The stylesheet
+ * receives it as `--flourish-color`, so this is the single source.
+ */
+export const diceFlourishColors: Record<RollPresentationEvent, string> = {
+  "critical-success": "#f1b66c",
+  "critical-failure": "#df754f",
+  "natural-20": "#f1b66c",
+  "natural-1": "#8d99a7",
+  none: "#8d99a7",
+};
+
+export function flourishColor(event: RollPresentationEvent): string {
+  return diceFlourishColors[event];
+}
+
 export interface RollPresentation {
   event: RollPresentationEvent;
   /** True when this roll is a combat roll (an attack or a save). */
@@ -470,20 +487,6 @@ export interface DicePresentationRequest {
   settings: DicePresentationSettings;
 }
 
-/**
- * Where a landed die sits on screen, normalized within the stage element
- * (`0`–`1`, origin top-left). This is the only thing a renderer may contribute
- * to the result display, and it is a position only: the value shown against a
- * die is always the authoritative `ResolvedRoll` face, never the renderer's own
- * idea of what it rolled.
- */
-export interface DicePresentationAnchor {
-  /** Flattened face index in the plan's dice order, the order resolution used. */
-  faceIndex: number;
-  x: number;
-  y: number;
-}
-
 export interface DicePresentationReport {
   mode: DicePresentationMode;
   /** The notation handed to the renderer, when it rendered. */
@@ -495,17 +498,54 @@ export interface DicePresentationReport {
    * so a renderer bug cannot quietly become a game fact.
    */
   handoff?: "matched" | "mismatch" | "unreported";
+}
+
+/**
+ * Asks a renderer to show the rolled values *on the dice themselves* now that
+ * they have landed: a textured object parented into the renderer's own scene at
+ * the die that produced each value, rising off its face and turning to face the
+ * camera, with the flourish emitted from the die the natural face landed on.
+ *
+ * The request carries only authoritative `ResolvedRoll` facts and display
+ * settings. The renderer contributes transforms only; it never reports a value
+ * back, so its physics cannot become a game result.
+ */
+export interface DiceDieValueRequest {
   /**
-   * The landed die positions, so a rolled value can rise from the die it was
-   * actually rolled on. Absent when the renderer could not report a position,
-   * in which case the result is shown without anchoring to physical dice.
+   * The authoritative faces in the plan's dice order, the same flattened order
+   * resolution used and the order the renderer assigns them to its dice.
    */
-  anchors?: DicePresentationAnchor[];
+  faces: number[];
+  /** Flattened index of the plan's declared check die, or `-1` for no check die. */
+  naturalFaceIndex: number;
+  event: RollPresentationEvent;
+  flourish: DiceFlourish;
+  settings: DicePresentationSettings;
+}
+
+/**
+ * A running die-local presentation in the renderer's scene. The caller keeps it
+ * until `done` resolves, then hands the same values off to screen-space
+ * arithmetic; `dispose` is safe at any point and drops every temporary scene
+ * object the renderer created for it.
+ */
+export interface DiceDieValuePresentation {
+  /** Resolves once every value has left its die and the sequence can hand off. */
+  done: Promise<void>;
+  dispose(): void;
 }
 
 /** The boundary a browser renderer implements. It only ever animates faces. */
 export interface DicePresenter {
   present(request: DicePresentationRequest): Promise<DicePresentationReport>;
+  /**
+   * Shows the landed values as objects in the renderer's scene. Returns `null`
+   * when this presenter has no scene to attach to, in which case the caller
+   * shows the result without a die-local phase.
+   */
+  presentDieValues?(
+    request: DiceDieValueRequest,
+  ): DiceDieValuePresentation | null;
   /** Applies new settings; the next presentation uses them. */
   configure(settings: DicePresentationSettings): void;
   dispose(): void;

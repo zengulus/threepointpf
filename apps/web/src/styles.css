@@ -954,13 +954,16 @@ input[type="checkbox"] {
 }
 
 /* Dice presentation. The dice table sits on the right and the result drawer on
-   the left: an already-resolved roll lands on the dice, and its values then rise
-   off them, travel into the drawer's arithmetic, and reveal the modifier, total
-   and semantic outcome on that line. */
+   the left. The die-local half of the sequence is not styled here at all: once
+   the dice are still, the renderer's own scene parents each value to the die it
+   was rolled on, so the value and its flourish are Three.js objects that move
+   with the die rather than DOM elements positioned over it. What this sheet owns
+   is the handoff — the drawer's arithmetic and the beats revealed on it. */
 .dice-overlay {
-  --flourish-color: transparent;
+  /* Set inline from the presentation's own colour table, so the stylesheet, the
+     drawer's rim and the scene's emissive glow all read one source. */
+  --flourish-color: #f1b66c;
   --flourish-intensity: 0.6;
-  --dice-lift: 44px;
   display: grid;
   gap: 18px;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
@@ -1043,12 +1046,9 @@ input[type="checkbox"] {
   gap: 12px;
   max-width: 100%;
 }
-/* The perspective is part of each chip's own transform rather than a parent's,
-   so a value folded onto a die across the table turns the same way wherever it
-   has travelled to. */
+/* A value chip is one term of the drawer's arithmetic, and nothing else: it
+   arrives with the handoff and is never positioned over a die. */
 .dice-value {
-  --die-x: 0px;
-  --die-y: 0px;
   align-items: center;
   background: rgba(16, 23, 32, 0.92);
   border: 1px solid #344252;
@@ -1061,12 +1061,6 @@ input[type="checkbox"] {
   justify-content: center;
   min-width: 52px;
   padding: 8px 12px 6px;
-  position: relative;
-  transform: perspective(700px) translate3d(0, 0, 0) rotateX(0deg) scale(1);
-  transition:
-    transform 660ms cubic-bezier(0.22, 0.8, 0.24, 1),
-    opacity 300ms ease;
-  transition-delay: var(--value-delay, 0ms);
 }
 .dice-value b {
   font-size: 26px;
@@ -1079,22 +1073,6 @@ input[type="checkbox"] {
   font-style: normal;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-/* Before the dice land, and while they are settling, a value is folded onto its
-   die: flat against the table and turned away from the screen. */
-.dice-overlay[data-phase="pending"] .dice-value,
-.dice-overlay[data-phase="die"] .dice-value {
-  opacity: 0;
-  transition: none;
-  transform: perspective(700px) translate3d(var(--die-x), var(--die-y), 0)
-    rotateX(80deg) scale(0.45);
-}
-/* The rise: up off the die and turned to face the screen. */
-.dice-overlay[data-phase="rise"] .dice-value {
-  opacity: 1;
-  transform: perspective(700px)
-    translate3d(var(--die-x), calc(var(--die-y) - var(--dice-lift)), 0) rotateX(0deg)
-    scale(1);
 }
 .dice-value[data-natural="true"] {
   border-color: #f1b66c;
@@ -1145,9 +1123,8 @@ input[type="checkbox"] {
   opacity: 0;
   transform: translateY(12px) scale(0.86);
 }
-/* Reduced motion, and a renderer with no positions to anchor to, shows the same
-   sequence directly. */
-.dice-overlay[data-phase="settled"] .dice-value,
+/* Reduced motion, and a renderer with no scene to attach the values to, shows
+   the same values, arithmetic and outcome directly. */
 .dice-overlay[data-phase="settled"] .dice-reveal {
   transition: none;
 }
@@ -1194,135 +1171,6 @@ input[type="checkbox"] {
   letter-spacing: 0.06em;
   padding-top: 12px;
   text-transform: uppercase;
-}
-/* Flourish effects belong to the die (or the result) they happened on, so the
-   burst is sized to the value chip it sits inside and never to the page. Each
-   motion is a keyframe pair driven by --flourish-intensity. */
-.dice-overlay[data-event="none"] {
-  --flourish-color: rgba(141, 153, 167, 0.45);
-}
-.dice-overlay[data-event="critical-success"] {
-  --flourish-color: rgba(241, 182, 108, 0.9);
-}
-.dice-overlay[data-event="critical-failure"] {
-  --flourish-color: rgba(223, 117, 79, 0.9);
-}
-.dice-overlay[data-event="natural-20"] {
-  --flourish-color: rgba(241, 182, 108, 0.6);
-}
-.dice-overlay[data-event="natural-1"] {
-  --flourish-color: rgba(141, 153, 167, 0.6);
-}
-.dice-burst {
-  animation: dice-burst-fade 1000ms ease-out 1 both;
-  animation-delay: 120ms;
-  background: radial-gradient(circle, var(--flourish-color) 0, transparent 62%);
-  border-radius: inherit;
-  inset: -45%;
-  pointer-events: none;
-  position: absolute;
-}
-.dice-burst[data-motion="pulse"] {
-  animation: dice-burst-pulse 900ms ease-out 1 both;
-}
-.dice-burst[data-motion="sparks"] {
-  animation: dice-burst-sparks 1100ms ease-out 1 both;
-  background:
-    radial-gradient(circle at 50% 50%, var(--flourish-color) 0, transparent 5%),
-    radial-gradient(circle at 8% 34%, var(--flourish-color) 0, transparent 3%),
-    radial-gradient(circle at 92% 62%, var(--flourish-color) 0, transparent 3%),
-    radial-gradient(circle at 34% 96%, var(--flourish-color) 0, transparent 2.4%),
-    radial-gradient(circle at 68% 4%, var(--flourish-color) 0, transparent 2.4%);
-}
-.dice-burst[data-motion="impact"] {
-  animation: dice-burst-impact 620ms ease-out 1 both;
-}
-.dice-burst[data-motion="flare"] {
-  animation: dice-burst-flare 1400ms ease-out 1 both;
-  background: radial-gradient(
-    circle at 50% 50%,
-    var(--flourish-color) 0,
-    transparent 68%
-  );
-}
-.dice-burst[data-motion="shards"] {
-  animation: dice-burst-shards 1300ms ease-out 1 both;
-  background-image: repeating-linear-gradient(
-    115deg,
-    var(--flourish-color) 0 2px,
-    transparent 2px 14px
-  );
-}
-@keyframes dice-burst-fade {
-  0% {
-    opacity: 0;
-  }
-  30% {
-    opacity: calc(0.25 + var(--flourish-intensity) * 0.6);
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes dice-burst-pulse {
-  0% {
-    opacity: 0;
-    transform: scale(calc(0.5 + var(--flourish-intensity) * 0.2));
-  }
-  35% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(calc(1 + var(--flourish-intensity) * 0.6));
-  }
-}
-@keyframes dice-burst-sparks {
-  0% {
-    background-size: 0 0, 0 0, 0 0, 0 0, 0 0;
-    opacity: 1;
-  }
-  100% {
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-    opacity: 0;
-  }
-}
-@keyframes dice-burst-impact {
-  0% {
-    opacity: calc(0.2 + var(--flourish-intensity) * 0.5);
-    transform: translateX(calc(var(--flourish-intensity) * -6px));
-  }
-  40% {
-    transform: translateX(calc(var(--flourish-intensity) * 6px));
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(0);
-  }
-}
-@keyframes dice-burst-flare {
-  0% {
-    opacity: 0;
-  }
-  40% {
-    opacity: calc(0.3 + var(--flourish-intensity) * 0.7);
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes dice-burst-shards {
-  0% {
-    background-position: 50% -40%;
-    opacity: 0;
-  }
-  25% {
-    opacity: calc(0.2 + var(--flourish-intensity) * 0.6);
-  }
-  100% {
-    background-position: 50% 140%;
-    opacity: 0;
-  }
 }
 /* Dice settings */
 .dice-settings-grid {
@@ -1414,11 +1262,6 @@ input[type="checkbox"] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dice-burst {
-    animation: none !important;
-    display: none;
-  }
-  .dice-value,
   .dice-reveal {
     transition: none !important;
   }
