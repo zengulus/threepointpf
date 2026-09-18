@@ -26,10 +26,13 @@ import {
   diceSkinKey,
   playFlourishCue,
   diceStageSelector,
+  readLandedDieAnchors,
   renderedFaceValues,
+  reportedDieIds,
   type DiceBoxFactory,
   type DiceBoxInit,
 } from "../apps/web/src/lib/dice-3d";
+import type { DicePresentationAnchor } from "@threepointpf/dice";
 
 /**
  * The renderer boundary is mocked here: no WebGL, no physics and no assets run
@@ -74,6 +77,8 @@ interface FakeRenderer {
   factory: DiceBoxFactory;
   results: unknown;
   failInitialize: boolean;
+  /** What the renderer reports for the dice that landed, when it can. */
+  anchors?: DicePresentationAnchor[] | null;
   /** Lets a test hold a throw open, so an overlap is real rather than assumed. */
   onRoll?: (notation: string) => Promise<unknown>;
 }
@@ -96,6 +101,9 @@ function fakeRenderer(results: unknown = undefined): FakeRenderer {
           state.rolls.push(notation);
           if (state.onRoll) return state.onRoll(notation);
           return state.results;
+        },
+        landedDieAnchors() {
+          return state.anchors ?? null;
         },
         clear() {
           state.cleared += 1;
@@ -821,5 +829,134 @@ describe("the renderer wrapper releases what upstream keeps", () => {
     presenter.dispose();
     expect(target.listeners.size).toBe(0);
     expect(log.rendererDisposed).toBe(2);
+  });
+});
+
+/**
+ * A landed die mesh is only ever projected, never read for a value: the fixture
+ * exposes `clone().project()` and nothing else, which is exactly the surface the
+ * adapter is allowed to use.
+ */
+function fakeDie(ndc: { x: number; y: number }) {
+  return {
+    position: {
+      clone: () => ({
+        project: () => ({ x: ndc.x, y: ndc.y, z: 0 }),
+      }),
+    },
+  };
+}
+
+function anchorOptions() {
+  return diceBoxOptions(
+    activeDiceSkin(defaultDicePresentationSettings),
+    defaultDicePresentationSettings,
+  );
+}
+
+describe("landed dice expose a position for the values to rise from", () => {
+  it("pairs each reported die with its projected screen position", () => {
+    const results = rendererResult([
+      { sides: 20, values: [17] },
+      { sides: 6, values: [4, 3] },
+    ]);
+    // The ids are the renderer's own flattened die order, which is the order the
+    // faces were applied in.
+    expect(reportedDieIds(results)).toEqual([0, 100, 101]);
+    const diceList: { position?: unknown }[] = [];
+    diceList[0] = fakeDie({ x: 0, y: 0 });
+    diceList[100] = fakeDie({ x: -0.5, y: 0.5 });
+    diceList[101] = fakeDie({ x: 1.4, y: -1.2 });
+    expect(readLandedDieAnchors(results, diceList, {})).toEqual([
+      { faceIndex: 0, x: 0.5, y: 0.5 },
+      { faceIndex: 1, x: 0.25, y: 0.25 },
+      { faceIndex: 2, x: 1, y: 1 },
+    ]);
+  });
+
+  it("is a position only — never a value, and never a guess", () => {
+    // A response the adapter has no reason to trust reports no positions at all.
+    expect(reportedDieIds({ sets: [{ rolls: [{ value: 17 }] }] })).toBeNull();
+    expect(reportedDieIds(undefined)).toBeNull();
+    expect(reportedDieIds({ sets: [{ sides: 20, dice: [{ value: 17 }] }] })).toBeNull();
+    const results = rendererResult([{ sides: 20, values: [17] }]);
+    const diceList = [fakeDie({ x: 0, y: 0 })];
+    expect(readLandedDieAnchors(results, undefined, {})).toBeNull();
+    expect(readLandedDieAnchors(results, [], {})).toBeNull();
+    expect(readLandedDieAnchors(results, diceList, undefined)).toBeNull();
+    const anchor = readLandedDieAnchors(results, diceList, {})![0]!;
+    expect(Object.keys(anchor).sort()).toEqual(["faceIndex", "x", "y"]);
+  });
+
+  it("keeps the face a die belongs to when another die cannot be projected", () => {
+    const results = rendererResult([
+      { sides: 20, values: [17] },
+      { sides: 6, values: [4, 3] },
+    ]);
+    const diceList: { position?: unknown }[] = [];
+    diceList[0] = fakeDie({ x: 0, y: 0 });
+    // A die the renderer no longer has, and a position that cannot project.
+    diceList[101] = { position: { clone: () => ({}) } };
+    expect(readLandedDieAnchors(results, diceList, {})).toEqual([
+      { faceIndex: 0, x: 0.5, y: 0.5 },
+    ]);
+  });
+
+  it("carries the landed positions into the presentation report", async () => {
+    const renderer = fakeRenderer(rendererResult([{ sides: 20, values: [17] }]));
+    renderer.anchors = [{ faceIndex: 0, x: 0.4, y: 0.7 }];
+    const presenter = createDiceBoxPresenter({
+      settings: defaultDicePresentationSettings,
+      factory: renderer.factory,
+      playCue: () => {},
+    });
+    const plan = engine().createAttackRollPlan("blade", 0);
+    const report = await presenter.present(requestFor(plan, [17]));
+    expect(report.mode).toBe("rendered");
+    expect(report.anchors).toEqual([{ faceIndex: 0, x: 0.4, y: 0.7 }]);
+  });
+
+  it("reports no anchors when the renderer cannot project the dice", async () => {
+    const presenter = createDiceBoxPresenter({
+      settings: defaultDicePresentationSettings,
+      factory: () => ({
+        async initialize() {},
+        async roll() {
+          return rendererResult([{ sides: 20, values: [17] }]);
+        },
+        clear() {},
+        dispose() {},
+      }),
+      playCue: () => {},
+    });
+    const plan = engine().createAttackRollPlan("blade", 0);
+    const report = await presenter.present(requestFor(plan, [17]));
+    // The result is still shown; it is only the anchoring that is unavailable.
+    expect(report).toMatchObject({ mode: "rendered", handoff: "matched" });
+    expect(report.anchors).toBeUndefined();
+  });
+
+  it("projects the dice the wrapper actually rolled", async () => {
+    /** A renderer that keeps its dice meshes and camera the way upstream does. */
+    class ProjectedBox {
+      camera = {};
+      diceList = [fakeDie({ x: 0, y: 0 })];
+      constructor(_selector: string, _options: unknown) {}
+      async initialize() {}
+      async roll() {
+        return rendererResult([{ sides: 20, values: [17] }]);
+      }
+      clearDice() {}
+    }
+    const handle = createDiceBoxRenderer({
+      loadModule: async () => ProjectedBox,
+      // The wrapper captures the renderer's own resize subscription.
+      resizeTarget: { addEventListener() {}, removeEventListener() {} },
+    })({ selector: diceStageSelector, options: anchorOptions() });
+    await handle.initialize();
+    // Nothing has landed yet, so there is nothing to anchor to.
+    expect(handle.landedDieAnchors?.()).toBeNull();
+    await handle.roll("1d20@17");
+    expect(handle.landedDieAnchors?.()).toEqual([{ faceIndex: 0, x: 0.5, y: 0.5 }]);
   });
 });

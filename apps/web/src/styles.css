@@ -953,48 +953,29 @@ input[type="checkbox"] {
   }
 }
 
-/* Dice presentation. The overlay shows a roll that is already decided: the card
-   reports the resolved facts, the stage only animates the faces it was given. */
+/* Dice presentation. The dice are the surface: an already-resolved roll lands on
+   them, and its values then rise off the dice, gather into the visible
+   arithmetic and reveal the modifier, total and semantic outcome on that line. */
 .dice-overlay {
   --flourish-color: transparent;
   --flourish-intensity: 0.6;
+  --dice-lift: 58px;
+  background: radial-gradient(circle at 50% 28%, rgba(14, 19, 26, 0.94), rgba(5, 8, 12, 0.98));
   display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
-  grid-template-rows: minmax(0, 1fr) auto;
   inset: 0;
-  padding: 22px;
+  padding: 16px;
   pointer-events: none;
   position: fixed;
   z-index: 40;
 }
-.dice-overlay[data-event="critical-success"] {
-  --flourish-color: rgba(241, 182, 108, 0.9);
-}
-.dice-overlay[data-event="critical-failure"] {
-  --flourish-color: rgba(223, 117, 79, 0.9);
-}
-.dice-overlay[data-event="natural-20"] {
-  --flourish-color: rgba(241, 182, 108, 0.6);
-}
-.dice-overlay[data-event="natural-1"] {
-  --flourish-color: rgba(141, 153, 167, 0.6);
-}
-.dice-flourish {
-  inset: 0;
-  pointer-events: none;
-  position: absolute;
-}
-.dice-flourish[data-motion="none"] {
-  display: none;
+.dice-stage-wrap,
+.dice-surface {
+  grid-area: 1 / 1;
 }
 .dice-stage-wrap {
-  background: radial-gradient(circle at 50% 20%, #1c2530 0, rgba(12, 17, 23, 0.9) 70%);
-  border: 1px solid #2a3543;
-  border-radius: 12px;
-  grid-column: 2;
-  grid-row: 1;
-  min-height: 220px;
+  background: radial-gradient(circle at 50% 20%, #1c2530 0, rgba(9, 13, 18, 0.96) 72%);
+  border: 1px solid #232e3b;
+  border-radius: 14px;
   overflow: hidden;
   pointer-events: auto;
   position: relative;
@@ -1008,100 +989,173 @@ input[type="checkbox"] {
   height: 100% !important;
   width: 100% !important;
 }
-.dice-stage-note {
-  bottom: 10px;
-  color: #8d99a7;
-  font-size: 10px;
-  left: 12px;
-  letter-spacing: 0.06em;
-  position: absolute;
-  text-transform: uppercase;
-}
-.dice-card {
-  align-self: end;
-  backdrop-filter: blur(6px);
-  background: rgba(15, 22, 32, 0.96);
-  border: 1px solid #2f3b4a;
-  border-left: 3px solid var(--flourish-color, #f1b66c);
-  border-radius: 10px;
-  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
-  display: grid;
-  gap: 12px;
-  grid-column: 1;
-  grid-row: 2;
-  justify-self: start;
-  max-width: 520px;
-  padding: 18px 20px;
-  pointer-events: auto;
-}
-.dice-card-head {
-  align-items: center;
+.dice-surface {
   display: flex;
-  gap: 14px;
-  justify-content: space-between;
+  flex-direction: column;
+  pointer-events: none;
+  position: relative;
 }
-.dice-card h3 {
+.dice-topbar {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 18px 20px 0;
+}
+.dice-topbar h3 {
   color: #f2f0eb;
   font-size: 19px;
   letter-spacing: -0.03em;
-  margin: 0;
+  margin: 4px 0 5px;
 }
-.dice-faces {
+.dice-topbar .button {
+  pointer-events: auto;
+}
+.dice-stage-note {
+  color: #8d99a7;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dice-result {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 22px;
+  justify-content: center;
+  padding: 0 20px 40px;
+}
+.dice-sequence {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  justify-content: center;
+  max-width: min(860px, 100%);
+  perspective: 900px;
 }
-.dice-face-group {
+.dice-value {
+  --die-x: 0px;
+  --die-y: 0px;
   align-items: center;
-  display: flex;
-  gap: 6px;
+  background: rgba(16, 23, 32, 0.92);
+  border: 1px solid #344252;
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  color: #e4e8eb;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  justify-content: center;
+  min-width: 52px;
+  padding: 8px 12px 6px;
+  position: relative;
+  transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
+  transition:
+    transform 660ms cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 300ms ease;
+  transition-delay: var(--value-delay, 0ms);
 }
-.dice-face-die {
-  color: #8d99a7;
-  font-size: 10px;
-  letter-spacing: 0.1em;
+.dice-value b {
+  font-size: 26px;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+.dice-value i {
+  color: #7d8997;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.dice-face {
-  background: #101720;
-  border: 1px solid #344252;
-  border-radius: 6px;
-  color: #e4e8eb;
-  display: inline-block;
-  font-size: 17px;
-  min-width: 34px;
-  padding: 6px 8px;
-  text-align: center;
+/* Before the dice land, and while they are settling, a value is folded onto its
+   die: flat against the table and turned away from the screen. */
+.dice-overlay[data-phase="pending"] .dice-value,
+.dice-overlay[data-phase="die"] .dice-value {
+  opacity: 0;
+  transition: none;
+  transform: translate3d(var(--die-x), var(--die-y), 0) rotateX(80deg) scale(0.45);
 }
-.dice-face[data-natural="true"] {
+/* The rise: up off the die and turned to face the screen. */
+.dice-overlay[data-phase="rise"] .dice-value {
+  opacity: 1;
+  transform: translate3d(var(--die-x), calc(var(--die-y) - var(--dice-lift)), 0)
+    rotateX(0deg) scale(1);
+}
+.dice-value[data-natural="true"] {
   border-color: #f1b66c;
-  box-shadow: 0 0 0 1px rgba(241, 182, 108, 0.35) inset;
+  box-shadow:
+    0 0 0 1px rgba(241, 182, 108, 0.35) inset,
+    0 14px 34px rgba(0, 0, 0, 0.45);
   color: #f6d6a8;
 }
-.dice-total {
+.dice-term {
   align-items: baseline;
   color: #aab4c0;
-  display: flex;
-  font-size: 14px;
-  gap: 12px;
+  display: inline-flex;
+  gap: 7px;
 }
-.dice-total b {
+.dice-op {
+  color: #7d8997;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 700;
+}
+.dice-number {
   color: #f7f4ee;
-  font-size: 24px;
+  font-size: 26px;
   letter-spacing: -0.05em;
+}
+.dice-number[data-kind="criticalSuccess"] {
+  color: #f6d6a8;
+}
+.dice-number[data-kind="success"] {
+  color: #a9dcb6;
+}
+.dice-number[data-kind="failure"] {
+  color: #8d99a7;
+}
+.dice-number[data-kind="criticalFailure"] {
+  color: #f0a184;
+}
+/* Each later term is revealed after the one it depends on, so the line reads as
+   a derivation rather than a flash of the answer. */
+.dice-reveal {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 340ms ease,
+    transform 420ms cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+.dice-reveal[data-revealed="false"] {
+  opacity: 0;
+  transform: translateY(12px) scale(0.86);
+}
+/* Reduced motion, and a renderer with no positions to anchor to, shows the same
+   sequence directly. */
+.dice-overlay[data-phase="settled"] .dice-value,
+.dice-overlay[data-phase="settled"] .dice-reveal {
+  transition: none;
 }
 .dice-outcome {
   align-items: center;
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.dice-outcome small {
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 .dice-outcome-chip {
   border: 1px solid #40505d;
   border-radius: 99px;
   color: #cbd3dc;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.12em;
-  padding: 5px 10px;
+  padding: 6px 12px;
   text-transform: uppercase;
 }
 .dice-outcome-chip[data-kind="criticalSuccess"] {
@@ -1119,70 +1173,91 @@ input[type="checkbox"] {
 .dice-outcome-chip[data-kind="failure"] {
   border-color: #8d99a7;
 }
-.dice-detail {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-}
-.dice-detail div {
-  display: flex;
-  gap: 10px;
-}
-.dice-detail dt {
+.dice-footer {
+  bottom: 12px;
   color: #7d8997;
+  display: flex;
+  flex-wrap: wrap;
   font-size: 10px;
-  letter-spacing: 0.08em;
-  min-width: 96px;
+  gap: 4px 16px;
+  justify-content: center;
+  left: 0;
+  letter-spacing: 0.06em;
+  padding: 0 20px;
+  position: absolute;
+  right: 0;
   text-transform: uppercase;
 }
-.dice-detail dd {
-  color: #cbd3dc;
-  font-size: 12px;
-  margin: 0;
+/* Flourish effects belong to the die (or the result) they happened on, so the
+   burst is sized to the value chip it sits inside and never to the page. Each
+   motion is a keyframe pair driven by --flourish-intensity. */
+.dice-overlay[data-event="none"] {
+  --flourish-color: rgba(141, 153, 167, 0.45);
 }
-/* Flourishes. Each motion is a keyframe pair driven by --flourish-intensity. */
-.dice-flourish[data-motion="pulse"] {
-  animation: dice-pulse 900ms ease-out 1 both;
-  background: radial-gradient(
-    circle at 62% 34%,
-    var(--flourish-color) 0,
-    transparent 42%
-  );
+.dice-overlay[data-event="critical-success"] {
+  --flourish-color: rgba(241, 182, 108, 0.9);
 }
-.dice-flourish[data-motion="sparks"] {
-  animation: dice-sparks 1100ms ease-out 1 both;
+.dice-overlay[data-event="critical-failure"] {
+  --flourish-color: rgba(223, 117, 79, 0.9);
+}
+.dice-overlay[data-event="natural-20"] {
+  --flourish-color: rgba(241, 182, 108, 0.6);
+}
+.dice-overlay[data-event="natural-1"] {
+  --flourish-color: rgba(141, 153, 167, 0.6);
+}
+.dice-burst {
+  animation: dice-burst-fade 1000ms ease-out 1 both;
+  animation-delay: 120ms;
+  background: radial-gradient(circle, var(--flourish-color) 0, transparent 62%);
+  border-radius: inherit;
+  inset: -45%;
+  pointer-events: none;
+  position: absolute;
+}
+.dice-burst[data-motion="pulse"] {
+  animation: dice-burst-pulse 900ms ease-out 1 both;
+}
+.dice-burst[data-motion="sparks"] {
+  animation: dice-burst-sparks 1100ms ease-out 1 both;
   background:
-    radial-gradient(circle at 62% 34%, var(--flourish-color) 0, transparent 3%),
-    radial-gradient(circle at 24% 48%, var(--flourish-color) 0, transparent 2.4%),
-    radial-gradient(circle at 78% 66%, var(--flourish-color) 0, transparent 2.4%),
-    radial-gradient(circle at 46% 74%, var(--flourish-color) 0, transparent 2%),
-    radial-gradient(circle at 88% 28%, var(--flourish-color) 0, transparent 2%);
+    radial-gradient(circle at 50% 50%, var(--flourish-color) 0, transparent 5%),
+    radial-gradient(circle at 8% 34%, var(--flourish-color) 0, transparent 3%),
+    radial-gradient(circle at 92% 62%, var(--flourish-color) 0, transparent 3%),
+    radial-gradient(circle at 34% 96%, var(--flourish-color) 0, transparent 2.4%),
+    radial-gradient(circle at 68% 4%, var(--flourish-color) 0, transparent 2.4%);
 }
-.dice-flourish[data-motion="impact"] {
-  animation: dice-impact 620ms ease-out 1 both;
+.dice-burst[data-motion="impact"] {
+  animation: dice-burst-impact 620ms ease-out 1 both;
+}
+.dice-burst[data-motion="flare"] {
+  animation: dice-burst-flare 1400ms ease-out 1 both;
   background: radial-gradient(
     circle at 50% 50%,
     var(--flourish-color) 0,
-    transparent 60%
+    transparent 68%
   );
 }
-.dice-flourish[data-motion="flare"] {
-  animation: dice-flare 1400ms ease-out 1 both;
-  background: radial-gradient(
-    ellipse at 30% 88%,
-    var(--flourish-color) 0,
-    transparent 52%
-  );
-}
-.dice-flourish[data-motion="shards"] {
-  animation: dice-shards 1300ms ease-out 1 both;
+.dice-burst[data-motion="shards"] {
+  animation: dice-burst-shards 1300ms ease-out 1 both;
   background-image: repeating-linear-gradient(
     115deg,
     var(--flourish-color) 0 2px,
-    transparent 2px 44px
+    transparent 2px 14px
   );
 }
-@keyframes dice-pulse {
+@keyframes dice-burst-fade {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: calc(0.25 + var(--flourish-intensity) * 0.6);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes dice-burst-pulse {
   0% {
     opacity: 0;
     transform: scale(calc(0.5 + var(--flourish-intensity) * 0.2));
@@ -1195,7 +1270,7 @@ input[type="checkbox"] {
     transform: scale(calc(1 + var(--flourish-intensity) * 0.6));
   }
 }
-@keyframes dice-sparks {
+@keyframes dice-burst-sparks {
   0% {
     background-size: 0 0, 0 0, 0 0, 0 0, 0 0;
     opacity: 1;
@@ -1205,7 +1280,7 @@ input[type="checkbox"] {
     opacity: 0;
   }
 }
-@keyframes dice-impact {
+@keyframes dice-burst-impact {
   0% {
     opacity: calc(0.2 + var(--flourish-intensity) * 0.5);
     transform: translateX(calc(var(--flourish-intensity) * -6px));
@@ -1218,7 +1293,7 @@ input[type="checkbox"] {
     transform: translateX(0);
   }
 }
-@keyframes dice-flare {
+@keyframes dice-burst-flare {
   0% {
     opacity: 0;
   }
@@ -1229,7 +1304,7 @@ input[type="checkbox"] {
     opacity: 0;
   }
 }
-@keyframes dice-shards {
+@keyframes dice-burst-shards {
   0% {
     background-position: 50% -40%;
     opacity: 0;
@@ -1306,20 +1381,15 @@ input[type="checkbox"] {
 }
 @media (max-width: 900px) {
   .dice-overlay {
-    gap: 12px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(150px, 32vh) auto;
-    padding: 12px;
+    padding: 10px;
   }
-  .dice-stage-wrap {
-    grid-column: 1;
-    grid-row: 1;
+  .dice-result {
+    gap: 16px;
+    padding: 0 12px 34px;
   }
-  .dice-card {
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: stretch;
-    max-width: none;
+  .dice-value b,
+  .dice-number {
+    font-size: 21px;
   }
   .dice-settings-grid,
   .dice-colors,
@@ -1328,8 +1398,12 @@ input[type="checkbox"] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dice-flourish {
+  .dice-burst {
     animation: none !important;
     display: none;
+  }
+  .dice-value,
+  .dice-reveal {
+    transition: none !important;
   }
 }

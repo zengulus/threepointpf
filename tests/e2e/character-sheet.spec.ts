@@ -1,8 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
- * The dice overlay is a result panel; it is dismissed before the next click so a
- * long roll sequence keeps exercising the sheet rather than the overlay.
+ * The dice overlay is the result surface; it is dismissed before the next click
+ * so a long roll sequence keeps exercising the sheet rather than the overlay.
  */
 async function dismissDice(page: Page) {
   const overlay = page.getByTestId("dice-overlay");
@@ -276,7 +276,8 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   await page.getByTestId("roll-standard-greatsword").click();
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toBeVisible();
-  // The card reports the resolved roll; the renderer only animates its faces.
+  // The dice surface reports the resolved roll; the renderer only animates its
+  // faces and says where they landed.
   await expect(page.getByTestId("dice-overlay-label")).toContainText("Greatsword");
   await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
   await expect(page.getByTestId("dice-face-0")).toHaveAttribute(
@@ -322,6 +323,11 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   await expect(page.getByTestId("dice-stage-mode")).toContainText("reduced motion");
   await expect(overlay).toHaveAttribute("data-mode", "skipped");
   await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
+  // The same sequence is shown directly: the rolled values, the arithmetic and
+  // the semantic outcome, with no movement to wait through.
+  await expect(overlay).toHaveAttribute("data-phase", "settled");
+  await expect(page.getByTestId("dice-face-0")).toContainText(/\d+/);
+  await expect(page.getByTestId("dice-overlay-outcome")).toBeVisible();
   await dismissDice(page);
 });
 

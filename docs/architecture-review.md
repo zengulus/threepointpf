@@ -6,6 +6,8 @@ Updated: 2026-09-18 (combat-context pass: CMD derivation, ability penalties, sel
 
 Updated: 2026-09-18 (roll-contract pass: actors/actions/targets in context, per-step roll plans, semantic outcomes, authored critical ranges; damage and initiative plans complete an action's roll list)
 
+Updated: 2026-09-18 (roll-presentation pass: the dice are the result surface, values rise from the landed dice into the visible arithmetic, flourishes and the semantic outcome belong to the dice/result rather than a card)
+
 This review compares the implementation with the supplied `Pathfinder Autosheet v6.2.1` workbook and the current vertical-slice brief. The workbook remains a behavioral reference, not a runtime dependency.
 
 ## Overall assessment
@@ -184,7 +186,9 @@ The renderer sits behind `DicePresenter`, and everything crossing that boundary 
 - It resolves its container once, when it is constructed. The overlay unmounts its stage between rolls, so a remounted stage is a different container; reusing the cached renderer would animate a detached element and report a rendered throw with no dice on screen, so a changed stage rebuilds the renderer the same way a skin change does.
 - It subscribes to `window` resize without ever unsubscribing and exposes no `dispose()`. The wrapper captures the listeners registered during `initialize()` and, on teardown, removes them, stops the loop, drops the physics bodies, detaches the canvas and releases the WebGL context. Without that, every skin change would leak a listener, a canvas and a GL context.
 
-All five are covered by tests that mock the boundary, so nothing in CI needs WebGL, and the response-shape tests build the object upstream really sends rather than a hand-written approximation.
+The renderer also reports where the dice it landed ended up, and that is the only thing physics contributes to the result display. The adapter projects each reported die (`position.clone().project(camera)`, so the clone is transformed and the die on the table is not) into a position normalized within the stage, and the presenter returns them as `DicePresentationReport.anchors`, in the same flattened face order resolution used. Values never cross that boundary in either direction: the value drawn against a die is the authoritative `ResolvedRoll` face, and a missing projection only means the sequence is shown settled instead of anchored to a guessed-at position.
+
+All five are covered by tests that mock the boundary — the landed-die projection included — so nothing in CI needs WebGL, and the response-shape tests build the object upstream really sends rather than a hand-written approximation.
 
 ### Module boundaries
 

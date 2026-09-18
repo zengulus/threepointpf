@@ -2,6 +2,7 @@ import {
   diceNotationFor,
   physicalFacesSupported,
   type DiceFlourish,
+  type DicePresentationAnchor,
   type DicePresentationReport,
   type DicePresentationRequest,
   type DicePresentationSettings,
@@ -71,6 +72,12 @@ export interface DiceBoxHandle {
    * WebGL context and its canvas. Presenter teardown prefers this over `clear`.
    */
   dispose?(): void;
+  /**
+   * Where the dice that last landed sit on screen, normalized within the stage.
+   * Position only — the faces themselves always come from the resolution, so a
+   * renderer that cannot project (or a test double) simply reports `null`.
+   */
+  landedDieAnchors?(): DicePresentationAnchor[] | null;
 }
 
 export interface DiceBoxInit {
@@ -110,7 +117,7 @@ export function diceBoxOptions(
 ): DiceBoxOptions {
   // Intensity drives how energetic the throw is; the gravity and iteration
   // ceiling keep a high-intensity throw from tumbling for many seconds, which
-  // matters because the result card is already on screen while it settles.
+  // matters because the rolled values rise off the dice as soon as they land.
   const strength = 0.5 + settings.intensity / 100;
   return {
     assetPath: diceAssetPath,
@@ -147,11 +154,23 @@ export function diceBoxOptions(
  * The remaining fields exist only so disposal can reach the resources upstream
  * never releases; none of them is read for a game fact.
  */
+interface RendererDie {
+  /**
+   * A three.js `Vector3` in world space. Only `clone().project(camera)` is used,
+   * so reading a position never moves the die it describes.
+   */
+  position?: unknown;
+}
+
 interface RendererInstance {
   initialize(): Promise<void>;
   roll(notation: string): Promise<unknown>;
   clear?(): void;
   clearDice?(): void;
+  /** The dice meshes the renderer keeps; their order is the flattened face order. */
+  diceList?: RendererDie[];
+  /** The camera the dice are drawn with, used only to project a landed die. */
+  camera?: unknown;
   renderer?: {
     domElement?: {
       parentNode?: { removeChild?(node: unknown): void } | null;
@@ -285,6 +304,8 @@ export function createDiceBoxRenderer(
   return (init) => {
     let box: RendererInstance | null = null;
     let resizeListeners: ResizeListener[] = [];
+    /** The last completed throw, kept only so its dice can be projected. */
+    let lastResults: unknown = null;
     return {
       async initialize() {
         const DiceBox = await loadModule();
@@ -306,7 +327,9 @@ export function createDiceBoxRenderer(
       },
       async roll(notation: string) {
         if (!box) throw new Error("Dice renderer was not initialized");
-        return box.roll(notation);
+        const results = await box.roll(notation);
+        lastResults = results;
+        return results;
       },
       clear() {
         if (!box) return;
@@ -317,9 +340,14 @@ export function createDiceBoxRenderer(
           // Clearing the table is cosmetic; the next throw removes stale dice itself.
         }
       },
+      landedDieAnchors() {
+        if (!box) return null;
+        return readLandedDieAnchors(lastResults, box.diceList, box.camera);
+      },
       dispose() {
         const instance = box;
         box = null;
+        lastResults = null;
         removeResizeListeners(resizeTarget, resizeListeners);
         resizeListeners = [];
         if (instance) disposeRendererInstance(instance);
@@ -353,6 +381,79 @@ export function renderedFaceValues(results: unknown): number[] | null {
     }
   }
   return values;
+}
+
+/**
+ * Reads the die ids a renderer reported, in the same flattened order as
+ * {@link renderedFaceValues}. Each reported roll carries the index of the mesh
+ * that produced it, which is what lets a landed position be paired with the
+ * face resolution used for it. A response that is not the documented shape — or
+ * a roll without an id — is reported as unreported rather than guessed at.
+ */
+export function reportedDieIds(results: unknown): number[] | null {
+  if (!results || typeof results !== "object") return null;
+  const sets = (results as { sets?: unknown }).sets;
+  if (!Array.isArray(sets)) return null;
+  const ids: number[] = [];
+  for (const set of sets) {
+    const rolls = (set as { rolls?: unknown }).rolls;
+    if (!Array.isArray(rolls)) return null;
+    for (const roll of rolls) {
+      const id = (roll as { id?: unknown }).id;
+      if (typeof id !== "number" || !Number.isFinite(id) || id < 0) return null;
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Projects one landed die onto the stage, normalized to `0`–`1` with the origin
+ * at the top-left. Projection goes through the die's own `clone().project()` so
+ * a three.js `Vector3` is copied rather than mutated — mutating it would move
+ * the die on the table. Anything that cannot project is skipped: this is a
+ * screen position, and no game fact ever depends on it.
+ */
+function projectDieToStage(position: unknown, camera: unknown): { x: number; y: number } | null {
+  if (!position || typeof position !== "object") return null;
+  const clone = (position as { clone?: unknown }).clone;
+  if (typeof clone !== "function") return null;
+  const copy = clone.call(position) as { project?: unknown };
+  if (!copy || typeof copy.project !== "function") return null;
+  const projected = copy.project(camera) as { x?: unknown; y?: unknown } | undefined;
+  if (typeof projected?.x !== "number" || typeof projected?.y !== "number") return null;
+  if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y)) return null;
+  return {
+    x: clampUnit((projected.x + 1) / 2),
+    y: clampUnit((1 - projected.y) / 2),
+  };
+}
+
+function clampUnit(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+/**
+ * Pairs each reported die with its landed screen position. The face index is the
+ * flattened index resolution used, so the overlay can anchor an authoritative
+ * value to the die it was rolled on without reading a value from the renderer.
+ */
+export function readLandedDieAnchors(
+  results: unknown,
+  diceList: readonly RendererDie[] | undefined,
+  camera: unknown,
+): DicePresentationAnchor[] | null {
+  if (!diceList || diceList.length === 0 || !camera) return null;
+  const ids = reportedDieIds(results);
+  if (!ids || ids.length === 0) return null;
+  const anchors: DicePresentationAnchor[] = [];
+  for (let faceIndex = 0; faceIndex < ids.length; faceIndex += 1) {
+    const die = diceList[ids[faceIndex]!];
+    if (!die) continue;
+    const point = projectDieToStage(die.position, camera);
+    if (point) anchors.push({ faceIndex, x: point.x, y: point.y });
+  }
+  return anchors.length > 0 ? anchors : null;
 }
 
 function handoffOf(
@@ -585,10 +686,15 @@ export function createDiceBoxPresenter(
             mode: "skipped",
             reason: "the throw was stopped before the dice landed",
           };
+        // The dice have settled, so their screen positions are final and can
+        // anchor the authoritative values. A renderer that reports none simply
+        // gets an unanchored result instead of a guessed-at position.
+        const anchors = box.landedDieAnchors?.() ?? null;
         return {
           mode: "rendered",
           notation,
           handoff: handoffOf(request.faces, outcome),
+          ...(anchors ? { anchors } : {}),
         };
       } finally {
         abandon = null;

@@ -123,35 +123,35 @@ export const diceFlourishes: DiceFlourish[] = [
   {
     id: "pulse",
     label: "Pulse",
-    description: "A single ring of light expanding from the result.",
+    description: "A single ring of light expanding from the landing die.",
     motion: "pulse",
     cue: "accent",
   },
   {
     id: "sparks",
     label: "Sparks",
-    description: "Short radial sparks from the dice.",
+    description: "Short radial sparks from the landing die.",
     motion: "sparks",
     cue: "rise",
   },
   {
     id: "impact",
     label: "Impact",
-    description: "A quick shake and a heavy frame flash.",
+    description: "A quick shake and a flash around the landing die.",
     motion: "impact",
     cue: "fall",
   },
   {
     id: "flare",
     label: "Flare",
-    description: "A soft full-panel glow behind the result card.",
+    description: "A soft glow around the landing die.",
     motion: "flare",
     cue: "rise",
   },
   {
     id: "shards",
     label: "Shards",
-    description: "Fragments falling away from the dice.",
+    description: "Fragments scattering from the landing die.",
     motion: "shards",
     cue: "fall",
   },
@@ -470,6 +470,20 @@ export interface DicePresentationRequest {
   settings: DicePresentationSettings;
 }
 
+/**
+ * Where a landed die sits on screen, normalized within the stage element
+ * (`0`–`1`, origin top-left). This is the only thing a renderer may contribute
+ * to the result display, and it is a position only: the value shown against a
+ * die is always the authoritative `ResolvedRoll` face, never the renderer's own
+ * idea of what it rolled.
+ */
+export interface DicePresentationAnchor {
+  /** Flattened face index in the plan's dice order, the order resolution used. */
+  faceIndex: number;
+  x: number;
+  y: number;
+}
+
 export interface DicePresentationReport {
   mode: DicePresentationMode;
   /** The notation handed to the renderer, when it rendered. */
@@ -481,6 +495,12 @@ export interface DicePresentationReport {
    * so a renderer bug cannot quietly become a game fact.
    */
   handoff?: "matched" | "mismatch" | "unreported";
+  /**
+   * The landed die positions, so a rolled value can rise from the die it was
+   * actually rolled on. Absent when the renderer could not report a position,
+   * in which case the result is shown without anchoring to physical dice.
+   */
+  anchors?: DicePresentationAnchor[];
 }
 
 /** The boundary a browser renderer implements. It only ever animates faces. */
