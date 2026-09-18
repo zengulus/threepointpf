@@ -280,7 +280,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toBeVisible();
   // The dice surface reports the resolved roll; the renderer only animates its
-  // faces and says where they landed.
+  // faces and carries the values on its own dice once they land.
   await expect(page.getByTestId("dice-overlay-label")).toContainText("Greatsword");
   await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
   await expect(page.getByTestId("dice-face-0")).toHaveAttribute(
@@ -340,6 +340,75 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   await expect(overlay).toHaveAttribute("data-phase", "settled");
   await expect(page.getByTestId("dice-face-0")).toContainText(/\d+/);
   await expect(page.getByTestId("dice-overlay-outcome")).toBeVisible();
+  await dismissDice(page);
+});
+
+test("the landed values leave the dice inside the renderer's own scene", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await page.getByTestId("roll-standard-greatsword").click();
+  const overlay = page.getByTestId("dice-overlay");
+  await expect(overlay).toHaveAttribute("data-phase", "pending");
+  // The beats are recorded by observation rather than by polling for them: a
+  // beat can be short, and the assertions below are not instantaneous.
+  await page.evaluate(() => {
+    const element = document.querySelector('[data-testid="dice-overlay"]')!;
+    const seen = [element.getAttribute("data-phase")];
+    (window as unknown as { __phases: (string | null)[] }).__phases = seen;
+    new MutationObserver(() => {
+      const phase = element.getAttribute("data-phase");
+      if (seen.at(-1) !== phase) seen.push(phase);
+    }).observe(element, { attributes: true, attributeFilter: ["data-phase"] });
+  });
+
+  // This is the animated path: the dice land, and the values are shown on them.
+  await expect(overlay).toHaveAttribute("data-mode", "rendered", {
+    timeout: 20_000,
+  });
+  await expect(overlay).toHaveAttribute("data-phase", "scene", {
+    timeout: 20_000,
+  });
+  // While the values ride their dice there is nothing to read in the document:
+  // the numbers on screen are the renderer's, not a panel's.
+  await expect(page.getByTestId("dice-face-0")).toHaveAttribute(
+    "data-revealed",
+    "false",
+  );
+  await expect(page.getByTestId("dice-overlay-total")).toHaveAttribute(
+    "data-revealed",
+    "false",
+  );
+  // And the scene really is what is moving: the canvas changes while the
+  // die-local phase runs. The samples stop at the first pair that differ, so
+  // they stay inside the phase however slow a screenshot turns out to be.
+  const stage = page.getByTestId("dice-stage");
+  let previous = await stage.screenshot();
+  let moved = false;
+  for (let sample = 0; sample < 4 && !moved; sample += 1) {
+    await page.waitForTimeout(250);
+    const next = await stage.screenshot();
+    moved = Buffer.compare(previous, next) !== 0;
+    previous = next;
+  }
+  expect(moved).toBe(true);
+
+  // The handoff then reveals the same authoritative values in the arithmetic.
+  await expect(overlay).toHaveAttribute("data-phase", "outcome", {
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("dice-face-0")).toHaveAttribute(
+    "data-revealed",
+    "true",
+  );
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
+  const phases = await page.evaluate(
+    () => (window as unknown as { __phases: (string | null)[] }).__phases,
+  );
+  expect(phases.indexOf("scene")).toBeLessThan(phases.indexOf("values"));
+  expect(phases.indexOf("values")).toBeLessThan(phases.indexOf("outcome"));
+  expect(phases).toContain("pending");
   await dismissDice(page);
 });
 

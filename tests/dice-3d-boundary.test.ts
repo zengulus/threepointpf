@@ -35,6 +35,12 @@ import {
 } from "../apps/web/src/lib/dice-3d";
 import { valueStableFrames } from "../apps/web/src/lib/dice-scene";
 import {
+  diceSurfaceLook,
+  dieMetalnessCeiling,
+} from "../apps/web/src/lib/dice-look";
+import {
+  FakeColor,
+  FakeMaterial,
   FakeObject3D,
   asCanvas,
   fakeCamera,
@@ -1113,3 +1119,243 @@ describe("the values live in the renderer's scene, on the dice", () => {
     expect(stylesheet).not.toMatch(/--die-x|--die-y|--dice-lift/);
   });
 });
+
+describe("the chosen skin reaches the renderer's own scene", () => {
+  /** A stand-in shaped like the parts of upstream the look is applied through. */
+  interface FakeUpstreamBox {
+    desk: { material: FakeMaterial; receiveShadow: boolean };
+    light: { color: FakeColor; intensity: number };
+    light_amb: { color: FakeColor; groundColor: FakeColor; intensity: number };
+    diceList: unknown[];
+    DiceFactory: {
+      createMaterials(): FakeMaterial[];
+      create(): unknown;
+    };
+  }
+
+  /** A `window` stand-in that can dispatch a resize at the renderer. */
+  function fakeResizeTarget() {
+    const listeners = new Set<(event: unknown) => void>();
+    return {
+      addEventListener(type: string, listener: unknown) {
+        if (type === "resize" && typeof listener === "function")
+          listeners.add(listener as (event: unknown) => void);
+      },
+      removeEventListener(type: string, listener: unknown) {
+        if (type === "resize")
+          listeners.delete(listener as (event: unknown) => void);
+      },
+      resize() {
+        for (const listener of [...listeners]) listener({ type: "resize" });
+      },
+      subscribed: () => listeners.size,
+    };
+  }
+
+  const rgbOf = (color: FakeColor) =>
+    [color.r, color.g, color.b].map((value) => Math.round(value * 255));
+
+  /**
+   * Upstream's own scene objects, with a die factory that builds the metallic
+   * material the presets really build, and a surface it rebuilds on a resize.
+   */
+  function upstreamRenderer(options = optionsFor()) {
+    const loop = fakeFrameLoop();
+    const target = fakeResizeTarget();
+    const instances: FakeUpstreamBox[] = [];
+    /** Upstream's own surface: a shadow catcher with nothing painted on it. */
+    const shadowCatcher = () => {
+      const material = new FakeMaterial();
+      material.map = { kind: "shadow-catcher" };
+      return material;
+    };
+    class LookBox implements FakeUpstreamBox {
+      desk = { material: shadowCatcher(), receiveShadow: true };
+      light = { color: new FakeColor(1, 1, 1), intensity: 0.7 };
+      light_amb = {
+        color: new FakeColor(1, 1, 1),
+        groundColor: new FakeColor(0.4, 0.4, 0.8),
+        intensity: 0.7,
+      };
+      diceList: unknown[] = [];
+      scene = new FakeObject3D();
+      camera = fakeCamera();
+      renderer = { render() {} };
+      DiceFactory = {
+        createMaterials: () => {
+          const material = new FakeMaterial();
+          // The metallic preset, exactly as upstream builds it.
+          material.color = new FakeColor(0.87, 0.87, 0.87);
+          material.metalness = 0.6;
+          material.roughness = 0.5;
+          material.map = { kind: "die-texture" };
+          return [material];
+        },
+        create: () => {
+          const die = fakeDie();
+          this.diceList.push(die);
+          return die;
+        },
+      };
+      constructor(_selector: string, options: unknown) {
+        this.options = options;
+        instances.push(this);
+      }
+      options: unknown;
+      async initialize() {}
+      async roll() {
+        // Upstream spawns a die at the start of a throw, before any frame of it.
+        this.DiceFactory.create();
+        return rendererResult([{ sides: 20, values: [17] }]);
+      }
+      clearDice() {}
+      /** A resize rebuilds the surface, the way upstream rebuilds its own. */
+      resize() {
+        this.desk = { material: shadowCatcher(), receiveShadow: true };
+      }
+    }
+    const factory = createDiceBoxRenderer({
+      loadModule: async () => LookBox as never,
+      resizeTarget: target,
+      dieValueEnvironment: {
+        createCanvas: () => asCanvas(fakeCanvas()),
+        now: () => loop.now,
+        requestFrame: loop.requestFrame,
+        cancelFrame: loop.cancelFrame,
+      },
+    });
+    return {
+      factory,
+      loop,
+      target,
+      instance: () => instances[instances.length - 1]!,
+      instances,
+    };
+  }
+
+  it("throws the selected surface's own light on the scene", async () => {
+    const upstream = upstreamRenderer();
+    const handle = upstream.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    const look = diceSurfaceLook(optionsFor().theme_surface);
+    expect(upstream.instance().light.intensity).toBe(look.spot.intensity);
+    expect(rgbOf(upstream.instance().light.color)).toEqual(
+      rgbOf(hexColor(look.spot.color)),
+    );
+    expect(upstream.instance().light_amb.intensity).toBe(
+      look.ambient.intensity,
+    );
+    handle.dispose?.();
+  });
+
+  it("paints the surface onto the renderer's own backdrop", async () => {
+    const upstream = upstreamRenderer();
+    const handle = upstream.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    // Before a die exists there is no material of the scene's class to build the
+    // plate from, so the renderer's own shadow material is left alone.
+    const shadowMaterial = upstream.instance().desk.material;
+    expect(shadowMaterial.map).toEqual({ kind: "shadow-catcher" });
+
+    await handle.roll("1d20@17");
+    const plate = upstream.instance().desk.material;
+    expect(plate).not.toBe(shadowMaterial);
+    expect(rgbOf(plate.color)).toEqual(
+      rgbOf(hexColor(diceSurfaceLook(optionsFor().theme_surface).desk)),
+    );
+    // It is still the renderer's mesh, so it still catches the dice's shadow.
+    expect(upstream.instance().desk.receiveShadow).toBe(true);
+    expect(shadowMaterial.disposed).toBe(0);
+
+    handle.dispose?.();
+    expect(plate.disposed).toBe(1);
+  });
+
+  it("normalises the die materials the renderer itself builds", async () => {
+    const upstream = upstreamRenderer();
+    const handle = upstream.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    const material = upstream.instance().DiceFactory.createMaterials()[0]!;
+    // The metallic preset's own tint is replaced, so the baked canvas carries
+    // the authored colours, and its metalness no longer darkens them.
+    expect(rgbOf(material.color)).toEqual([255, 255, 255]);
+    expect(material.metalness).toBeLessThanOrEqual(dieMetalnessCeiling);
+    expect(material.metalness).toBeGreaterThan(0);
+    expect(material.roughness).toBe(0.5);
+    handle.dispose?.();
+  });
+
+  it("repaints the surface the renderer rebuilt on a resize", async () => {
+    const upstream = upstreamRenderer();
+    const handle = upstream.factory({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    await handle.roll("1d20@17");
+
+    // Upstream rebuilds its surface on the frame after a resize; ours is
+    // re-established on that same frame, right after it.
+    upstream.instance().resize();
+    const rebuilt = upstream.instance().desk.material;
+    expect(rebuilt.map).toEqual({ kind: "shadow-catcher" });
+    upstream.target.resize();
+    upstream.loop.step();
+    // The rebuilt surface wears a new plate, and the renderer's own material —
+    // which is not ours to repaint — is left where it is.
+    const plate = upstream.instance().desk.material;
+    expect(plate).not.toBe(rebuilt);
+    expect(plate.map).toBeNull();
+    expect(rgbOf(plate.color)).toEqual(
+      rgbOf(hexColor(diceSurfaceLook(optionsFor().theme_surface).desk)),
+    );
+    expect(rebuilt.map).toEqual({ kind: "shadow-catcher" });
+
+    handle.dispose?.();
+    // The extra subscription goes with the renderer it was made for.
+    expect(upstream.target.subscribed()).toBe(0);
+  });
+
+  it("gives each surface a visibly different table", async () => {
+    const surfaces = ["green-felt", "cyberpunk", "stainless"];
+    const colours: string[] = [];
+    for (const surface of surfaces) {
+      const options = {
+        ...optionsFor(),
+        theme_surface: surface,
+      };
+      const upstream = upstreamRenderer(options);
+      const handle = upstream.factory({
+        selector: diceStageSelector,
+        options,
+      });
+      await handle.initialize();
+      await handle.roll("1d20@17");
+      const plate = upstream.instance().desk.material;
+      colours.push(rgbOf(plate.color).join(","));
+      // The scene's light is the surface's own, not the renderer's default.
+      expect(upstream.instance().light.intensity).not.toBe(0.7);
+      handle.dispose?.();
+    }
+    expect(new Set(colours).size).toBe(surfaces.length);
+  });
+});
+
+/** The rgb components a six-digit hex names, as the scene stores them. */
+function hexColor(hex: string): FakeColor {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return new FakeColor(
+    ((value >> 16) & 0xff) / 255,
+    ((value >> 8) & 0xff) / 255,
+    (value & 0xff) / 255,
+  );
+}

@@ -73,7 +73,6 @@ function validateSkin(value: unknown, fallback: DiceSkin): DiceSkin {
   return {
     foreground: color(value.foreground, fallback.foreground),
     background: color(value.background, fallback.background),
-    outline: color(value.outline, fallback.outline),
     ...(edge || fallback.edge ? { edge: edge || fallback.edge! } : {}),
     texture,
     material,

@@ -953,36 +953,35 @@ input[type="checkbox"] {
   }
 }
 
-/* Dice presentation. The dice table sits on the right and the result drawer on
-   the left. The die-local half of the sequence is not styled here at all: once
-   the dice are still, the renderer's own scene parents each value to the die it
-   was rolled on, so the value and its flourish are Three.js objects that move
-   with the die rather than DOM elements positioned over it. What this sheet owns
-   is the handoff — the drawer's arithmetic and the beats revealed on it. */
+/* Dice presentation. There is one surface — the dice drawer — and it is the whole
+   roll: `roll → die settles → number rises from the die → arithmetic → modifier →
+   total → outcome`, all inside it. There is no separate card, HUD or corner
+   summary. The die-local half is not styled here at all: once the dice are still,
+   the renderer's own scene parents each value to the die it was rolled on, so the
+   value and its flourish are Three.js objects that move with the die rather than
+   DOM elements positioned over it. What this sheet owns is the handoff — the
+   arithmetic below the dice and the beats revealed on it. */
 .dice-overlay {
   /* Set inline from the presentation's own colour table, so the stylesheet, the
      drawer's rim and the scene's emissive glow all read one source. */
   --flourish-color: #f1b66c;
   --flourish-intensity: 0.6;
+  align-items: end;
   display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
-  grid-template-rows: minmax(0, 1fr) auto;
   inset: 0;
+  justify-items: center;
   padding: 22px;
   pointer-events: none;
   position: fixed;
   z-index: 40;
 }
-.dice-stage-wrap {
+/* The dice themselves: the renderer's canvas, on its own plate. */
+.dice-field {
   background: radial-gradient(circle at 50% 20%, #1c2530 0, rgba(9, 13, 18, 0.96) 72%);
   border: 1px solid #232e3b;
-  border-radius: 12px;
-  grid-column: 2;
-  grid-row: 1;
-  min-height: 220px;
+  border-radius: 10px;
+  min-height: 140px;
   overflow: hidden;
-  pointer-events: auto;
   position: relative;
 }
 .dice-stage {
@@ -1004,10 +1003,7 @@ input[type="checkbox"] {
   position: absolute;
   text-transform: uppercase;
 }
-/* The drawer is declared after the table so a value travelling out of it is
-   drawn over the stage rather than behind it. */
 .dice-drawer {
-  align-self: end;
   backdrop-filter: blur(6px);
   background: rgba(15, 22, 32, 0.96);
   border: 1px solid #2f3b4a;
@@ -1016,12 +1012,12 @@ input[type="checkbox"] {
   box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
   display: grid;
   gap: 14px;
-  grid-column: 1;
-  grid-row: 2;
-  justify-self: start;
-  max-width: 520px;
+  grid-template-rows: auto minmax(150px, 38vh) auto auto;
+  max-height: calc(100vh - 44px);
+  max-width: 760px;
   padding: 18px 20px;
   pointer-events: auto;
+  width: 100%;
 }
 .dice-topbar {
   align-items: flex-start;
@@ -1035,9 +1031,16 @@ input[type="checkbox"] {
   letter-spacing: -0.03em;
   margin: 5px 0 0;
 }
+/* The arithmetic area of the same drawer, not a panel of its own: the values that
+   left the dice land here and are then revealed beat by beat. */
 .dice-result {
+  align-content: start;
+  background: rgba(9, 14, 21, 0.6);
+  border: 1px solid #293440;
+  border-radius: 10px;
   display: grid;
-  gap: 16px;
+  gap: 14px;
+  padding: 14px 16px;
 }
 .dice-sequence {
   align-items: center;
@@ -1236,20 +1239,12 @@ input[type="checkbox"] {
 }
 @media (max-width: 900px) {
   .dice-overlay {
-    gap: 12px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(150px, 32vh) auto;
     padding: 12px;
   }
-  .dice-stage-wrap {
-    grid-column: 1;
-    grid-row: 1;
-  }
   .dice-drawer {
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: stretch;
-    max-width: none;
+    gap: 12px;
+    grid-template-rows: auto minmax(120px, 30vh) auto auto;
+    padding: 14px;
   }
   .dice-value b,
   .dice-number {

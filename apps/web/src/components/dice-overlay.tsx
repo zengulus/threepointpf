@@ -44,16 +44,17 @@ export function outcomeLabel(kind: RollOutcomeKind): string {
 export const diceOverlayLifetimeMs = 12_000;
 
 /**
- * The browser dice overlay: the dice table on one side, the result drawer on the
- * other.
+ * The browser dice overlay: one dice drawer, which is the whole roll surface.
  *
- * The die-local half of the sequence is not drawn here at all. Once the landed
- * dice are visually still, `presentDieValues` puts each authoritative value into
- * the renderer's own scene as an object parented to the die that rolled it, so a
- * value rises out of its die with a flourish emitted by that die — and follows
- * the die through the scene graph rather than being re-projected into CSS. When
- * those values have left their dice, they hand off to the drawer's arithmetic:
- * `17 → 17 + 8 → 25`, with the semantic outcome ending the sequence.
+ * There is no separate result panel, card or corner summary: the drawer holds the
+ * dice, and what it shows changes as the roll resolves. The die-local half of the
+ * sequence is not drawn here at all. Once the landed dice are visually still,
+ * `presentDieValues` puts each authoritative value into the renderer's own scene
+ * as an object parented to the die that rolled it, so a value rises out of its
+ * die with a flourish emitted by that die — and follows the die through the scene
+ * graph rather than being re-projected into CSS. When those values have left
+ * their dice, they hand off to the arithmetic just below them: `17 → 17 + 8 →
+ * 25`, with the semantic outcome ending the same sequence.
  *
  * Everything shown here is a fact from the resolution. No DOM element is ever
  * positioned over a die.
@@ -212,13 +213,7 @@ function DiceSequence({
         } as CSSProperties
       }
     >
-      <div className="dice-stage-wrap">
-        <div className="dice-stage" id="dice-stage" ref={stageRef} data-testid="dice-stage" />
-        <span className="dice-stage-note" data-testid="dice-stage-mode">
-          {stageNote}
-        </span>
-      </div>
-      <div className="dice-drawer">
+      <div className="dice-drawer" data-testid="dice-drawer">
         <div className="dice-topbar">
           <div>
             <span className="eyebrow">
@@ -233,6 +228,19 @@ function DiceSequence({
           >
             Close
           </button>
+        </div>
+        {/* The dice live inside the drawer, not beside it: one surface, whose
+            contents change over the course of the roll. */}
+        <div className="dice-field">
+          <div
+            className="dice-stage"
+            id="dice-stage"
+            ref={stageRef}
+            data-testid="dice-stage"
+          />
+          <span className="dice-stage-note" data-testid="dice-stage-mode">
+            {stageNote}
+          </span>
         </div>
         <div className="dice-result">
           <div className="dice-sequence" data-testid="dice-overlay-faces">

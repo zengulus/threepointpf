@@ -190,15 +190,8 @@ export function DiceSettingsPanel({ dice }: { dice: DicePresentation }) {
           onChange={(background) => editSkin({ background })}
         />
         <ColorField
-          label="Outline"
-          value={skin.outline}
-          testId="dice-color-outline"
-          disabled={!custom}
-          onChange={(outline) => editSkin({ outline })}
-        />
-        <ColorField
-          label="Edge"
-          value={skin.edge ?? skin.foreground}
+          label="Edges"
+          value={skin.edge ?? skin.background}
           testId="dice-color-edge"
           disabled={!custom}
           onChange={(edge) => editSkin({ edge })}
@@ -206,7 +199,9 @@ export function DiceSettingsPanel({ dice }: { dice: DicePresentation }) {
       </div>
       <p className="muted">
         Picking a colour, texture, material or surface switches the skin to
-        Custom; a preset keeps its authored look.
+        Custom; a preset keeps its authored look. Numerals, body and edges are
+        painted into the die's own face texture — there is no outline colour,
+        because the renderer's outline is a hairline no die this size shows.
       </p>
       <div className="dice-settings-grid">
         {flourishSlots.map((slot) => (

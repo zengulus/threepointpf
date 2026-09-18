@@ -182,13 +182,22 @@ export function findDiceFlourish(id: string | undefined): DiceFlourish {
 
 /**
  * A dice skin is colours, a texture, a material and a table surface: the exact
- * axes the 3D renderer exposes, described as data so the settings UI and the
- * renderer adapter share one vocabulary.
+ * axes the 3D renderer actually paints, described as data so the settings UI and
+ * the renderer adapter share one vocabulary.
+ *
+ * Every axis here reaches the rendered die. There is deliberately no numeral
+ * outline: this renderer bakes each numeral into a texture and strokes it with a
+ * hairline whose width is fixed at 5 pixels against a glyph hundreds of pixels
+ * tall, so an outline colour changes nothing visible. A control that does nothing
+ * is worse than no control, so the axis is not offered. The die's chamfered
+ * edges are the `edge` colour, and they do reach the die.
  */
 export interface DiceSkin {
+  /** Numeral colour, painted into the die's own face texture. */
   foreground: string;
+  /** Die body colour, the fill the numerals are drawn over. */
   background: string;
-  outline: string;
+  /** The die's chamfered edges, when the geometry has them. */
   edge?: string;
   /** Texture id from {@link diceTextureOptions}. */
   texture: string;
@@ -211,7 +220,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Near-black dice with gilded numerals on an old table.",
     foreground: "#f3c877",
     background: "#15110c",
-    outline: "#000000",
     edge: "#f3c877",
     texture: "none",
     material: "metal",
@@ -223,7 +231,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Cloudy violet glass that reads well against the dark sheet.",
     foreground: "#e2d2ff",
     background: "#2a1c4d",
-    outline: "#120720",
     texture: "cloudy",
     material: "glass",
     surface: "cyberpunk",
@@ -234,7 +241,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Warm ember numerals in dark glass on steel.",
     foreground: "#ffd9a3",
     background: "#451a10",
-    outline: "#1a0906",
     texture: "fire",
     material: "glass",
     surface: "stainless",
@@ -245,7 +251,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Classic green table dice for a plain table look.",
     foreground: "#c8f7d0",
     background: "#14321f",
-    outline: "#04120a",
     texture: "none",
     material: "plastic",
     surface: "green-felt",
@@ -256,7 +261,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Light marble dice with dark numerals.",
     foreground: "#2b2b34",
     background: "#f2eee3",
-    outline: "#b6ab92",
     texture: "marble",
     material: "glass",
     surface: "blue-felt",
@@ -267,7 +271,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Speckled bone-white dice on mahogany.",
     foreground: "#efe8d6",
     background: "#39352d",
-    outline: "#14120e",
     texture: "speckles",
     material: "wood",
     surface: "mahogany",
@@ -278,7 +281,6 @@ export const diceSkinPresets: DiceSkinPreset[] = [
     description: "Sparkling dice for tables that like a little chaos.",
     foreground: "#ffe9f7",
     background: "#5a2b62",
-    outline: "#220a29",
     texture: "glitter",
     material: "plastic",
     surface: "red-felt",
@@ -368,7 +370,6 @@ export const defaultDicePresentationSettings: DicePresentationSettings = {
   customSkin: {
     foreground: defaultDiceSkinPreset.foreground,
     background: defaultDiceSkinPreset.background,
-    outline: defaultDiceSkinPreset.outline,
     edge: defaultDiceSkinPreset.edge,
     texture: defaultDiceSkinPreset.texture,
     material: defaultDiceSkinPreset.material,
@@ -395,7 +396,6 @@ export function activeDiceSkin(settings: DicePresentationSettings): DiceSkin {
   return {
     foreground: preset.foreground,
     background: preset.background,
-    outline: preset.outline,
     edge: preset.edge,
     texture: preset.texture,
     material: preset.material,

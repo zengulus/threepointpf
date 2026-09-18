@@ -293,6 +293,9 @@ export class FakeMaterial {
   color = new FakeColor();
   emissive = new FakeColor(0, 0, 0);
   emissiveIntensity = 0;
+  /** The metallic presets set these; the surface-and-colour work reads them. */
+  metalness = 0;
+  roughness = 1;
   transparent = false;
   opacity = 1;
   depthTest = true;
@@ -312,6 +315,8 @@ export class FakeMaterial {
     copy.color = this.color.clone();
     copy.emissive = this.emissive.clone();
     copy.emissiveIntensity = this.emissiveIntensity;
+    copy.metalness = this.metalness;
+    copy.roughness = this.roughness;
     copy.transparent = this.transparent;
     copy.opacity = this.opacity;
     copy.depthTest = this.depthTest;

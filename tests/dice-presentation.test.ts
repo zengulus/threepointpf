@@ -250,8 +250,21 @@ describe("dice skins", () => {
       expect(surfaces).toContain(preset.surface);
       expect(preset.foreground).toMatch(diceColorPattern);
       expect(preset.background).toMatch(diceColorPattern);
-      expect(preset.outline).toMatch(diceColorPattern);
     }
+  });
+
+  it("offers only colour axes the renderer actually paints", () => {
+    // The renderer bakes the numerals, the body fill and the die edges into its
+    // face texture. It has no visible outline colour, so a skin has none either:
+    // a control that changes nothing is worse than no control.
+    for (const preset of diceSkinPresets) {
+      expect(Object.keys(preset)).not.toContain("outline");
+      if (preset.edge !== undefined)
+        expect(preset.edge).toMatch(diceColorPattern);
+    }
+    expect(
+      Object.keys(defaultDicePresentationSettings.customSkin),
+    ).not.toContain("outline");
   });
 
   it("resolves a preset and a custom skin", () => {
@@ -268,7 +281,7 @@ describe("dice skins", () => {
       customSkin: {
         foreground: "#101010",
         background: "#fefefe",
-        outline: "#000000",
+        edge: "#808080",
         texture: "wood",
         material: "wood",
         surface: "mahogany",

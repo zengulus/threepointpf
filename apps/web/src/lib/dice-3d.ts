@@ -11,6 +11,14 @@ import {
   type DiceSkin,
 } from "@threepointpf/dice";
 import {
+  createSurfaceApplier,
+  firstDieMaterial,
+  patchDieCreation,
+  patchDieMaterials,
+  type DiceLookTarget,
+  type SurfaceApplier,
+} from "./dice-look";
+import {
   presentSceneValues,
   type SceneMeshLike,
   type SceneObject3D,
@@ -54,6 +62,13 @@ export interface DiceBoxOptions {
     name: string;
     foreground: string;
     background: string;
+    /**
+     * Sent as the body colour, which is how this renderer is told to skip its
+     * numeral outline: it only strokes when the outline differs from the body.
+     * The stroke it would draw is a fixed five-pixel hairline against a glyph
+     * hundreds of pixels tall, so an outline colour would change nothing on the
+     * rendered die — and a control that does nothing is not offered.
+     */
     outline: string;
     edge?: string;
     texture: string;
@@ -115,7 +130,6 @@ export function diceSkinKey(
   return [
     skin.foreground,
     skin.background,
-    skin.outline,
     skin.edge ?? "",
     skin.texture,
     skin.material,
@@ -150,7 +164,7 @@ export function diceBoxOptions(
       name: `threepointpf-${diceSkinKey(skin, settings).replace(/[^a-z0-9]+/gi, "-")}`,
       foreground: skin.foreground,
       background: skin.background,
-      outline: skin.outline,
+      outline: skin.background,
       ...(skin.edge ? { edge: skin.edge } : {}),
       texture: skin.texture,
       material: skin.material,
@@ -177,13 +191,19 @@ export function diceBoxOptions(
  * remaining fields exist only so disposal can reach the resources upstream never
  * releases. None of them is ever read for a game fact.
  */
-interface RendererInstance {
+interface RendererInstance extends DiceLookTarget {
   initialize(): Promise<void>;
   roll(notation: string): Promise<unknown>;
   clear?(): void;
   clearDice?(): void;
   /** The dice meshes the renderer keeps; their index is the reported die id. */
   diceList?: SceneMeshLike[];
+  /**
+   * The renderer's own die factory. Its material builder is wrapped so every die
+   * wears the authored colours, and its die builder is wrapped so the selected
+   * surface is in place before a throw's first frame.
+   */
+  DiceFactory?: unknown;
   /** The scene root the dice and their presentation objects are parented to. */
   scene?: SceneObject3D;
   /** The camera the dice are drawn with, used for the view's own axes. */
@@ -340,6 +360,35 @@ export function createDiceBoxRenderer(
     let resizeListeners: ResizeListener[] = [];
     /** The last completed throw, kept only so its dice can be paired to faces. */
     let lastResults: unknown = null;
+    /** Keeps the selected table surface painted onto this renderer's scene. */
+    let surface: SurfaceApplier | null = null;
+    /** Our own resize subscription, so a rebuild keeps the surface. */
+    let surfaceResizeListener: ResizeListener | null = null;
+    const surfaceId = init.options.theme_surface;
+
+    /**
+     * Applies the surface to the renderer's own scene. The dice are passed when
+     * the caller has one, because the plate is built from a die's material class.
+     */
+    const applySurface = (instance: RendererInstance, die?: unknown) => {
+      surface?.apply(surfaceId, die ?? firstDieMaterial(instance.diceList));
+    };
+
+    /**
+     * The frame scheduler for the resize fix-up: injected when a caller supplied
+     * one, otherwise the browser's own, otherwise nothing at all.
+     */
+    const frameScheduler = (): ((callback: () => void) => void) | null => {
+      const injected = dieValueEnvironment.requestFrame;
+      if (injected) return (callback) => void injected(callback);
+      const host = globalThis as {
+        requestAnimationFrame?: (callback: () => void) => number;
+      };
+      if (typeof host.requestAnimationFrame === "function")
+        return (callback) => void host.requestAnimationFrame?.(callback);
+      return null;
+    };
+
     return {
       async initialize() {
         const DiceBox = await loadModule();
@@ -358,11 +407,39 @@ export function createDiceBoxRenderer(
         }
         resizeListeners = captured;
         box = instance;
+        // The renderer's theme is fixed at construction, so the surface it was
+        // built with is applied here — and the die materials are wrapped, so the
+        // colours the skin authored survive the factory's own tinting.
+        const applier = createSurfaceApplier(instance);
+        surface = applier;
+        patchDieMaterials(instance.DiceFactory);
+        patchDieCreation(instance.DiceFactory, (die) => applySurface(instance, die));
+        // The lights exist as soon as the renderer has built its world; the plate
+        // follows with the first spawned die.
+        applySurface(instance);
+        // A resize makes the renderer rebuild its surface, so the look is
+        // established again on the frame after the one it rebuilds on. Its own
+        // handler was registered first, so the frame callback it queues runs
+        // before ours.
+        const schedule = frameScheduler();
+        if (schedule) {
+          const onResize = () => schedule(() => applySurface(instance));
+          surfaceResizeListener = onResize;
+          try {
+            resizeTarget.addEventListener("resize", onResize);
+          } catch {
+            // A target that refuses the subscription simply keeps the first look.
+            surfaceResizeListener = null;
+          }
+        }
       },
       async roll(notation: string) {
         if (!box) throw new Error("Dice renderer was not initialized");
         const results = await box.roll(notation);
         lastResults = results;
+        // Belt and braces for a surface the renderer rebuilt while no die existed
+        // to rebuild the plate from.
+        applySurface(box);
         return results;
       },
       clear() {
@@ -402,6 +479,14 @@ export function createDiceBoxRenderer(
         const instance = box;
         box = null;
         lastResults = null;
+        if (surfaceResizeListener) {
+          removeResizeListeners(resizeTarget, [surfaceResizeListener]);
+          surfaceResizeListener = null;
+        }
+        // The plate material is ours; the mesh and its geometry are the
+        // renderer's, and they go with it.
+        surface?.dispose();
+        surface = null;
         removeResizeListeners(resizeTarget, resizeListeners);
         resizeListeners = [];
         if (instance) disposeRendererInstance(instance);
