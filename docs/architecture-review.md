@@ -176,13 +176,15 @@ Publishing additionally needs the repository's Pages build source set to GitHub 
 
 ### The 3D dice boundary
 
-The renderer sits behind `DicePresenter`, and everything crossing that boundary goes one way: authoritative faces are generated and resolved first, the renderer is handed exactly those faces (`NdS@f1,f2,…`), and what it reports back is only ever compared with what it was given. Three properties of the real `dice-box-threejs` renderer are handled explicitly because the library does not:
+The renderer sits behind `DicePresenter`, and everything crossing that boundary goes one way: authoritative faces are generated and resolved first, the renderer is handed exactly those faces (`NdS@f1,f2,…`), and what it reports back is only ever compared with what it was given. Five properties of the real `dice-box-threejs` renderer are handled explicitly because the library does not:
 
 - It resolves a throw with `sets[].rolls[].value`. The handoff reader accepts that shape and treats every other shape as *unreported*, so a renderer upgrade can never be mistaken for agreement about the faces.
+- It takes a whole roll as one notation string with a single face list, so a plan with several dice groups is still one throw (`1d20+2d6@17,4,3`), with the faces applied by die in group order. Multi-dice plans therefore do not fall back: a plan is presentable whenever it needs dice at all, and only a plan that needs none has nothing to land on. The renderer does draw repeated die types as one merged group (`1d6+1d8+1d6` lands as `2d6 + 1d8`), which is unobservable while a plan has one die type per group and, when it is not, changes only the shape drawn against each face — the flattened order that resolution used, and that the handoff check compares, is preserved.
 - It owns one stage, one physics world and one animation loop, so presentations are queued. A second throw waits for the first to land instead of interrupting it mid-flight and reporting the wrong faces.
+- It resolves its container once, when it is constructed. The overlay unmounts its stage between rolls, so a remounted stage is a different container; reusing the cached renderer would animate a detached element and report a rendered throw with no dice on screen, so a changed stage rebuilds the renderer the same way a skin change does.
 - It subscribes to `window` resize without ever unsubscribing and exposes no `dispose()`. The wrapper captures the listeners registered during `initialize()` and, on teardown, removes them, stops the loop, drops the physics bodies, detaches the canvas and releases the WebGL context. Without that, every skin change would leak a listener, a canvas and a GL context.
 
-All three are covered by tests that mock the boundary, so nothing in CI needs WebGL, and the response-shape tests build the object upstream really sends rather than a hand-written approximation.
+All five are covered by tests that mock the boundary, so nothing in CI needs WebGL, and the response-shape tests build the object upstream really sends rather than a hand-written approximation.
 
 ### Module boundaries
 

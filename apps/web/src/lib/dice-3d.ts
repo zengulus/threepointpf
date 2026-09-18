@@ -469,12 +469,15 @@ export function createDiceBoxPresenter(
 
   /** Set while a throw is in flight, so teardown can settle it. */
   let abandon: (() => void) | null = null;
+  /** The stage element the current handle drew into. */
+  let appliedStage: HTMLElement | null = null;
 
   const disposeHandle = () => {
     const previous = handle;
     const inFlight = abandon;
     handle = null;
     appliedKey = null;
+    appliedStage = null;
     abandon = null;
     // A throw whose renderer is going away has to be let go of. This is not just
     // tidiness: the presenter queues throws, so a promise that never settles
@@ -498,7 +501,13 @@ export function createDiceBoxPresenter(
     requestSettings: DicePresentationSettings,
   ): Promise<DiceBoxHandle> => {
     const key = diceSkinKey(skin, requestSettings);
-    if (handle && appliedKey === key) return handle;
+    // The renderer resolves its container once, when it is constructed, and
+    // appends its own canvas to it. A remounted stage — the overlay is dismissed
+    // and opened again — is therefore a different container, and reusing the
+    // cached renderer would animate a detached element that is no longer on
+    // screen: a rendered report with no visible dice.
+    const stage = options.stage?.() ?? null;
+    if (handle && appliedKey === key && appliedStage === stage) return handle;
     disposeHandle();
     const created = factory({
       selector,
@@ -518,6 +527,7 @@ export function createDiceBoxPresenter(
     }
     handle = created;
     appliedKey = key;
+    appliedStage = stage;
     return created;
   };
 
@@ -540,7 +550,7 @@ export function createDiceBoxPresenter(
     if (!physicalFacesSupported(request.plan))
       return {
         mode: "fallback",
-        reason: `this roll needs ${request.plan.dice.length} dice groups, which physical dice cannot force in one throw`,
+        reason: "this roll needs no dice, so there is nothing for physical dice to land on",
       };
     let notation: string;
     try {

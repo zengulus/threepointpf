@@ -418,30 +418,38 @@ export function systemPrefersReducedMotion(): boolean {
 }
 
 /**
- * Whether a rollout can be landed physically. The renderer forces faces through
- * a single predetermined dice group, so a plan whose dice span several groups
- * (and would need more than one forced set) is presented without 3D dice rather
- * than with dice that disagree with the resolution.
+ * Whether a roll can be landed physically. The renderer takes a whole roll as
+ * one notation string with a single predetermined face list, and it applies
+ * those faces by die across every group in order — so several groups are simply
+ * one throw (`1d20+2d6@17,4,3`), and only a plan that needs no dice at all has
+ * nothing to land on.
  */
 export function physicalFacesSupported(plan: RollPlan): boolean {
-  return plan.dice.length === 1;
+  return plan.dice.some((group) => group.count > 0);
 }
 
 /**
  * The notation the renderer rolls, carrying the authoritative faces. The faces
- * are generated before this is called and are the same ones that were resolved.
+ * are generated before this is called and are the same ones that were resolved,
+ * flattened in group order — the order the renderer applies them in.
+ *
+ * The renderer reads one face list for the whole roll and assigns it by die
+ * across the groups, so several groups stay a single throw. It does merge
+ * repeated die types into one group (`1d6+1d8+1d6` lands as `2d6 + 1d8`); the
+ * flattened sequence, which is what resolution used and what the handoff check
+ * compares, is preserved either way, so only the shape drawn for each face can
+ * differ when a plan interleaves the same die type.
  */
 export function diceNotationFor(
   plan: RollPlan,
   faces: readonly number[],
 ): string {
   validateFaces(plan, faces);
-  const group = plan.dice[0];
-  if (plan.dice.length !== 1 || !group)
+  if (!physicalFacesSupported(plan))
     throw new Error(
-      `Roll plan ${plan.id} needs ${plan.dice.length} dice groups; physical dice present one group at a time`,
+      `Roll plan ${plan.id} needs no dice, so there is nothing for physical dice to land on`,
     );
-  return `${formatDiceExpression(group)}@${faces.join(",")}`;
+  return `${plan.dice.map(formatDiceExpression).join("+")}@${faces.join(",")}`;
 }
 
 /**

@@ -458,6 +458,43 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
     ).not.toContain("not a melee attack");
   });
 
+  it("keeps the two-handed Strength multiplier off flat damage and off a Strength penalty", () => {
+    // A greatsword deals 2d6 + 1½ × Strength modifier. Each case here separates
+    // that rule from the tempting "multiply the damage roll" reading: an
+    // enhancement bonus must stay flat, and a Strength penalty is added in full.
+    const greatsword = (str: number, weaponBonus: number) =>
+      engine(
+        homebrew({
+          baseAbilities: { str, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+          baseBab: 1,
+          attacks: [
+            melee("greatsword", {
+              baseDamage: { count: 2, sides: 6 },
+              damageAbilityMultiplier: 1.5,
+              weaponBonus,
+              attackTags: ["weapon.melee", "weapon.two-handed"],
+            }),
+          ],
+        }),
+      ).createDamageRollPlan("greatsword");
+
+    // Strength 17 (+3): floor(1½ × 3) = 4, and a +1 enhancement stays +1 —
+    // scaling the whole roll instead would give 6.
+    expect(greatsword(17, 0).modifier).toBe(4);
+    expect(greatsword(17, 1).modifier).toBe(5);
+    // An odd modifier rounds down: Strength 13 (+1) → floor(1½ × 1) = 1.
+    expect(greatsword(13, 0).modifier).toBe(1);
+    // Strength 8 (−1) applies in full; multiplying it would make it −2.
+    expect(greatsword(8, 0).modifier).toBe(-1);
+    expect(greatsword(8, 1).modifier).toBe(0);
+    expect(
+      greatsword(17, 0).provenance.modifier?.map((item) => item.label),
+    ).toContain("STR damage (1.5×)");
+    expect(greatsword(8, 0).provenance.modifier?.map((item) => item.label)).toContain(
+      "STR damage (1×)",
+    );
+  });
+
   it("grants one shared Haste extra attack to a multi-weapon full attack", () => {
     const character = homebrew({
       attacks: [

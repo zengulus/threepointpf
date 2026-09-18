@@ -262,8 +262,13 @@ describe("fallbacks never hide the authoritative result", () => {
     expect(renderer.inits).toHaveLength(2);
   });
 
-  it("falls back for a plan it cannot force in one throw", async () => {
-    const renderer = fakeRenderer();
+  it("throws every dice group of a plan in one roll", async () => {
+    const renderer = fakeRenderer(
+      rendererResult([
+        { sides: 20, values: [17] },
+        { sides: 6, values: [4, 3] },
+      ]),
+    );
     const presenter = createDiceBoxPresenter({
       settings: defaultDicePresentationSettings,
       factory: renderer.factory,
@@ -274,12 +279,28 @@ describe("fallbacks never hide the authoritative result", () => {
       ...plan,
       dice: [
         { sides: 20, count: 1 },
-        { sides: 6, count: 1 },
+        { sides: 6, count: 2 },
       ],
     };
-    const report = await presenter.present(requestFor(multi, [17, 4]));
+    const report = await presenter.present(requestFor(multi, [17, 4, 3]));
+    // Several groups are still one throw, with the faces flattened in group
+    // order — the order the renderer applies them in.
+    expect(renderer.rolls).toEqual(["1d20+2d6@17,4,3"]);
+    expect(report).toMatchObject({ mode: "rendered", handoff: "matched" });
+  });
+
+  it("falls back when a plan needs no dice", async () => {
+    const renderer = fakeRenderer();
+    const presenter = createDiceBoxPresenter({
+      settings: defaultDicePresentationSettings,
+      factory: renderer.factory,
+      playCue: () => {},
+    });
+    const plan = engine().createAttackRollPlan("blade", 0);
+    const noDice: RollPlan = { ...plan, dice: [] };
+    const report = await presenter.present(requestFor(noDice, []));
     expect(report.mode).toBe("fallback");
-    expect(report.reason).toContain("dice groups");
+    expect(report.reason).toContain("needs no dice");
     expect(renderer.inits).toHaveLength(0);
   });
 
@@ -353,6 +374,32 @@ describe("skins and settings reach the renderer", () => {
     // another table clear.
     expect(renderer.cleared).toBe(2);
     expect(renderer.disposed).toBe(2);
+  });
+
+  it("rebuilds when the overlay remounts the stage element", async () => {
+    const renderer = fakeRenderer();
+    let stage = stageElement();
+    const presenter = createDiceBoxPresenter({
+      settings: defaultDicePresentationSettings,
+      factory: renderer.factory,
+      stage: () => stage,
+      playCue: () => {},
+    });
+    const plan = engine().createAttackRollPlan("blade", 0);
+    await presenter.present(requestFor(plan, [17]));
+    expect(renderer.inits).toHaveLength(1);
+
+    // Dismissing the overlay unmounts its stage, so the next throw gets a new
+    // container. The renderer looks its container up once, at construction, so
+    // the cached one would animate an element that is no longer on screen.
+    stage = stageElement();
+    await presenter.present(requestFor(plan, [12]));
+    expect(renderer.inits).toHaveLength(2);
+    expect(renderer.disposed).toBe(1);
+
+    // A stage that did not change is still reused rather than rebuilt.
+    await presenter.present(requestFor(plan, [12]));
+    expect(renderer.inits).toHaveLength(2);
   });
 
   it("plays the flourish's own cue for each throw", async () => {

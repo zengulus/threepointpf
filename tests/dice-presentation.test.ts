@@ -405,7 +405,7 @@ describe("physical dice notation", () => {
     expect(() => diceNotationFor(plan, [1, 2])).toThrow(/requires 1 face/);
   });
 
-  it("refuses to fake a multi-group throw", () => {
+  it("carries every dice group of a plan in one throw", () => {
     const plan = engine(homebrew({ attacks: [sword("blade")] })).createAttackRollPlan(
       "blade",
       0,
@@ -414,12 +414,25 @@ describe("physical dice notation", () => {
       ...plan,
       dice: [
         { sides: 20, count: 1 },
-        { sides: 6, count: 1 },
+        { sides: 6, count: 2 },
       ],
     };
     expect(physicalFacesSupported(plan)).toBe(true);
-    expect(physicalFacesSupported(multi)).toBe(false);
-    expect(() => diceNotationFor(multi, [17, 4])).toThrow(/one group at a time/);
+    expect(physicalFacesSupported(multi)).toBe(true);
+    // Groups are flattened in declaration order, which is the order the renderer
+    // applies the predetermined faces in.
+    expect(diceNotationFor(multi, [17, 4, 3])).toBe("1d20+2d6@17,4,3");
+  });
+
+  it("has nothing to throw for a plan that needs no dice", () => {
+    const plan = engine(homebrew({ attacks: [sword("blade")] })).createAttackRollPlan(
+      "blade",
+      0,
+    );
+    const empty: RollPlan = { ...plan, dice: [] };
+    expect(physicalFacesSupported(empty)).toBe(false);
+    // An empty plan must not become a bare "@" notation.
+    expect(() => diceNotationFor(empty, [])).toThrow(/nothing for physical dice/);
   });
 
   it("keeps attack planning free of presentation concerns", () => {
