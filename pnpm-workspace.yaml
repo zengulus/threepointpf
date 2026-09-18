@@ -3,3 +3,5 @@ packages:
   - packages/*
 allowBuilds:
   esbuild: true
+patchedDependencies:
+  '@3d-dice/dice-box-threejs@0.0.12': patches/@3d-dice__dice-box-threejs@0.0.12.patch

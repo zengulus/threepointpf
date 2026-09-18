@@ -15,6 +15,7 @@ import {
   firstDieMaterial,
   patchDieCreation,
   patchDieMaterials,
+  readableNumeralOutline,
   type DiceLookTarget,
   type SurfaceApplier,
 } from "./dice-look";
@@ -63,11 +64,11 @@ export interface DiceBoxOptions {
     foreground: string;
     background: string;
     /**
-     * Sent as the body colour, which is how this renderer is told to skip its
-     * numeral outline: it only strokes when the outline differs from the body.
-     * The stroke it would draw is a fixed five-pixel hairline against a glyph
-     * hundreds of pixels tall, so an outline colour would change nothing on the
-     * rendered die — and a control that does nothing is not offered.
+     * The numeral outline. It is derived from the foreground's own luminance —
+     * dark ink under light numerals, off-white under dark ones — rather than
+     * exposed as a setting, so a die's numerals always stay readable. A patched
+     * renderer widens the stroke to scale with the glyph so it is visible on a
+     * die this size.
      */
     outline: string;
     edge?: string;
@@ -164,7 +165,7 @@ export function diceBoxOptions(
       name: `threepointpf-${diceSkinKey(skin, settings).replace(/[^a-z0-9]+/gi, "-")}`,
       foreground: skin.foreground,
       background: skin.background,
-      outline: skin.background,
+      outline: readableNumeralOutline(skin.foreground),
       ...(skin.edge ? { edge: skin.edge } : {}),
       texture: skin.texture,
       material: skin.material,
@@ -410,7 +411,11 @@ export function createDiceBoxRenderer(
         // The renderer's theme is fixed at construction, so the surface it was
         // built with is applied here — and the die materials are wrapped, so the
         // colours the skin authored survive the factory's own tinting.
-        const applier = createSurfaceApplier(instance);
+        const applier = createSurfaceApplier(instance, {
+          ...(dieValueEnvironment.createCanvas
+            ? { createCanvas: dieValueEnvironment.createCanvas }
+            : {}),
+        });
         surface = applier;
         patchDieMaterials(instance.DiceFactory);
         patchDieCreation(instance.DiceFactory, (die) => applySurface(instance, die));

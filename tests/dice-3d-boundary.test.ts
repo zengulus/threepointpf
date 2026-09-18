@@ -35,10 +35,12 @@ import {
 } from "../apps/web/src/lib/dice-3d";
 import { valueStableFrames } from "../apps/web/src/lib/dice-scene";
 import {
-  diceSurfaceLook,
   dieMetalnessCeiling,
+  neutralDiceLighting,
+  readableNumeralOutline,
 } from "../apps/web/src/lib/dice-look";
 import {
+  FakeCanvasTexture,
   FakeColor,
   FakeMaterial,
   FakeObject3D,
@@ -444,6 +446,12 @@ describe("skins and settings reach the renderer", () => {
     expect(options.theme_customColorset.background).toBe(skin.background);
     expect(options.theme_customColorset.material).toBe(skin.material);
     expect(options.theme_customColorset.texture).toBe(skin.texture);
+    // The outline is derived from the numeral colour, not the body: a light
+    // numeral gets dark ink so it stays readable on the die.
+    expect(options.theme_customColorset.outline).toBe(
+      readableNumeralOutline(skin.foreground),
+    );
+    expect(options.theme_customColorset.outline).toBe("#050608");
     // The colourset name changes with the skin so the renderer's internal
     // colourset cache can never serve a stale look.
     const other = updateDicePresentationSettings(settings, { skinId: "arcane" });
@@ -1188,7 +1196,8 @@ describe("the chosen skin reaches the renderer's own scene", () => {
           material.color = new FakeColor(0.87, 0.87, 0.87);
           material.metalness = 0.6;
           material.roughness = 0.5;
-          material.map = { kind: "die-texture" };
+          // A real texture class, so the surface plate's map belongs to one too.
+          material.map = new FakeCanvasTexture(fakeCanvas());
           return [material];
         },
         create: () => {
@@ -1233,22 +1242,27 @@ describe("the chosen skin reaches the renderer's own scene", () => {
     };
   }
 
-  it("throws the selected surface's own light on the scene", async () => {
-    const upstream = upstreamRenderer();
-    const handle = upstream.factory({
-      selector: diceStageSelector,
-      options: optionsFor(),
-    });
-    await handle.initialize();
-    const look = diceSurfaceLook(optionsFor().theme_surface);
-    expect(upstream.instance().light.intensity).toBe(look.spot.intensity);
-    expect(rgbOf(upstream.instance().light.color)).toEqual(
-      rgbOf(hexColor(look.spot.color)),
-    );
-    expect(upstream.instance().light_amb.intensity).toBe(
-      look.ambient.intensity,
-    );
-    handle.dispose?.();
+  it("throws the one neutral light on the scene, whatever surface is selected", async () => {
+    for (const surface of ["green-felt", "mahogany", "stainless"]) {
+      const options = { ...optionsFor(), theme_surface: surface };
+      const upstream = upstreamRenderer(options);
+      const handle = upstream.factory({
+        selector: diceStageSelector,
+        options,
+      });
+      await handle.initialize();
+      const instance = upstream.instance();
+      expect(instance.light.intensity).toBe(neutralDiceLighting.spot.intensity);
+      expect(rgbOf(instance.light.color)).toEqual([255, 255, 255]);
+      expect(instance.light_amb.intensity).toBe(
+        neutralDiceLighting.ambient.intensity,
+      );
+      expect(rgbOf(instance.light_amb.color)).toEqual([255, 255, 255]);
+      expect(rgbOf(instance.light_amb.groundColor)).toEqual(
+        rgbOf(hexColor(neutralDiceLighting.ambient.ground)),
+      );
+      handle.dispose?.();
+    }
   });
 
   it("paints the surface onto the renderer's own backdrop", async () => {
@@ -1266,9 +1280,10 @@ describe("the chosen skin reaches the renderer's own scene", () => {
     await handle.roll("1d20@17");
     const plate = upstream.instance().desk.material;
     expect(plate).not.toBe(shadowMaterial);
-    expect(rgbOf(plate.color)).toEqual(
-      rgbOf(hexColor(diceSurfaceLook(optionsFor().theme_surface).desk)),
-    );
+    // White, so the generated map's own colour is not multiplied dark.
+    expect(rgbOf(plate.color)).toEqual([255, 255, 255]);
+    expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
+    expect(plate.map).not.toBe(shadowMaterial.map);
     // It is still the renderer's mesh, so it still catches the dice's shadow.
     expect(upstream.instance().desk.receiveShadow).toBe(true);
     expect(shadowMaterial.disposed).toBe(0);
@@ -1314,10 +1329,8 @@ describe("the chosen skin reaches the renderer's own scene", () => {
     // which is not ours to repaint — is left where it is.
     const plate = upstream.instance().desk.material;
     expect(plate).not.toBe(rebuilt);
-    expect(plate.map).toBeNull();
-    expect(rgbOf(plate.color)).toEqual(
-      rgbOf(hexColor(diceSurfaceLook(optionsFor().theme_surface).desk)),
-    );
+    expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
+    expect(rgbOf(plate.color)).toEqual([255, 255, 255]);
     expect(rebuilt.map).toEqual({ kind: "shadow-catcher" });
 
     handle.dispose?.();
@@ -1325,9 +1338,9 @@ describe("the chosen skin reaches the renderer's own scene", () => {
     expect(upstream.target.subscribed()).toBe(0);
   });
 
-  it("gives each surface a visibly different table", async () => {
+  it("gives each surface its own material spec and generated map", async () => {
     const surfaces = ["green-felt", "cyberpunk", "stainless"];
-    const colours: string[] = [];
+    const specs: string[] = [];
     for (const surface of surfaces) {
       const options = {
         ...optionsFor(),
@@ -1341,12 +1354,16 @@ describe("the chosen skin reaches the renderer's own scene", () => {
       await handle.initialize();
       await handle.roll("1d20@17");
       const plate = upstream.instance().desk.material;
-      colours.push(rgbOf(plate.color).join(","));
-      // The scene's light is the surface's own, not the renderer's default.
-      expect(upstream.instance().light.intensity).not.toBe(0.7);
+      // The table is the surface's own material, with a generated map on it.
+      specs.push(`${plate.roughness}:${plate.metalness}`);
+      expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
+      // And the light on the dice is the neutral one, not a per-surface light.
+      expect(upstream.instance().light.intensity).toBe(
+        neutralDiceLighting.spot.intensity,
+      );
       handle.dispose?.();
     }
-    expect(new Set(colours).size).toBe(surfaces.length);
+    expect(new Set(specs).size).toBe(surfaces.length);
   });
 });
 

@@ -200,8 +200,9 @@ export function DiceSettingsPanel({ dice }: { dice: DicePresentation }) {
       <p className="muted">
         Picking a colour, texture, material or surface switches the skin to
         Custom; a preset keeps its authored look. Numerals, body and edges are
-        painted into the die's own face texture — there is no outline colour,
-        because the renderer's outline is a hairline no die this size shows.
+        painted into the die's own face texture, and each numeral is outlined
+        automatically — dark ink under light numerals, off-white under dark ones
+        — so the number stays readable on whatever face it lands.
       </p>
       <div className="dice-settings-grid">
         {flourishSlots.map((slot) => (

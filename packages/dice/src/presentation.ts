@@ -186,11 +186,11 @@ export function findDiceFlourish(id: string | undefined): DiceFlourish {
  * the renderer adapter share one vocabulary.
  *
  * Every axis here reaches the rendered die. There is deliberately no numeral
- * outline: this renderer bakes each numeral into a texture and strokes it with a
- * hairline whose width is fixed at 5 pixels against a glyph hundreds of pixels
- * tall, so an outline colour changes nothing visible. A control that does nothing
- * is worse than no control, so the axis is not offered. The die's chamfered
- * edges are the `edge` colour, and they do reach the die.
+ * outline *setting*: this renderer bakes each numeral into a texture and strokes
+ * it, and the outline is derived automatically from the foreground's luminance —
+ * dark ink under light numerals, off-white under dark ones — so a die stays
+ * readable without asking the user to reason about contrast. The die's
+ * chamfered edges are the `edge` colour, and they do reach the die.
  */
 export interface DiceSkin {
   /** Numeral colour, painted into the die's own face texture. */

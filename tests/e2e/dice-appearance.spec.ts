@@ -313,3 +313,585 @@ test("appearance changes between rolls rebuild without stale canvases", async ({
   expect(felt.mean.g).toBeGreaterThan(felt.mean.r);
   expect(brightness(steel)).toBeGreaterThan(brightness(felt) + 60);
 });
+
+/* ------------------------------------------------------------------ *
+ * Reading the renderer's own generated textures.
+ *
+ * The dice and the table are a handful of pixels on the stage, so a numeral or a
+ * grain line is one or two pixels there. Both are baked by the renderer into a
+ * canvas and handed to Three.js, so these helpers observe those canvases: the
+ * stage is still driven entirely by the real renderer, and the assertions are
+ * made against the real generated texture at its own resolution rather than
+ * inferring a numeral from a 60-pixel die.
+ * ------------------------------------------------------------------ */
+
+interface GeneratedCanvasEntry {
+  canvas: HTMLCanvasElement;
+  strokes: { text: string; style: string; lineWidth: number; font: string }[];
+  fills: { text: string; style: string }[];
+}
+
+/**
+ * Records every 2D canvas the renderer creates, and the text it draws on it.
+ * This is a read-only observation — the returned context is the renderer's own,
+ * with its `strokeText`/`fillText` wrapped so their arguments can be inspected —
+ * and it is installed before any app code runs.
+ */
+async function recordGeneratedCanvases(page: Page) {
+  await page.addInitScript(() => {
+    const scope = window as unknown as { __diceCanvases?: GeneratedCanvasEntry[] };
+    scope.__diceCanvases = [];
+    const wrapped = new WeakSet<object>();
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type: string,
+      ...args: unknown[]
+    ) {
+      const context = (
+        original as unknown as (
+          this: HTMLCanvasElement,
+          type: string,
+          ...rest: unknown[]
+        ) => CanvasRenderingContext2D | null
+      ).call(this, type, ...args);
+      if (type === "2d" && context && !wrapped.has(context)) {
+        wrapped.add(context);
+        const entry: GeneratedCanvasEntry = {
+          canvas: this,
+          strokes: [],
+          fills: [],
+        };
+        scope.__diceCanvases!.push(entry);
+        const strokeText = context.strokeText.bind(context);
+        const fillText = context.fillText.bind(context);
+        context.strokeText = ((text: string, x: number, y: number) => {
+          entry.strokes.push({
+            text: String(text),
+            style: String(context.strokeStyle),
+            lineWidth: context.lineWidth,
+            font: context.font,
+          });
+          return strokeText(text, x, y);
+        }) as typeof context.strokeText;
+        context.fillText = ((text: string, x: number, y: number) => {
+          entry.fills.push({
+            text: String(text),
+            style: String(context.fillStyle),
+          });
+          return fillText(text, x, y);
+        }) as typeof context.fillText;
+      }
+      return context;
+    } as typeof HTMLCanvasElement.prototype.getContext;
+  });
+}
+
+interface FaceTextureReport {
+  /** Numeral fills drawn in the skin's foreground colour. */
+  fills: number;
+  /** Numeral strokes drawn in the expected outline colour. */
+  outlineStrokes: number;
+  /** Thinnest outline stroked around any numeral, in texture pixels. */
+  minOutlineWidth: number;
+  /**
+   * Fraction of the numeral's edge pixels that lead into a contiguous run of
+   * outline pixels at least four deep. This is the visible ring: the patched
+   * stroke leaves roughly half its width outside the glyph, while the body
+   * colour and any texture behind the numeral leave a run of one or two.
+   */
+  ringFraction: number;
+  /** Pixels of the outline colour in the face texture. */
+  inkPixels: number;
+  /** How many distinct landed values were seen. */
+  distinctValues: number;
+}
+
+/** Inspects the real face textures the renderer generated, at 512px. */
+async function faceTextureReport(
+  page: Page,
+  foreground: string,
+  outline: string,
+  inkThreshold = 40,
+): Promise<FaceTextureReport> {
+  return page.evaluate(
+    ({ foreground, outline, inkThreshold }) => {
+      const scope = window as unknown as {
+        __diceCanvases?: GeneratedCanvasEntry[];
+      };
+      const entries = scope.__diceCanvases ?? [];
+      const isNumeral = (text: string) => /^[0-9]+$/.test(text.trim());
+      const sameColor = (a: string, b: string) =>
+        a.toLowerCase() === b.toLowerCase();
+      const strokes = entries
+        .flatMap((entry) => entry.strokes)
+        .filter((stroke) => isNumeral(stroke.text));
+      const fills = entries
+        .flatMap((entry) => entry.fills)
+        .filter((fill) => isNumeral(fill.text));
+      const foregroundFills = fills.filter((fill) =>
+        sameColor(fill.style, foreground),
+      );
+      const outlineStrokes = strokes.filter((stroke) =>
+        sameColor(stroke.style, outline),
+      );
+      const minOutlineWidth = outlineStrokes.length
+        ? Math.min(...outlineStrokes.map((stroke) => stroke.lineWidth))
+        : 0;
+      let ringFraction = 0;
+      let inkPixels = 0;
+      const entry = entries.find((candidate) =>
+        candidate.fills.some(
+          (fill) => isNumeral(fill.text) && sameColor(fill.style, foreground),
+        ),
+      );
+      if (entry) {
+        const rgb = (hex: string) => {
+          const value = Number.parseInt(hex.slice(1), 16);
+          return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
+        };
+        const target = rgb(foreground);
+        const ink = rgb(outline);
+        const context = entry.canvas.getContext("2d")!;
+        const { width, height } = entry.canvas;
+        const data = context.getImageData(0, 0, width, height).data;
+        const near = (at: number, colour: number[], threshold: number) =>
+          Math.abs(data[at]! - colour[0]!) <= threshold &&
+          Math.abs(data[at + 1]! - colour[1]!) <= threshold &&
+          Math.abs(data[at + 2]! - colour[2]!) <= threshold;
+        const isFill = (x: number, y: number) =>
+          near((y * width + x) * 4, target, 60);
+        const isInk = (x: number, y: number) =>
+          near((y * width + x) * 4, ink, inkThreshold);
+        const neighbours: [number, number][] = [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+          [-1, -1],
+          [-1, 1],
+          [1, -1],
+          [1, 1],
+        ];
+        for (let y = 0; y < height; y += 1)
+          for (let x = 0; x < width; x += 1)
+            if (isInk(x, y)) inkPixels += 1;
+        let edges = 0;
+        let ringed = 0;
+        for (let y = 2; y < height - 2; y += 1)
+          for (let x = 2; x < width - 2; x += 1) {
+            if (!isFill(x, y)) continue;
+            // A numeral edge pixel: the glyph's interior is not needed here.
+            const boundary = neighbours.some(
+              ([dx, dy]) => !isFill(x + dx, y + dy),
+            );
+            if (!boundary) continue;
+            edges += 1;
+            let deepest = 0;
+            for (const [dx, dy] of neighbours) {
+              let run = 0;
+              for (let step = 1; step <= 24; step += 1) {
+                const nx = x + dx * step;
+                const ny = y + dy * step;
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height) break;
+                if (!isInk(nx, ny)) break;
+                run += 1;
+              }
+              deepest = Math.max(deepest, run);
+            }
+            if (deepest >= 4) ringed += 1;
+          }
+        ringFraction = edges ? ringed / edges : 0;
+      }
+      return {
+        fills: foregroundFills.length,
+        outlineStrokes: outlineStrokes.length,
+        minOutlineWidth,
+        ringFraction: Number(ringFraction.toFixed(3)),
+        inkPixels,
+        distinctValues: new Set(
+          foregroundFills.map((fill) => fill.text.trim()),
+        ).size,
+      };
+    },
+    { foreground, outline, inkThreshold },
+  );
+}
+
+interface TableTextureSample {
+  /** 90th-percentile per-pixel luminance residual of the rendered table. */
+  renderedResidual: number;
+  /** The same residual computed on the generated map at 512px. */
+  canvasResidual: number;
+  /** The generated map's own mean colour, which should be the authored tint. */
+  canvasMean: [number, number, number];
+}
+
+/** Samples the rendered table and the map its material actually wears. */
+async function sampleTableTexture(
+  page: Page,
+  tint: string,
+): Promise<TableTextureSample> {
+  const png = await page.getByTestId("dice-stage").screenshot();
+  const renderedResidual = await page.evaluate(async (base64: string) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d")!;
+    context.drawImage(image, 0, 0);
+    const { width, height } = canvas;
+    const data = context.getImageData(0, 0, width, height).data;
+    const lum = (x: number, y: number) => {
+      const at = (y * width + x) * 4;
+      return (
+        0.2126 * data[at]! + 0.7152 * data[at + 1]! + 0.0722 * data[at + 2]!
+      );
+    };
+    const residuals: number[] = [];
+    for (let y = 1; y < height - 1; y += 1)
+      for (let x = 1; x < width - 1; x += 1) {
+        const centre = lum(x, y);
+        const neighbours =
+          (lum(x - 1, y) + lum(x + 1, y) + lum(x, y - 1) + lum(x, y + 1)) / 4;
+        residuals.push(Math.abs(centre - neighbours));
+      }
+    residuals.sort((a, b) => a - b);
+    return (
+      residuals[Math.floor(residuals.length * 0.9)] ??
+      0
+    );
+  }, png.toString("base64"));
+  const map = await page.evaluate((tint) => {
+    const scope = window as unknown as {
+      __diceCanvases?: GeneratedCanvasEntry[];
+    };
+    const rgb = (hex: string) => {
+      const value = Number.parseInt(hex.slice(1), 16);
+      return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
+    };
+    const target = rgb(tint);
+    const candidates = (scope.__diceCanvases ?? []).filter(
+      (entry) => entry.canvas.width === 512 && entry.canvas.height === 512,
+    );
+    let best: {
+      mean: [number, number, number];
+      residual: number;
+      distance: number;
+    } | null = null;
+    for (const entry of candidates) {
+      const context = entry.canvas.getContext("2d")!;
+      const data = context.getImageData(0, 0, 512, 512).data;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let at = 0; at < data.length; at += 4) {
+        r += data[at]!;
+        g += data[at + 1]!;
+        b += data[at + 2]!;
+      }
+      const count = data.length / 4;
+      const mean: [number, number, number] = [
+        Math.round(r / count),
+        Math.round(g / count),
+        Math.round(b / count),
+      ];
+      const distance =
+        Math.abs(mean[0] - target[0]!) +
+        Math.abs(mean[1] - target[1]!) +
+        Math.abs(mean[2] - target[2]!);
+      let residual = 0;
+      let samples = 0;
+      for (let y = 1; y < 512; y += 2)
+        for (let x = 1; x < 512; x += 1) {
+          const at = (y * 512 + x) * 4;
+          const left = at - 4;
+          const up = at - 512 * 4;
+          residual +=
+            (Math.abs(data[at]! - data[left]!) +
+              Math.abs(data[at]! - data[up]!)) /
+            2;
+          samples += 1;
+        }
+      const found = { mean, residual: residual / samples, distance };
+      if (!best || found.distance < best.distance) best = found;
+    }
+    return best ?? { mean: [0, 0, 0], residual: 0, distance: 255 };
+  }, tint);
+  return {
+    renderedResidual,
+    canvasResidual: map.residual,
+    canvasMean: map.mean,
+  };
+}
+
+/** Rolls and waits for the dice to land, without dismissing the overlay. */
+async function rollToLanding(page: Page) {
+  await page.getByTestId("roll-standard-greatsword").click();
+  const overlay = page.getByTestId("dice-overlay");
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toHaveAttribute("data-mode", "rendered", {
+    timeout: 20_000,
+  });
+  return overlay;
+}
+
+test("the skulls face texture outlines its numerals so they stay readable", async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  await recordGeneratedCanvases(page);
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await noFlourishes(page);
+  await page.getByTestId("dice-surface").selectOption("default");
+  await page.getByTestId("dice-texture").selectOption("skulls");
+  await page.getByTestId("dice-material").selectOption("plastic");
+  await page.getByTestId("dice-color-foreground").fill("#ffffff");
+  await page.getByTestId("dice-color-background").fill("#303030");
+  await applyAppearance(page);
+
+  // Several throws, because the landed face is the throw's, not the test's: every
+  // face that does land must carry the same outlined numeral.
+  let distinct = 0;
+  for (let throwNumber = 0; throwNumber < 3; throwNumber += 1) {
+    await rollToLanding(page);
+    const report = await faceTextureReport(page, "#ffffff", "#050608");
+    expect(report.fills, "the numeral colour reaches the face texture").toBeGreaterThan(
+      0,
+    );
+    expect(
+      report.outlineStrokes,
+      "every numeral is stroked with the automatic dark outline",
+    ).toBeGreaterThanOrEqual(report.fills);
+    expect(
+      report.minOutlineWidth,
+      "the outline is wider than upstream's five-pixel hairline",
+    ).toBeGreaterThanOrEqual(8);
+    expect(
+      report.ringFraction,
+      "the white numerals are ringed by their dark outline",
+    ).toBeGreaterThan(0.35);
+    distinct = Math.max(distinct, report.distinctValues);
+    await dismissDice(page);
+  }
+  expect(distinct, "more than one value was actually rolled").toBeGreaterThan(1);
+
+  // The inverse: dark numerals on a light, busy texture take the off-white ink.
+  await page.getByTestId("dice-color-foreground").fill("#111111");
+  await page.getByTestId("dice-color-background").fill("#d8d2c4");
+  await applyAppearance(page);
+  await rollToLanding(page);
+  // The light body cannot be mistaken for the off-white ink, so its ring is
+  // counted directly rather than measured against a busy background.
+  const inverse = await faceTextureReport(page, "#111111", "#f7f7f2", 20);
+  expect(inverse.fills).toBeGreaterThan(0);
+  expect(inverse.outlineStrokes).toBeGreaterThanOrEqual(inverse.fills);
+  expect(inverse.minOutlineWidth).toBeGreaterThanOrEqual(8);
+  expect(
+    inverse.inkPixels,
+    "the dark numerals are ringed by their off-white outline",
+  ).toBeGreaterThan(1000);
+  await dismissDice(page);
+});
+
+test("the numeral colour reaches the rendered die", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await noFlourishes(page);
+  await page.getByTestId("dice-surface").selectOption("default");
+  await page.getByTestId("dice-texture").selectOption("none");
+  await page.getByTestId("dice-material").selectOption("none");
+  // A dark body so the only strongly-coloured pixels on the stage are numerals.
+  await page.getByTestId("dice-color-background").fill("#202020");
+  await page.getByTestId("dice-color-foreground").fill("#00ff00");
+  await applyAppearance(page);
+
+  await rollToLanding(page);
+  const png = await page.getByTestId("dice-stage").screenshot();
+  const green = await page.evaluate(async (base64: string) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d")!;
+    context.drawImage(image, 0, 0);
+    const data = context
+      .getImageData(0, 0, canvas.width, canvas.height)
+      .data;
+    let pixels = 0;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    for (let at = 0; at < data.length; at += 4) {
+      const red = data[at]!;
+      const green = data[at + 1]!;
+      const blue = data[at + 2]!;
+      if (green > red + 40 && green > blue + 40) {
+        pixels += 1;
+        r += red;
+        g += green;
+        b += blue;
+      }
+    }
+    return {
+      pixels,
+      r: Math.round(r / Math.max(1, pixels)),
+      g: Math.round(g / Math.max(1, pixels)),
+      b: Math.round(b / Math.max(1, pixels)),
+    };
+  }, png.toString("base64"));
+  expect(green.pixels, "the numerals are on the rendered die").toBeGreaterThan(20);
+  expect(green.g).toBeGreaterThan(green.r + 40);
+  expect(green.g).toBeGreaterThan(green.b + 40);
+  await dismissDice(page);
+});
+
+test("a surface change does not materially recolour the same die", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await noFlourishes(page);
+  await page.getByTestId("dice-texture").selectOption("none");
+  await page.getByTestId("dice-material").selectOption("none");
+  // A uniformly red die: the surface's light must not tint it.
+  await page.getByTestId("dice-color-foreground").fill("#ff0000");
+  await page.getByTestId("dice-color-background").fill("#ff0000");
+  await applyAppearance(page);
+
+  const measure = async (surface: string) => {
+    await page.getByTestId("dice-surface").selectOption(surface);
+    await applyAppearance(page);
+    await rollToLanding(page);
+    const png = await page.getByTestId("dice-stage").screenshot();
+    const sample = await page.evaluate(async (base64: string) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      const data = context
+        .getImageData(0, 0, canvas.width, canvas.height)
+        .data;
+      let pixels = 0;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let at = 0; at < data.length; at += 4) {
+        const red = data[at]!;
+        const green = data[at + 1]!;
+        const blue = data[at + 2]!;
+        if (red > green + 60 && red > blue + 60 && red > 60) {
+          pixels += 1;
+          r += red;
+          g += green;
+          b += blue;
+        }
+      }
+      return {
+        pixels,
+        r: Math.round(r / Math.max(1, pixels)),
+        g: Math.round(g / Math.max(1, pixels)),
+        b: Math.round(b / Math.max(1, pixels)),
+      };
+    }, png.toString("base64"));
+    await dismissDice(page);
+    return sample;
+  };
+
+  const reds: number[] = [];
+  for (const surface of [
+    "green-felt",
+    "mahogany",
+    "stainless",
+    "taverntable",
+    "cyberpunk",
+  ]) {
+    const sample = await measure(surface);
+    expect(sample.pixels, `${surface} renders the die`).toBeGreaterThan(300);
+    // The red die stays red on every table: the green channel is never lifted.
+    expect(sample.g, `${surface} does not recolour the die`).toBeLessThan(90);
+    expect(sample.b).toBeLessThan(90);
+    reds.push(sample.r);
+  }
+  // And the red itself is the same light on every table.
+  expect(Math.max(...reds) - Math.min(...reds)).toBeLessThan(60);
+});
+
+test("a table surface carries texture, not just a mean colour", async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await recordGeneratedCanvases(page);
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await noFlourishes(page);
+  await page.getByTestId("dice-texture").selectOption("none");
+  await page.getByTestId("dice-material").selectOption("none");
+  await page.getByTestId("dice-color-foreground").fill("#ffffff");
+  await page.getByTestId("dice-color-background").fill("#202020");
+  await applyAppearance(page);
+
+  const measure = async (surface: string, tint: string) => {
+    await page.getByTestId("dice-surface").selectOption(surface);
+    await applyAppearance(page);
+    await rollToLanding(page);
+    const sample = await sampleTableTexture(page, tint);
+    await dismissDice(page);
+    return sample;
+  };
+
+  const flat = await measure("default", "#22262c");
+  // The solid plate is one flat colour, on screen and in its map.
+  expect(flat.canvasResidual, "the solid table map is flat").toBeLessThan(0.01);
+  expect(
+    flat.renderedResidual,
+    "the solid table stays approximately uniform on screen",
+  ).toBeLessThan(0.6);
+  expect(flat.canvasMean).toEqual([34, 38, 44]);
+
+  const tavern = await measure("taverntable", "#6b4528");
+  const mahogany = await measure("mahogany", "#4a1e17");
+  const felt = await measure("green-felt", "#245b3b");
+  const steel = await measure("stainless", "#9da5ad");
+
+  // Every textured map has spatial structure and wears its authored tint.
+  for (const [name, sample, tint] of [
+    ["taverntable", tavern, "#6b4528"],
+    ["mahogany", mahogany, "#4a1e17"],
+    ["green-felt", felt, "#245b3b"],
+    ["stainless", steel, "#9da5ad"],
+  ] as const) {
+    expect(sample.canvasResidual, `${name} has a textured map`).toBeGreaterThan(
+      0.01,
+    );
+    const authored = [1, 3, 5].map((at) =>
+      Number.parseInt(tint.slice(at, at + 2), 16),
+    );
+    sample.canvasMean.forEach((channel, index) => {
+      expect(
+        Math.abs(channel - authored[index]!),
+        `${name} wears its authored tint`,
+      ).toBeLessThan(25);
+    });
+  }
+
+  // Wood and brushed metal resolve at the stage's own resolution, so they are
+  // measurably non-uniform there, while the solid table is not.
+  expect(tavern.renderedResidual).toBeGreaterThan(flat.renderedResidual * 2);
+  expect(mahogany.renderedResidual).toBeGreaterThan(flat.renderedResidual * 1.5);
+  expect(steel.renderedResidual).toBeGreaterThan(flat.renderedResidual * 2);
+  // Felt's grain is finer than a stage pixel, but it is present and not a
+  // re-tinted flat plate.
+  expect(felt.renderedResidual).toBeGreaterThan(flat.renderedResidual * 1.15);
+});

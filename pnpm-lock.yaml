@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@3d-dice/dice-box-threejs@0.0.12': a3bb94b860297c98104c59088df105a13f7099162703c6d4d84879cd75f360e4
+
 importers:
 
   .:
@@ -189,7 +192,7 @@ importers:
     dependencies:
       '@3d-dice/dice-box-threejs':
         specifier: ^0.0.12
-        version: 0.0.12
+        version: 0.0.12(patch_hash=a3bb94b860297c98104c59088df105a13f7099162703c6d4d84879cd75f360e4)
       '@supabase/supabase-js':
         specifier: ^2.49.1
         version: 2.116.0
@@ -1329,7 +1332,7 @@ packages:
 
 snapshots:
 
-  '@3d-dice/dice-box-threejs@0.0.12':
+  '@3d-dice/dice-box-threejs@0.0.12(patch_hash=a3bb94b860297c98104c59088df105a13f7099162703c6d4d84879cd75f360e4)':
     dependencies:
       cannon-es: 0.20.0
       three: 0.143.0

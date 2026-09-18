@@ -1,31 +1,43 @@
 import { describe, expect, it, vi } from "vitest";
 import { diceSurfaceOptions } from "@threepointpf/dice";
 import {
-  applySurfaceLighting,
+  applyNeutralDiceLighting,
+  applyTextureRepeat,
   createSurfaceApplier,
+  createSurfaceCanvas,
+  createSurfaceTexture,
   defaultDiceSurfaceLook,
   dieMetalnessCeiling,
   dieMetalnessScale,
   diceSurfaceLook,
   diceSurfaceLooks,
   firstDieMaterial,
+  linearFilter,
+  nearestFilter,
+  neutralDiceLighting,
   normalizeDieMaterial,
   patchDieCreation,
   patchDieMaterials,
+  readableNumeralOutline,
+  repeatWrapping,
   surfacePlateMaterial,
+  surfaceTextureSize,
   type DiceLookTarget,
+  type DiceSurfaceKind,
   type SceneColorLike,
   type SceneLightLike,
   type SceneMaterialLike,
   type SceneMeshLike,
+  type SceneTextureLike,
 } from "../apps/web/src/lib/dice-look";
+import { asCanvas } from "./helpers/fake-three";
 
 /**
  * The surface and the die colours are both written into objects the renderer
  * already owns, so what matters is exactly what this module writes — and that it
- * releases the one thing it allocates. These tests drive it against small
+ * releases everything it allocates. These tests drive it against small
  * structural stand-ins, the same way the renderer hands it real three.js
- * materials, lights and meshes.
+ * materials, lights, meshes and canvas textures.
  */
 
 interface FakeColor extends SceneColorLike {
@@ -96,6 +108,34 @@ function fakeMaterial(overrides: Partial<FakeMaterial> = {}): FakeMaterial {
   return material;
 }
 
+/** The renderer's own canvas-texture class, as much of it as the plate uses. */
+class FakeCanvasTexture implements SceneTextureLike {
+  canvas: unknown;
+  needsUpdate = true;
+  wrapS = 0;
+  wrapT = 0;
+  disposed = 0;
+  repeat = {
+    x: 1,
+    y: 1,
+    set(x: number, y: number) {
+      this.x = x;
+      this.y = y;
+    },
+  };
+  constructor(canvas: unknown) {
+    this.canvas = canvas;
+  }
+  dispose() {
+    this.disposed += 1;
+  }
+}
+
+/** A die material whose map belongs to a real texture class. */
+function fakeTexturedDie(texture: FakeCanvasTexture = new FakeCanvasTexture(null)) {
+  return { material: [fakeMaterial({ map: texture })] };
+}
+
 function fakeDie(materials: FakeMaterial[] = [fakeMaterial()]) {
   return { material: materials, geometry: { kind: "die-geometry" } };
 }
@@ -122,6 +162,143 @@ const lightColorOf = (target: FakeTarget) =>
   rgbOf(target.light.color as FakeColor);
 const plateOf = (target: FakeTarget) => target.desk.material as FakeMaterial;
 
+/* ------------------------------------------------------------------ *
+ * Recording canvases, so a generated surface can be inspected.
+ * ------------------------------------------------------------------ */
+
+interface RecordingCanvas {
+  width: number;
+  height: number;
+  context: RecordingContext;
+  getContext(): RecordingContext;
+}
+
+interface RecordingContext {
+  globalAlpha: number;
+  fillStyle: unknown;
+  strokeStyle: unknown;
+  lineWidth: number;
+  rects: number;
+  strokes: number;
+  fills: number;
+  /** A rolling hash of every drawing call, for determinism comparisons. */
+  signature: number;
+  fillRect(x: number, y: number, width: number, height: number): void;
+  beginPath(): void;
+  closePath(): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  quadraticCurveTo(
+    controlX: number,
+    controlY: number,
+    x: number,
+    y: number,
+  ): void;
+  stroke(): void;
+  fill(): void;
+  drawImage(
+    image: unknown,
+    dx: number,
+    dy: number,
+    width: number,
+    height: number,
+  ): void;
+}
+
+function recordingCanvas(): RecordingCanvas {
+  const context = {
+    globalAlpha: 1,
+    fillStyle: null,
+    strokeStyle: null,
+    lineWidth: 1,
+    rects: 0,
+    strokes: 0,
+    fills: 0,
+    signature: 0x811c9dc5,
+    fillRect(x, y, width, height) {
+      context.rects += 1;
+      record(
+        context,
+        `rect ${String(context.fillStyle)} ${x},${y},${width},${height}`,
+      );
+    },
+    beginPath() {
+      record(context, "begin");
+    },
+    closePath() {
+      record(context, "close");
+    },
+    moveTo(x, y) {
+      record(context, `move ${x},${y}`);
+    },
+    lineTo(x, y) {
+      record(context, `line ${x},${y}`);
+    },
+    quadraticCurveTo(controlX, controlY, x, y) {
+      record(context, `quad ${controlX},${controlY},${x},${y}`);
+    },
+    stroke() {
+      context.strokes += 1;
+      record(context, `stroke ${String(context.strokeStyle)} ${context.lineWidth}`);
+    },
+    fill() {
+      context.fills += 1;
+      record(context, "fill");
+    },
+    drawImage(image, dx, dy, width, height) {
+      record(context, `image ${dx},${dy},${width},${height}`);
+    },
+  } as unknown as RecordingContext;
+  const canvas: RecordingCanvas = {
+    width: 0,
+    height: 0,
+    context,
+    getContext: () => context,
+  };
+  return canvas;
+}
+
+function record(context: RecordingContext, token: string): void {
+  let hash = context.signature;
+  for (let index = 0; index < token.length; index += 1) {
+    hash ^= token.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  context.signature = hash >>> 0;
+}
+
+/** Generates a surface on a recording canvas and hands back what it drew. */
+function generate(kind: DiceSurfaceKind, tint: string): RecordingContext {
+  const canvas = recordingCanvas();
+  createSurfaceCanvas(kind, tint, () => asCanvas(canvas));
+  return canvas.context;
+}
+
+const recordingFactory = () => asCanvas(recordingCanvas());
+
+describe("readableNumeralOutline", () => {
+  it("gives light numerals a dark outline and dark numerals a light one", () => {
+    // The four colours the appearance matrix calls out explicitly.
+    expect(readableNumeralOutline("#ffffff")).toBe("#050608");
+    expect(readableNumeralOutline("#f3c877")).toBe("#050608");
+    expect(readableNumeralOutline("#111111")).toBe("#f7f7f2");
+    expect(readableNumeralOutline("#2b2b34")).toBe("#f7f7f2");
+  });
+
+  it("judges luminance, not raw channel average", () => {
+    // A saturated yellow is bright to the eye even though it is not a light
+    // grey; it takes the dark outline.
+    expect(readableNumeralOutline("#f2d21a")).toBe("#050608");
+    // A saturated blue is dark to the eye; it takes the light outline.
+    expect(readableNumeralOutline("#1020d0")).toBe("#f7f7f2");
+  });
+
+  it("never returns the fill colour itself", () => {
+    for (const fill of ["#ffffff", "#111111", "#f3c877", "#2b2b34", "#245b3b"])
+      expect(readableNumeralOutline(fill)).not.toBe(fill);
+  });
+});
+
 describe("surface looks", () => {
   it("gives every selectable surface a look of its own", () => {
     for (const option of diceSurfaceOptions)
@@ -129,52 +306,297 @@ describe("surface looks", () => {
   });
 
   it("keeps the surfaces visibly distinguishable", () => {
-    const desks = diceSurfaceOptions.map(
-      (option) => diceSurfaceLook(option.id).desk,
+    const tints = diceSurfaceOptions.map(
+      (option) => diceSurfaceLook(option.id).tint,
     );
-    expect(new Set(desks).size).toBe(desks.length);
+    expect(new Set(tints).size).toBe(tints.length);
   });
 
-  it("authors every colour as a six-digit hex the scene can read", () => {
+  it("authors every look as a tinted material spec the scene can read", () => {
+    const kinds: DiceSurfaceKind[] = [
+      "solid",
+      "wood",
+      "felt",
+      "brushed-metal",
+      "cyber-grid",
+      "stone",
+    ];
     for (const look of Object.values(diceSurfaceLooks)) {
-      expect(look.desk).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(look.spot.color).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(look.ambient.sky).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(look.ambient.ground).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(look.spot.intensity).toBeGreaterThan(0);
-      expect(look.ambient.intensity).toBeGreaterThan(0);
+      expect(look.tint).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(kinds).toContain(look.kind);
+      expect(look.roughness).toBeGreaterThan(0);
+      expect(look.roughness).toBeLessThanOrEqual(1);
+      expect(look.metalness).toBeGreaterThanOrEqual(0);
+      expect(look.metalness).toBeLessThanOrEqual(1);
+      expect(look.textureScale).toBeGreaterThan(0);
     }
+  });
+
+  it("matches the authored definitions exactly", () => {
+    expect(diceSurfaceLooks.default).toEqual({
+      kind: "solid",
+      tint: "#22262c",
+      roughness: 0.9,
+      metalness: 0,
+      textureScale: 1,
+    });
+    expect(diceSurfaceLooks.taverntable).toEqual({
+      kind: "wood",
+      tint: "#6b4528",
+      roughness: 0.78,
+      metalness: 0,
+      textureScale: 3,
+    });
+    expect(diceSurfaceLooks.mahogany).toEqual({
+      kind: "wood",
+      tint: "#4a1e17",
+      roughness: 0.7,
+      metalness: 0,
+      textureScale: 3,
+    });
+    expect(diceSurfaceLooks["green-felt"]).toEqual({
+      kind: "felt",
+      tint: "#245b3b",
+      roughness: 1,
+      metalness: 0,
+      textureScale: 10,
+    });
+    expect(diceSurfaceLooks.stainless).toEqual({
+      kind: "brushed-metal",
+      tint: "#9da5ad",
+      roughness: 0.32,
+      metalness: 0.7,
+      textureScale: 6,
+    });
+    expect(diceSurfaceLooks.cyberpunk).toEqual({
+      kind: "cyber-grid",
+      tint: "#171526",
+      roughness: 0.55,
+      metalness: 0.15,
+      textureScale: 1,
+    });
+    expect(diceSurfaceLooks.cagetown).toEqual({
+      kind: "stone",
+      tint: "#4c4941",
+      roughness: 0.96,
+      metalness: 0,
+      textureScale: 5,
+    });
   });
 
   it("falls back to the neutral look for an unknown surface", () => {
     expect(diceSurfaceLook("not-a-surface")).toBe(defaultDiceSurfaceLook);
   });
+
+  it("carries no per-surface light any more", () => {
+    for (const look of Object.values(diceSurfaceLooks)) {
+      expect(look).not.toHaveProperty("desk");
+      expect(look).not.toHaveProperty("spot");
+      expect(look).not.toHaveProperty("ambient");
+    }
+  });
 });
 
-describe("applySurfaceLighting", () => {
-  it("throws the surface's own light on the dice", () => {
-    const target = fakeTarget();
-    expect(applySurfaceLighting(target, "green-felt")).toBe(true);
-    const look = diceSurfaceLook("green-felt");
-    expect(lightColorOf(target)).toEqual(rgbOf(fakeColorFrom(look.spot.color)));
-    expect(target.light.intensity).toBe(look.spot.intensity);
-    expect(rgbOf(target.light_amb.groundColor as FakeColor)).toEqual(
-      rgbOf(fakeColorFrom(look.ambient.ground)),
-    );
-    expect(target.light_amb.intensity).toBe(look.ambient.intensity);
+describe("generated surface textures", () => {
+  it("draws a real pattern for every surface, not a flat colour", () => {
+    const solid = generate("solid", "#22262c");
+    // The solid plate is one fill and nothing else.
+    expect(solid.rects).toBe(1);
+    expect(solid.strokes).toBe(0);
+
+    const wood = generate("wood", "#6b4528");
+    // Ninety grain lines plus the knot rings.
+    expect(wood.strokes).toBeGreaterThanOrEqual(90);
+
+    const felt = generate("felt", "#245b3b");
+    expect(felt.rects).toBeGreaterThanOrEqual(12000);
+
+    const metal = generate("brushed-metal", "#9da5ad");
+    expect(metal.strokes).toBeGreaterThanOrEqual(300);
+
+    const grid = generate("cyber-grid", "#171526");
+    // Minor, major and accent lines, each drawn both ways.
+    expect(grid.strokes).toBeGreaterThan(32);
+
+    const stone = generate("stone", "#4c4941");
+    expect(stone.rects).toBeGreaterThanOrEqual(4000);
+    expect(stone.strokes).toBeGreaterThanOrEqual(7);
   });
 
-  it("gives different surfaces different light", () => {
-    const steel = fakeTarget();
-    const neon = fakeTarget();
-    applySurfaceLighting(steel, "stainless");
-    applySurfaceLighting(neon, "cyberpunk");
-    expect(lightColorOf(steel)).not.toEqual(lightColorOf(neon));
-    expect(steel.light.intensity).not.toBe(neon.light.intensity);
+  it("is deterministic: the same kind and tint draw the same pixels", () => {
+    for (const [kind, tint] of [
+      ["wood", "#6b4528"],
+      ["felt", "#245b3b"],
+      ["brushed-metal", "#9da5ad"],
+      ["cyber-grid", "#171526"],
+      ["stone", "#4c4941"],
+      ["solid", "#22262c"],
+    ] as const) {
+      const first = generate(kind, tint);
+      const second = generate(kind, tint);
+      expect(second.signature, kind).toBe(first.signature);
+      expect(second.rects).toBe(first.rects);
+      expect(second.strokes).toBe(first.strokes);
+    }
+  });
+
+  it("gives different surfaces and tints different patterns", () => {
+    const tavern = generate("wood", diceSurfaceLook("taverntable").tint);
+    const mahogany = generate("wood", diceSurfaceLook("mahogany").tint);
+    // Same generator, different tint: the tint alone seeds a different grain.
+    expect(mahogany.signature).not.toBe(tavern.signature);
+    expect(generate("felt", "#245b3b").signature).not.toBe(
+      generate("stone", "#245b3b").signature,
+    );
+  });
+
+  it("produces a canvas at the authored resolution", () => {
+    const canvas = createSurfaceCanvas("wood", "#6b4528", () =>
+      asCanvas(recordingCanvas()),
+    )!;
+    expect(canvas.width).toBe(surfaceTextureSize);
+    expect(canvas.height).toBe(surfaceTextureSize);
+  });
+
+  it("declines rather than throwing when the runtime has no canvas", () => {
+    expect(createSurfaceCanvas("wood", "#6b4528", () => null)).toBeNull();
+  });
+});
+
+describe("surface textures own their repetition and lifetime", () => {
+  it("tiles the generated canvas at the look's scale", () => {
+    const texture = createSurfaceTexture(
+      fakeMaterial({ map: new FakeCanvasTexture(null) }),
+      diceSurfaceLook("green-felt"),
+      recordingFactory,
+    ) as FakeCanvasTexture;
+    expect(texture).toBeInstanceOf(FakeCanvasTexture);
+    expect(texture.repeat.x).toBe(10);
+    expect(texture.repeat.y).toBe(10);
+    expect(texture.wrapS).toBe(repeatWrapping);
+    expect(texture.wrapT).toBe(repeatWrapping);
+    // The pattern is fine grain: it is sampled at level 0 rather than averaged
+    // into cloudy grey by a mipmap.
+    expect(texture.generateMipmaps).toBe(false);
+    expect(texture.minFilter).toBe(nearestFilter);
+    expect(texture.magFilter).toBe(linearFilter);
+    expect(texture.needsUpdate).toBe(true);
+  });
+
+  it("reports a texture that cannot express a repeat instead of guessing", () => {
+    expect(applyTextureRepeat(null, 4)).toBe(false);
+    expect(applyTextureRepeat({}, 4)).toBe(false);
+    expect(applyTextureRepeat({ repeat: {} }, 4)).toBe(false);
+    expect(applyTextureRepeat({ repeat: {} }, 0)).toBe(false);
+  });
+
+  it("bakes the repetition into the canvas when the texture cannot repeat", () => {
+    const created: NoRepeatTexture[] = [];
+    class NoRepeatTexture implements SceneTextureLike {
+      canvas: unknown;
+      disposed = 0;
+      constructor(canvas: unknown) {
+        this.canvas = canvas;
+        created.push(this);
+      }
+      dispose() {
+        this.disposed += 1;
+      }
+    }
+    const dieMap = new NoRepeatTexture(null);
+    const template = fakeMaterial({ map: dieMap as unknown as SceneTextureLike });
+    const texture = createSurfaceTexture(
+      template,
+      diceSurfaceLook("mahogany"),
+      recordingFactory,
+    ) as NoRepeatTexture;
+    // created[0] is the template's own map; the plate's untiled texture is
+    // created[1] and is released in favour of the tiled created[2].
+    expect(created).toHaveLength(3);
+    expect(texture).toBe(created[2]);
+    expect(created[1]!.disposed).toBe(1);
+    // The die's own map is never ours to dispose.
+    expect(dieMap.disposed).toBe(0);
+  });
+
+  it("declines rather than faking a map when there is no canvas at all", () => {
+    class NoRepeatTexture implements SceneTextureLike {
+      canvas: unknown;
+      constructor(canvas: unknown) {
+        this.canvas = canvas;
+      }
+    }
+    const first = new NoRepeatTexture(null);
+    const template = fakeMaterial({ map: first });
+    // Without a canvas the surface has no map; it never returns a broken one.
+    const texture = createSurfaceTexture(
+      template,
+      diceSurfaceLook("mahogany"),
+      () => null,
+    );
+    expect(texture).toBeNull();
+  });
+
+  it("releases the plate texture when the surface changes or the applier is disposed", () => {
+    const target = fakeTarget();
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    applier.apply("green-felt", fakeTexturedDie());
+    const felt = plateOf(target).map as FakeCanvasTexture;
+    expect(felt).toBeInstanceOf(FakeCanvasTexture);
+    expect(felt.disposed).toBe(0);
+
+    applier.apply("stainless", fakeTexturedDie());
+    const steel = plateOf(target).map as FakeCanvasTexture;
+    expect(steel).not.toBe(felt);
+    expect(felt.disposed).toBe(1);
+
+    applier.dispose();
+    expect(steel.disposed).toBe(1);
+  });
+
+  it("releases the texture of a plate the renderer rebuilt", () => {
+    const target = fakeTarget();
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    applier.apply("green-felt", fakeTexturedDie());
+    const first = plateOf(target).map as FakeCanvasTexture;
+    target.desk = { material: fakeMaterial(), receiveShadow: true };
+    applier.apply("green-felt", fakeTexturedDie());
+    expect(first.disposed).toBe(1);
+    applier.dispose();
+  });
+});
+
+describe("applyNeutralDiceLighting", () => {
+  it("applies the one neutral light, whatever the surface", () => {
+    const target = fakeTarget();
+    expect(applyNeutralDiceLighting(target)).toBe(true);
+    expect(lightColorOf(target)).toEqual([255, 255, 255]);
+    expect(target.light.intensity).toBe(neutralDiceLighting.spot.intensity);
+    expect(rgbOf(target.light_amb.color as FakeColor)).toEqual([255, 255, 255]);
+    expect(rgbOf(target.light_amb.groundColor as FakeColor)).toEqual(
+      rgbOf(fakeColorFrom(neutralDiceLighting.ambient.ground)),
+    );
+    expect(target.light_amb.intensity).toBe(
+      neutralDiceLighting.ambient.intensity,
+    );
+  });
+
+  it("does not take a surface id, so selecting a surface cannot recolour the dice", () => {
+    const first = fakeTarget();
+    const second = fakeTarget();
+    applyNeutralDiceLighting(first);
+    applyNeutralDiceLighting(second);
+    expect(lightColorOf(first)).toEqual(lightColorOf(second));
+    expect(first.light.intensity).toBe(second.light.intensity);
+    expect(first.light_amb.intensity).toBe(second.light_amb.intensity);
   });
 
   it("reports nothing to do for a scene without lights", () => {
-    expect(applySurfaceLighting({}, "mahogany")).toBe(false);
+    expect(applyNeutralDiceLighting({})).toBe(false);
   });
 });
 
@@ -311,17 +733,17 @@ describe("die material templates", () => {
 });
 
 describe("surfacePlateMaterial", () => {
-  it("paints the surface onto a material that can carry it", () => {
+  it("wears the surface's own map with a white tint, so it cannot be multiplied dark", () => {
     const look = diceSurfaceLook("stainless");
-    const plate = surfacePlateMaterial(fakeMaterial(), look)!;
-    expect(rgbOf(plate.color as FakeColor)).toEqual(
-      rgbOf(fakeColorFrom(look.desk)),
-    );
-    expect(plate.map).toBeNull();
+    const texture = new FakeCanvasTexture(null);
+    const plate = surfacePlateMaterial(fakeMaterial(), look, texture)!;
+    expect(plate.map).toBe(texture);
+    expect(rgbOf(plate.color as FakeColor)).toEqual([255, 255, 255]);
     expect(plate.bumpMap).toBeNull();
     expect(plate.normalMap).toBeNull();
     expect(plate.emissiveIntensity).toBe(0);
-    expect(plate.metalness).toBe(0);
+    expect(plate.metalness).toBe(look.metalness);
+    expect(plate.roughness).toBe(look.roughness);
   });
 
   it("leaves the die's own material untouched", () => {
@@ -333,7 +755,7 @@ describe("surfacePlateMaterial", () => {
       depthTest: template.depthTest,
       color: { ...template.color },
     };
-    surfacePlateMaterial(template, diceSurfaceLook("red-felt"));
+    surfacePlateMaterial(template, diceSurfaceLook("red-felt"), null);
     expect(template.map).toBe(before.map);
     expect(template.bumpMap).toBe(before.bumpMap);
     expect(template.transparent).toBe(before.transparent);
@@ -345,6 +767,7 @@ describe("surfacePlateMaterial", () => {
     const plate = surfacePlateMaterial(
       fakeMaterial(),
       diceSurfaceLook("taverntable"),
+      null,
     )!;
     expect(plate.depthTest).toBe(true);
     expect(plate.depthWrite).toBe(true);
@@ -360,14 +783,90 @@ describe("surfacePlateMaterial", () => {
   });
 });
 
+describe("the surface material does not depend on the die material", () => {
+  /** Runs the applier for one dice material and records the plate it produced. */
+  function plateFor(material: FakeMaterial) {
+    const target = fakeTarget();
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    applier.apply("green-felt", { material: [material] });
+    const plate = plateOf(target);
+    const record = {
+      transparent: plate.transparent,
+      opaque: plate.opacity,
+      metalness: plate.metalness,
+      roughness: plate.roughness,
+      color: rgbOf(plate.color),
+      depthTest: plate.depthTest,
+      depthWrite: plate.depthWrite,
+      // The felt map is the generated surface texture, never the die's map.
+      mapIsSurfaceTexture: plate.map instanceof FakeCanvasTexture,
+      mapIsDieTexture: plate.map === material.map,
+      mapRepeat: (plate.map as FakeCanvasTexture).repeat.x,
+    };
+    applier.dispose();
+    return record;
+  }
+
+  it("builds the same opaque felt table for a plastic die and a glass one", () => {
+    const plastic = plateFor(
+      fakeMaterial({
+        map: new FakeCanvasTexture(null),
+        metalness: 0.2,
+        roughness: 0.5,
+        transparent: false,
+        opacity: 1,
+      }),
+    );
+    const glass = plateFor(
+      fakeMaterial({
+        map: new FakeCanvasTexture(null),
+        metalness: 0.1,
+        roughness: 0.05,
+        transparent: true,
+        opacity: 0.3,
+        transmission: 1,
+        envMapIntensity: 1.5,
+      }),
+    );
+    // A glass die must not make the table transparent, a metal die must not make
+    // felt metallic: the two records are identical.
+    expect(glass).toEqual(plastic);
+    expect(plastic).toMatchObject({
+      transparent: false,
+      opaque: 1,
+      metalness: 0,
+      roughness: 1,
+      color: [255, 255, 255],
+      depthTest: true,
+      depthWrite: true,
+      mapIsSurfaceTexture: true,
+      mapIsDieTexture: false,
+    });
+  });
+
+  it("zeroes a glass material's transmission rather than inheriting it", () => {
+    const glass = fakeMaterial({ transmission: 1 });
+    const plate = surfacePlateMaterial(
+      glass,
+      diceSurfaceLook("green-felt"),
+      null,
+    )!;
+    expect(plate.transmission).toBe(0);
+    // The die's own material is only read; its transmission is untouched.
+    expect(glass.transmission).toBe(1);
+  });
+});
+
 describe("the surface applier", () => {
   it("lights the scene before there is a die to take a material from", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
     expect(applier.apply("cyberpunk")).toBe(true);
-    expect(target.light.intensity).toBe(
-      diceSurfaceLook("cyberpunk").spot.intensity,
-    );
+    expect(target.light.intensity).toBe(neutralDiceLighting.spot.intensity);
     // The renderer's own shadow-catcher material is untouched until a plate can
     // be built from a material of the scene's own class.
     expect(plateOf(target).map).toEqual({ kind: "die-texture" });
@@ -376,11 +875,13 @@ describe("the surface applier", () => {
 
   it("paints the surface onto the renderer's own mesh", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
-    expect(applier.apply("green-felt", fakeDie())).toBe(true);
-    expect(rgbOf(plateOf(target).color)).toEqual(
-      rgbOf(fakeColorFrom(diceSurfaceLook("green-felt").desk)),
-    );
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    expect(applier.apply("green-felt", fakeTexturedDie())).toBe(true);
+    const plate = plateOf(target);
+    expect(rgbOf(plate.color)).toEqual([255, 255, 255]);
+    expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
     // It is still the renderer's mesh, so it still catches the dice's shadow.
     expect(target.desk.receiveShadow).toBe(true);
     applier.dispose();
@@ -388,7 +889,9 @@ describe("the surface applier", () => {
 
   it("keeps the plate it already built for the same surface and mesh", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
     const die = fakeDie();
     applier.apply("green-felt", die);
     const plate = plateOf(target);
@@ -401,8 +904,10 @@ describe("the surface applier", () => {
 
   it("swaps and releases the plate when the surface changes", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
-    const die = fakeDie();
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    const die = fakeTexturedDie();
     applier.apply("green-felt", die);
     const previous = plateOf(target);
     expect(applier.apply("stainless", die)).toBe(true);
@@ -413,35 +918,41 @@ describe("the surface applier", () => {
 
   it("repaints a surface the renderer rebuilt on a resize", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
-    applier.apply("green-felt", fakeDie());
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    applier.apply("green-felt", fakeTexturedDie());
     const rebuilt: SceneMeshLike = {
       material: fakeMaterial(),
       receiveShadow: true,
     };
     target.desk = rebuilt;
-    expect(applier.apply("green-felt", fakeDie())).toBe(true);
-    expect(rgbOf((rebuilt.material as FakeMaterial).color)).toEqual(
-      rgbOf(fakeColorFrom(diceSurfaceLook("green-felt").desk)),
-    );
+    expect(applier.apply("green-felt", fakeTexturedDie())).toBe(true);
+    expect(rgbOf((rebuilt.material as FakeMaterial).color)).toEqual([
+      255, 255, 255,
+    ]);
     applier.dispose();
   });
 
   it("gets the plate in place as soon as a die supplies a material", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
     const original = target.desk.material;
     applier.apply("mahogany");
     expect(target.desk.material).toBe(original);
-    applier.apply("mahogany", fakeDie());
+    applier.apply("mahogany", fakeTexturedDie());
     expect(target.desk.material).not.toBe(original);
     applier.dispose();
   });
 
   it("releases the plate it created on disposal, once", () => {
     const target = fakeTarget();
-    const applier = createSurfaceApplier(target);
-    applier.apply("blue-felt", fakeDie());
+    const applier = createSurfaceApplier(target, {
+      createCanvas: recordingFactory,
+    });
+    applier.apply("blue-felt", fakeTexturedDie());
     const plate = plateOf(target);
     applier.dispose();
     applier.dispose();

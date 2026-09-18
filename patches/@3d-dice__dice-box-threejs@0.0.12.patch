@@ -1,0 +1,20 @@
+diff --git a/dist/dice-box-threejs.es.js b/dist/dice-box-threejs.es.js
+index 2c463aba95cf8c64aba21b5ee1e8aaed14dc76f1..98f195cdcf81b0a6002bfea37115efc41f409435 100644
+--- a/dist/dice-box-threejs.es.js
++++ b/dist/dice-box-threejs.es.js
+@@ -15718,9 +15718,14 @@ const bp = {
+         let z = f.measureText("M").width * 1.4, L = d.split(`
+ `);
+         L.length > 1 && (F = F / L.length, f.font = F + "pt " + e.font, _.font = F + "pt " + e.font, z = f.measureText("M").width * 1.2, P -= z * L.length / 2);
++        const textureName = String(o?.name ?? "").toLowerCase();
++        const busyTexture = textureName.includes("skull") || textureName.includes("stained") || textureName.includes("dragon") || textureName.includes("glitter") || textureName.includes("star") || textureName.includes("astral") || textureName.includes("fire") || textureName.includes("marble") || textureName.includes("metal") || textureName.includes("wood");
++        const outlineWidth = Math.max(8, Math.round(F * (busyTexture ? 0.12 : 0.08)));
++        f.lineJoin = "round", f.miterLimit = 2, f.lineWidth = outlineWidth;
++        _.lineJoin = "round", _.miterLimit = 2, _.lineWidth = outlineWidth;
+         for (let I = 0, D = L.length; I < D; I++) {
+           let q = L[I].trim();
+-          l != "none" && l != a && (f.strokeStyle = l, f.lineWidth = 5, f.strokeText(L[I], G, P), _.strokeStyle = "#000000", _.lineWidth = 5, _.strokeText(L[I], G, P), (q == "6" || q == "9") && (f.strokeText("  .", G, P), _.strokeText("  .", G, P))), f.fillStyle = r, f.fillText(L[I], G, P), _.fillStyle = "#000000", _.fillText(L[I], G, P), (q == "6" || q == "9") && (f.fillText("  .", G, P), _.fillText("  .", G, P)), P += z * 1.5;
++          l != "none" && l != a && (f.strokeStyle = l, f.lineWidth = outlineWidth, f.strokeText(L[I], G, P), _.strokeStyle = "#000000", _.lineWidth = outlineWidth, _.strokeText(L[I], G, P), (q == "6" || q == "9") && (f.strokeText("  .", G, P), _.strokeText("  .", G, P))), f.fillStyle = r, f.fillText(L[I], G, P), _.fillStyle = "#000000", _.fillText(L[I], G, P), (q == "6" || q == "9") && (f.fillText("  .", G, P), _.fillText("  .", G, P)), P += z * 1.5;
+         }
+       }
+     } else {
