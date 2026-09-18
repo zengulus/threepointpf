@@ -66,6 +66,11 @@ export interface DiceBoxHandle {
   initialize(): Promise<void>;
   roll(notation: string): Promise<unknown>;
   clear?(): void;
+  /**
+   * Releases everything `initialize()` acquired: the renderer's listeners, its
+   * WebGL context and its canvas. Presenter teardown prefers this over `clear`.
+   */
+  dispose?(): void;
 }
 
 export interface DiceBoxInit {
@@ -138,51 +143,211 @@ export function diceBoxOptions(
  * The renderer's own teardown API differs from its documentation: 0.0.12 has
  * `clearDice()` but no `clear()`, so both are accepted and a missing teardown is
  * never allowed to fail a throw.
+ *
+ * The remaining fields exist only so disposal can reach the resources upstream
+ * never releases; none of them is read for a game fact.
  */
 interface RendererInstance {
   initialize(): Promise<void>;
   roll(notation: string): Promise<unknown>;
   clear?(): void;
   clearDice?(): void;
+  renderer?: {
+    domElement?: {
+      parentNode?: { removeChild?(node: unknown): void } | null;
+      remove?(): void;
+    } | null;
+    dispose?(): void;
+    forceContextLoss?(): void;
+  } | null;
+}
+
+/** A `window`-like target the renderer subscribes to. */
+export interface ResizeListenerTarget {
+  addEventListener(type: string, listener: unknown, options?: unknown): void;
+  removeEventListener(type: string, listener: unknown, options?: unknown): void;
+}
+
+type ResizeListener = (event: unknown) => void;
+
+/**
+ * Records the `resize` listeners the renderer registers while `run()` executes.
+ *
+ * Upstream's renderer subscribes to `window` resize and never unsubscribes. The
+ * callback closes over the renderer, its stage element and its physics world, so
+ * leaving it attached keeps a whole discarded renderer alive — on every skin
+ * change and every teardown. The registration is the only handle on it, so it is
+ * captured here; the listener still reaches the renderer exactly as before, and
+ * the captured list is filled even when `run()` throws.
+ */
+export async function captureResizeListeners<T>(
+  target: ResizeListenerTarget,
+  sink: ResizeListener[],
+  run: () => Promise<T>,
+): Promise<T> {
+  const previous = target.addEventListener;
+  // Bound only for the forwarded call: `window.addEventListener` rejects an
+  // unbound invocation, but what is restored afterwards must be exactly what was
+  // there before, not a bound wrapper.
+  const forward = previous.bind(target);
+  target.addEventListener = (type: string, listener: unknown, options?: unknown) => {
+    if (type === "resize" && typeof listener === "function")
+      sink.push(listener as ResizeListener);
+    forward(type, listener, options);
+  };
+  try {
+    return await run();
+  } finally {
+    target.addEventListener = previous;
+  }
+}
+
+/** Detaches listeners captured by {@link captureResizeListeners}. */
+export function removeResizeListeners(
+  target: ResizeListenerTarget,
+  listeners: readonly ResizeListener[],
+): void {
+  for (const listener of listeners) {
+    try {
+      target.removeEventListener("resize", listener);
+    } catch {
+      // A target that is already gone has nothing left to unsubscribe from.
+    }
+  }
+}
+
+/**
+ * Releases a renderer instance's own resources. `clearDice()` stops the
+ * animation loop and drops the physics bodies, and it has to run while the
+ * renderer still exists; after that the canvas is detached and the WebGL
+ * context released, because dropping the canvas alone leaves the GL context —
+ * and its GPU allocations — alive until the browser garbage-collects it. Every
+ * step is best-effort: a partially initialized renderer must still tear down.
+ */
+export function disposeRendererInstance(instance: RendererInstance): void {
+  try {
+    if (typeof instance.clearDice === "function") instance.clearDice();
+    else instance.clear?.();
+  } catch {
+    // The table is already going away.
+  }
+  const renderer = instance.renderer;
+  if (!renderer) return;
+  try {
+    const canvas = renderer.domElement;
+    if (canvas?.parentNode?.removeChild) canvas.parentNode.removeChild(canvas);
+    else canvas?.remove?.();
+  } catch {
+    // Detaching is cosmetic once the stage itself is being cleared.
+  }
+  try {
+    renderer.forceContextLoss?.();
+  } catch {
+    // A context that is already lost needs no further notice.
+  }
+  try {
+    renderer.dispose?.();
+  } catch {
+    // Nothing left to release.
+  }
 }
 
 /** Loads the renderer only when a throw is actually requested. */
-export const defaultDiceBoxFactory: DiceBoxFactory = (init) => {
-  let box: RendererInstance | null = null;
-  return {
-    async initialize() {
-      const { default: DiceBox } = await import("@3d-dice/dice-box-threejs");
-      const instance = new DiceBox(init.selector, init.options) as unknown as RendererInstance;
-      await instance.initialize();
-      box = instance;
-    },
-    async roll(notation: string) {
-      if (!box) throw new Error("Dice renderer was not initialized");
-      return box.roll(notation);
-    },
-    clear() {
-      if (!box) return;
-      try {
-        if (typeof box.clear === "function") box.clear();
-        else if (typeof box.clearDice === "function") box.clearDice();
-      } catch {
-        // Clearing the table is cosmetic; the next throw removes stale dice itself.
-      }
-    },
-  };
-};
+async function loadDiceBoxModule() {
+  const { default: DiceBox } = await import("@3d-dice/dice-box-threejs");
+  return DiceBox as new (selector: string, options: DiceBoxOptions) => unknown;
+}
 
-/** Reads the values a renderer reports for the dice it rolled, when it reports them. */
+export type DiceBoxModuleLoader = typeof loadDiceBoxModule;
+
+export interface DiceBoxRendererOptions {
+  /** Injectable so tests never load three.js, cannon-es or WebGL. */
+  loadModule?: DiceBoxModuleLoader;
+  /** The target the renderer subscribes to; `window` in a browser. */
+  resizeTarget?: ResizeListenerTarget;
+}
+
+/**
+ * The renderer factory, with the resource handling upstream omits.
+ *
+ * `initialize` captures the resize listeners the renderer adds; `dispose`
+ * unsubscribes them, detaches the canvas and releases the WebGL context, so
+ * rebuilding on a skin change (or tearing down the presenter) leaves nothing
+ * behind. `clear` stays cheap and only empties the table between throws.
+ */
+export function createDiceBoxRenderer(
+  options: DiceBoxRendererOptions = {},
+): DiceBoxFactory {
+  const loadModule = options.loadModule ?? loadDiceBoxModule;
+  const resizeTarget =
+    options.resizeTarget ?? (globalThis as unknown as ResizeListenerTarget);
+
+  return (init) => {
+    let box: RendererInstance | null = null;
+    let resizeListeners: ResizeListener[] = [];
+    return {
+      async initialize() {
+        const DiceBox = await loadModule();
+        const instance = new DiceBox(init.selector, init.options) as unknown as RendererInstance;
+        const captured: ResizeListener[] = [];
+        try {
+          await captureResizeListeners(resizeTarget, captured, () =>
+            instance.initialize(),
+          );
+        } catch (failure) {
+          // A half-initialized renderer has already taken a context and maybe a
+          // listener; neither should outlive the failure.
+          removeResizeListeners(resizeTarget, captured);
+          disposeRendererInstance(instance);
+          throw failure;
+        }
+        resizeListeners = captured;
+        box = instance;
+      },
+      async roll(notation: string) {
+        if (!box) throw new Error("Dice renderer was not initialized");
+        return box.roll(notation);
+      },
+      clear() {
+        if (!box) return;
+        try {
+          if (typeof box.clearDice === "function") box.clearDice();
+          else box.clear?.();
+        } catch {
+          // Clearing the table is cosmetic; the next throw removes stale dice itself.
+        }
+      },
+      dispose() {
+        const instance = box;
+        box = null;
+        removeResizeListeners(resizeTarget, resizeListeners);
+        resizeListeners = [];
+        if (instance) disposeRendererInstance(instance);
+      },
+    };
+  };
+}
+
+export const defaultDiceBoxFactory = createDiceBoxRenderer();
+
+/**
+ * Reads the values a renderer reports for the dice it rolled, when it reports
+ * them. Upstream resolves a throw with `{ sets: [{ rolls: [{ value, ... }] }],
+ * modifier, total }`: each die's final result is spread into the group's
+ * `rolls` array. A response that does not have that shape is reported as
+ * unreported rather than guessed at, so a renderer upgrade can never be
+ * mistaken for agreement about the faces.
+ */
 export function renderedFaceValues(results: unknown): number[] | null {
   if (!results || typeof results !== "object") return null;
   const sets = (results as { sets?: unknown }).sets;
   if (!Array.isArray(sets)) return null;
   const values: number[] = [];
   for (const set of sets) {
-    const dice = (set as { dice?: unknown }).dice;
-    if (!Array.isArray(dice)) return null;
-    for (const die of dice) {
-      const value = (die as { value?: unknown }).value;
+    const rolls = (set as { rolls?: unknown }).rolls;
+    if (!Array.isArray(rolls)) return null;
+    for (const roll of rolls) {
+      const value = (roll as { value?: unknown }).value;
       if (typeof value !== "number") return null;
       values.push(value);
     }
@@ -272,6 +437,15 @@ export interface DiceBoxPresenterOptions {
   playCue?: (flourish: DiceFlourish, settings: DicePresentationSettings) => void;
 }
 
+/** A promise with its resolver exposed, for racing a throw against teardown. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
 /**
  * Wraps the renderer in the presenter contract. A skin (or intensity/sound)
  * change rebuilds the renderer, because the renderer's theme is fixed once it
@@ -293,16 +467,29 @@ export function createDiceBoxPresenter(
     if (stage) stage.innerHTML = "";
   };
 
+  /** Set while a throw is in flight, so teardown can settle it. */
+  let abandon: (() => void) | null = null;
+
   const disposeHandle = () => {
-    if (handle) {
+    const previous = handle;
+    const inFlight = abandon;
+    handle = null;
+    appliedKey = null;
+    abandon = null;
+    // A throw whose renderer is going away has to be let go of. This is not just
+    // tidiness: the presenter queues throws, so a promise that never settles
+    // would wedge every later throw for the rest of the session.
+    inFlight?.();
+    if (previous) {
       try {
-        handle.clear?.();
+        // `dispose` is the real teardown; `clear` is the fallback for a handle
+        // that has nothing to release.
+        if (typeof previous.dispose === "function") previous.dispose();
+        else previous.clear?.();
       } catch {
         // A renderer that is already gone needs no teardown.
       }
     }
-    handle = null;
-    appliedKey = null;
     clearStage();
   };
 
@@ -321,7 +508,8 @@ export function createDiceBoxPresenter(
       await created.initialize();
     } catch (failure) {
       try {
-        created.clear?.();
+        if (typeof created.dispose === "function") created.dispose();
+        else created.clear?.();
       } catch {
         // Best effort: the failed renderer may not have a teardown at all.
       }
@@ -333,56 +521,93 @@ export function createDiceBoxPresenter(
     return created;
   };
 
+  /**
+   * Presentations are queued, never concurrent. The renderer owns one stage,
+   * one physics world and one animation loop, so starting a throw while another
+   * is still landing would interrupt it mid-flight and could leave it reporting
+   * the wrong faces. Each caller still gets its own report.
+   */
+  let queue: Promise<unknown> = Promise.resolve();
+
+  const render = async (
+    request: DicePresentationRequest,
+  ): Promise<DicePresentationReport> => {
+    if (settings.reducedMotion)
+      return {
+        mode: "skipped",
+        reason: "reduced motion is enabled, so the throw is not animated",
+      };
+    if (!physicalFacesSupported(request.plan))
+      return {
+        mode: "fallback",
+        reason: `this roll needs ${request.plan.dice.length} dice groups, which physical dice cannot force in one throw`,
+      };
+    let notation: string;
+    try {
+      notation = diceNotationFor(request.plan, request.faces);
+    } catch (failure) {
+      return {
+        mode: "fallback",
+        reason: failure instanceof Error ? failure.message : String(failure),
+      };
+    }
+    if (options.playCue) options.playCue(request.flourish, settings);
+    else playFlourishCue(request.flourish, settings);
+    try {
+      const box = await ensure(request.skin, settings);
+      // Remove the previous throw so each roll starts from a clear table. A
+      // renderer that cannot clear still gets to roll.
+      try {
+        box.clear?.();
+      } catch {
+        // Only the stale dice are lost, never the throw.
+      }
+      // The renderer settles its own roll promise from inside its animation
+      // loop, and tearing that loop down is exactly what disposal does — so a
+      // throw stopped mid-flight would otherwise never report at all. Racing it
+      // against teardown keeps the queue moving.
+      const stopped = deferred<"abandoned">();
+      abandon = () => stopped.resolve("abandoned");
+      try {
+        const outcome = await Promise.race([box.roll(notation), stopped.promise]);
+        if (outcome === "abandoned")
+          return {
+            mode: "skipped",
+            reason: "the throw was stopped before the dice landed",
+          };
+        return {
+          mode: "rendered",
+          notation,
+          handoff: handoffOf(request.faces, outcome),
+        };
+      } finally {
+        abandon = null;
+      }
+    } catch (failure) {
+      disposeHandle();
+      return {
+        mode: "fallback",
+        reason: failure instanceof Error ? failure.message : String(failure),
+      };
+    }
+  };
+
   return {
     configure(next: DicePresentationSettings) {
       settings = next;
     },
-    async present(
-      request: DicePresentationRequest,
-    ): Promise<DicePresentationReport> {
-      if (settings.reducedMotion)
-        return {
-          mode: "skipped",
-          reason: "reduced motion is enabled, so the throw is not animated",
-        };
-      if (!physicalFacesSupported(request.plan))
-        return {
-          mode: "fallback",
-          reason: `this roll needs ${request.plan.dice.length} dice groups, which physical dice cannot force in one throw`,
-        };
-      let notation: string;
-      try {
-        notation = diceNotationFor(request.plan, request.faces);
-      } catch (failure) {
-        return {
-          mode: "fallback",
-          reason: failure instanceof Error ? failure.message : String(failure),
-        };
-      }
-      if (options.playCue) options.playCue(request.flourish, settings);
-      else playFlourishCue(request.flourish, settings);
-      try {
-        const box = await ensure(request.skin, settings);
-        // Remove the previous throw so each roll starts from a clear table. A
-        // renderer that cannot clear still gets to roll.
-        try {
-          box.clear?.();
-        } catch {
-          // Only the stale dice are lost, never the throw.
-        }
-        const results = await box.roll(notation);
-        return {
-          mode: "rendered",
-          notation,
-          handoff: handoffOf(request.faces, results),
-        };
-      } catch (failure) {
-        disposeHandle();
-        return {
-          mode: "fallback",
-          reason: failure instanceof Error ? failure.message : String(failure),
-        };
-      }
+    present(request: DicePresentationRequest): Promise<DicePresentationReport> {
+      const next = queue.then(
+        () => render(request),
+        () => render(request),
+      );
+      // The chain has to survive a failed presentation, or every later throw
+      // would inherit the rejection instead of running.
+      queue = next.then(
+        () => undefined,
+        () => undefined,
+      );
+      return next;
     },
     dispose: disposeHandle,
   };

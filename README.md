@@ -2,9 +2,13 @@
 
 A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics live in `rules-core`; imported and authored content is injected by callers.
 
+## ▶️ [Live demo](https://zengulus.github.io/threepointpf/)
+
+**[https://zengulus.github.io/threepointpf/](https://zengulus.github.io/threepointpf/)** — no install, no sign-in, no database. It opens on a level 1 fighter and rolls with 3D dice.
+
 ## Try the demo
 
-The sheet is published as a static demo on GitHub Pages (`.github/workflows/pages.yml`), and **demo mode is the default presentation**: it needs no server, no sign-in and no configuration. The published build sets `VITE_DEMO_MODE=true` explicitly, so a credential that happens to exist in the build environment can never turn it into a database client.
+The sheet is published as a static demo on GitHub Pages at **[zengulus.github.io/threepointpf](https://zengulus.github.io/threepointpf/)** (`.github/workflows/pages.yml`), and **demo mode is the default presentation**: it needs no server, no sign-in and no configuration. The published build sets `VITE_DEMO_MODE=true` explicitly, so a credential that happens to exist in the build environment can never turn it into a database client.
 
 Opening it lands on a **level 1 fighter sample** — elite array, Power Attack and Weapon Focus with a greatsword, Toughness, a chain shirt, one level of the fighter progression — and a second sample holds the multi-level showcase sheet. Everything is authored state: the engine recomputes every number, saves stay in that browser's storage, and switching samples is a fresh start.
 
@@ -15,6 +19,14 @@ corepack pnpm dev          # local development, also in demo mode
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to leave demo mode; anything else stays in it.
 
+### Publishing the demo
+
+`.github/workflows/pages.yml` builds and deploys the site on every push to `main`. It needs one repository setting, which is not a file and so cannot be committed — **this is the only manual step**:
+
+> **Settings → Pages → Build and deployment → Source → GitHub Actions**
+
+A repository can have Pages enabled and still not publish this workflow: a branch-based Pages site looks healthy while serving something else entirely. So the workflow checks the deployment source before it uploads anything, and until the setting above is applied it stops there with that same instruction. Once it is applied, the next push to `main` publishes the demo, and it is served from the project subpath `/threepointpf/` — including the dice textures and sounds, which resolve against that base path rather than the site root.
+
 ## Run and verify
 
 ```bash
@@ -22,6 +34,7 @@ corepack pnpm install
 corepack pnpm test
 corepack pnpm build
 corepack pnpm build:demo
+corepack pnpm check:demo      # serves the demo from /threepointpf/ and fetches its assets
 corepack pnpm rules:check-autosheet
 corepack pnpm check:edge
 corepack pnpm exec playwright install chromium

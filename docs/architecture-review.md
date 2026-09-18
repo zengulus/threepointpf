@@ -170,6 +170,20 @@ Two user-facing choices are deliberately *not* character state and have their ow
 
 The Pages workflow builds with a relative base (`vite build --base=./`) so the same artifact works from a project subpath, and the presentation layer follows `import.meta.env.BASE_URL` when it resolves the renderer's texture and sound directory, so the demo's 3D dice work at `/threepointpf/` exactly as they do at the root.
 
+That claim is checked rather than asserted. `scripts/check-demo-base.mjs` (`pnpm check:demo`) mounts the built artifact at a real `/threepointpf/` prefix, refuses any site-absolute asset reference the document asks for, and fetches the dice textures and sounds back from that path — because a base-path regression is invisible to every other test. A blank page and untextured dice only appear at the published URL, so the check runs in CI and in the Pages workflow, against the same artifact that gets uploaded.
+
+Publishing additionally needs the repository's Pages build source set to GitHub Actions. A repository can have Pages enabled and still not publish this workflow: a branch-based Pages site looks healthy while serving something else entirely, and `actions/configure-pages` reports that as an opaque failure. So the workflow verifies the deployment source first and stops with the exact setting to change, rather than uploading an artifact nothing will serve. The setting itself is a repository property, not a file, so it is the one step a human has to take; the README states it once.
+
+### The 3D dice boundary
+
+The renderer sits behind `DicePresenter`, and everything crossing that boundary goes one way: authoritative faces are generated and resolved first, the renderer is handed exactly those faces (`NdS@f1,f2,…`), and what it reports back is only ever compared with what it was given. Three properties of the real `dice-box-threejs` renderer are handled explicitly because the library does not:
+
+- It resolves a throw with `sets[].rolls[].value`. The handoff reader accepts that shape and treats every other shape as *unreported*, so a renderer upgrade can never be mistaken for agreement about the faces.
+- It owns one stage, one physics world and one animation loop, so presentations are queued. A second throw waits for the first to land instead of interrupting it mid-flight and reporting the wrong faces.
+- It subscribes to `window` resize without ever unsubscribing and exposes no `dispose()`. The wrapper captures the listeners registered during `initialize()` and, on teardown, removes them, stops the loop, drops the physics bodies, detaches the canvas and releases the WebGL context. Without that, every skin change would leak a listener, a canvas and a GL context.
+
+All three are covered by tests that mock the boundary, so nothing in CI needs WebGL, and the response-shape tests build the object upstream really sends rather than a hand-written approximation.
+
 ### Module boundaries
 
 `packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. `apps/web/src/App.tsx` is composition only: domain panels live in `components/`, and state plus rules wiring lives in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.

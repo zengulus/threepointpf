@@ -21,6 +21,12 @@ jobs:
         run: corepack pnpm test
       - name: Build
         run: corepack pnpm build
+      # Pages serves the demo from /threepointpf/, so the published build is
+      # checked against that path rather than only against the site root.
+      - name: Demo build resolves from the project path
+        env:
+          VITE_DEMO_MODE: "true"
+        run: corepack pnpm build:demo && corepack pnpm check:demo
       - name: Generated rules are fresh
         run: corepack pnpm rules:check-autosheet
       - name: Edge typecheck

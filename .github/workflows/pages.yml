@@ -1,9 +1,17 @@
 name: Demo (GitHub Pages)
 
-# Publishes the sheet as a static demo. The build is explicitly in demo mode, so
-# the published site never talks to a database even if credentials happen to be
-# present in the build environment, and it is built with a relative base so it
-# works from the project subpath GitHub Pages serves it from.
+# Publishes the sheet as a static demo at https://zengulus.github.io/threepointpf/.
+#
+# The build is explicitly in demo mode, so the published site never talks to a
+# database even if credentials happen to be present in the build environment, and
+# it is built with a relative base so it works from the project subpath GitHub
+# Pages serves it from.
+#
+# Publishing this workflow *requires* the repository to be set to build Pages
+# from GitHub Actions. That is a repository setting rather than a file, so the
+# preflight below checks it and, when it is missing, fails with the one step a
+# human has to take. `actions/configure-pages` would otherwise fail with an
+# opaque error, or the built site would be silently replaced by a branch build.
 on:
   push:
     branches: [main]
@@ -36,6 +44,30 @@ jobs:
         env:
           VITE_DEMO_MODE: "true"
         run: corepack pnpm build:demo
+      # The build above is the artifact that gets published, so it is served from
+      # a real subpath and asked for its own assets before it is uploaded.
+      - name: The built demo resolves from the project path
+        run: corepack pnpm check:demo
+      # A file in the repository cannot enable Pages, and "Pages is on" is not the
+      # same as "Pages publishes this workflow": a repository can have a live
+      # Pages site that is built from a branch, in which case this workflow's
+      # artifact is never served. So the deployment source is checked explicitly.
+      - name: Check Pages publishes from GitHub Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          build_type="$(curl -sS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin).get("build_type") or "unknown")' \
+            2>/dev/null || echo unknown)"
+          echo "GitHub Pages build_type is '${build_type}'"
+          if [ "${build_type}" != "workflow" ]; then
+            echo "::error title=GitHub Pages is not publishing this workflow::Pages for ${GITHUB_REPOSITORY} has build_type='${build_type}', so the demo would not be served from this workflow's artifact. Set it once: Settings -> Pages -> Build and deployment -> Source -> GitHub Actions. Every push to main then publishes the demo."
+            exit 1
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
