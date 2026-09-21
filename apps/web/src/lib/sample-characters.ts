@@ -146,6 +146,23 @@ export function sampleCharacter(id: string): SampleCharacter {
   return found;
 }
 
+/**
+ * Samples have a browser-facing selection id and an authored character id.
+ * Keep that translation at the sample boundary: controllers and repositories
+ * always address the latter, while the demo picker continues to store the
+ * former as a presentation preference.
+ */
+export function sampleForCharacterId(
+  characterId: string,
+): SampleCharacter | undefined {
+  return sampleCharacters.find((sample) => sample.character.id === characterId);
+}
+
+/** The demo-picker id for an authored character, when that character is a sample. */
+export function sampleIdForCharacterId(characterId: string): string | undefined {
+  return sampleForCharacterId(characterId)?.id;
+}
+
 export function defaultSample(): SampleCharacter {
   return sampleCharacter(defaultSampleId);
 }

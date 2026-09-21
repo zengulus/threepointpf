@@ -7,16 +7,28 @@ import { test, expect, type Page } from "@playwright/test";
  * covered in `character-sheet.spec.ts`.
  */
 
+async function selectTab(page: Page, name: string) {
+  const tab = page.getByRole("tab", { name, exact: true });
+  if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+}
+
 async function loadSample(page: Page, id: string) {
+  await selectTab(page, "Summary");
   await page.getByTestId("sample-character").selectOption(id);
   await expect(page.getByTestId("sample-character")).toHaveValue(id);
 }
 
 async function dismissDice(page: Page) {
   const overlay = page.getByTestId("dice-overlay");
-  if ((await overlay.count()) === 0) return;
-  await page.getByTestId("dice-overlay-close").click();
-  await expect(overlay).toHaveCount(0);
+  if ((await overlay.count()) > 0) {
+    await page.getByTestId("dice-overlay-close").click();
+    await expect(overlay).toHaveCount(0);
+  }
+  // Dice settings are part of the compact Summary tab. Each roll helper
+  // returns there, so appearance assertions keep exercising the real tab UI
+  // instead of reaching through a hidden Combat panel.
+  await selectTab(page, "Summary");
 }
 
 /**
@@ -25,6 +37,7 @@ async function dismissDice(page: Page) {
  * these tests are measuring.
  */
 async function noFlourishes(page: Page) {
+  await selectTab(page, "Summary");
   for (const slot of [
     "dice-flourish-critical-success",
     "dice-flourish-critical-failure",
@@ -33,6 +46,21 @@ async function noFlourishes(page: Page) {
     "dice-flourish-ordinary",
   ])
     await page.getByTestId(slot).selectOption("none");
+}
+
+async function rollStandardGreatsword(page: Page) {
+  await selectTab(page, "Combat");
+  await page.getByTestId("roll-standard-greatsword").click();
+}
+
+/** Let the newly mounted drawer paint before sampling only its stage pixels. */
+async function waitForDrawerPaint(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
 }
 
 interface StageStats {
@@ -100,19 +128,27 @@ async function stageStats(page: Page): Promise<StageStats> {
 
 /** Rolls and returns the stage once the throw is under way. */
 async function rollAndMeasure(page: Page): Promise<StageStats> {
-  await page.getByTestId("roll-standard-greatsword").click();
+  await rollStandardGreatsword(page);
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toBeVisible();
+  await waitForDrawerPaint(page);
   // Once the dice land, the crit/nat flourish tints the die and the values
   // appear on it — neither of which is the die's own colour, so the samples are
   // taken while the dice are still in the air.
   for (let attempt = 0; attempt < 14; attempt += 1) {
     if ((await overlay.count()) === 0) break;
-    if ((await overlay.getAttribute("data-mode")) !== "pending") break;
-    const stats = await stageStats(page);
-    if (stats.dicePixels > 200) {
-      await dismissDice(page);
-      return stats;
+    const mode = await overlay.getAttribute("data-mode");
+    // A Three.js canvas exists before it is opaque. Sampling its transparent
+    // pending frame captures the parchment behind the drawer rather than the
+    // renderer's table, so wait until the renderer reports its own scene.
+    if (mode === "rendered") {
+      const stats = await stageStats(page);
+      if (stats.dicePixels > 200) {
+        await dismissDice(page);
+        return stats;
+      }
+    } else if (mode !== "pending") {
+      break;
     }
     await page.waitForTimeout(200);
   }
@@ -131,7 +167,7 @@ test("the dice drawer is the whole roll, with no second result surface", async (
 }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
-  await page.getByTestId("roll-standard-greatsword").click();
+  await rollStandardGreatsword(page);
 
   const drawer = page.getByTestId("dice-drawer");
   await expect(drawer).toBeVisible();
@@ -178,7 +214,7 @@ test("the dice drawer is the whole roll, with no second result surface", async (
 
   // The same surface holds a phone: one drawer, dice above the arithmetic.
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByTestId("roll-standard-greatsword").click();
+  await rollStandardGreatsword(page);
   await expect(drawer).toBeVisible();
   const phoneDrawer = (await drawer.boundingBox())!;
   const phoneStage = (await page.getByTestId("dice-stage").boundingBox())!;
@@ -292,7 +328,7 @@ test("appearance changes between rolls rebuild without stale canvases", async ({
   const rollWith = async (surface: string) => {
     await page.getByTestId("dice-surface").selectOption(surface);
     await applyAppearance(page);
-    await page.getByTestId("roll-standard-greatsword").click();
+    await rollStandardGreatsword(page);
     const overlay = page.getByTestId("dice-overlay");
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveAttribute("data-mode", "rendered", {
@@ -637,7 +673,7 @@ async function sampleTableTexture(
 
 /** Rolls and waits for the dice to land, without dismissing the overlay. */
 async function rollToLanding(page: Page) {
-  await page.getByTestId("roll-standard-greatsword").click();
+  await rollStandardGreatsword(page);
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toBeVisible();
   await expect(overlay).toHaveAttribute("data-mode", "rendered", {

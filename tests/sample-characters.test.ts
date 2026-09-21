@@ -9,6 +9,8 @@ import {
   levelOneFighter,
   sampleCharacter,
   sampleCharacters,
+  sampleForCharacterId,
+  sampleIdForCharacterId,
 } from "../apps/web/src/lib/sample-characters";
 
 const engineFor = (character = levelOneFighter) =>
@@ -24,6 +26,15 @@ describe("the sample registry", () => {
   it("rejects an unknown sample instead of silently defaulting", () => {
     expect(() => sampleCharacter("nope")).toThrow(/Unknown sample character/);
     expect(sampleCharacter("showcase").character.id).toBe("human-martial");
+  });
+
+  it("keeps presentation sample ids separate from caller-facing character ids", () => {
+    expect(sampleForCharacterId("human-martial")?.id).toBe("showcase");
+    expect(sampleIdForCharacterId("sample-level-1-fighter")).toBe(
+      "level-1-fighter",
+    );
+    expect(sampleForCharacterId("another-character")).toBeUndefined();
+    expect(sampleIdForCharacterId("another-character")).toBeUndefined();
   });
 
   it("keeps every sample as authored state that derives and round-trips", () => {

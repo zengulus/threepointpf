@@ -31,6 +31,17 @@ fighter as the landing sheet, and user-facing presentation choices (dice skins,
 flourishes, sound, reduced motion, selected sample) live under their own storage
 keys and never enter character state.
 
+Settled by the application-shell pass, and no longer open: `App` can receive a
+caller-selected `characterId`; `AppShell` owns one character-sheet controller,
+one dice presentation, and one application-level `DiceOverlay`; and
+`CharacterSheetView` is shared unchanged by the full-page sheet and the
+draggable/resizable floating-window presentation. Active tab, workspace mode,
+window visibility/minimized state, and window bounds are transient UI state,
+not authored or persisted character data. The workspace is deliberately a
+neutral placeholder, not a VTT: this pass adds no maps, tokens, campaign state,
+multiplayer behavior, or new backend requirement, and preserves the static
+GitHub Pages deployment at `/threepointpf/`.
+
 Settled by the roll-contract pass, and no longer open: the roll/action contract
 itself, per-action roll plans, deterministic outcome classification with
 distinct natural-face and critical facts, no critical confirmation, and critical

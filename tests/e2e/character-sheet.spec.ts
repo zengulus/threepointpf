@@ -45,6 +45,119 @@ test("sheet tabs swap panels and compact roll controls invoke dice", async ({ pa
   await dismissDice(page);
 });
 
+test("workspace frames the shared sheet in one draggable, resizable window", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/");
+
+  const fullPage = page.getByTestId("full-page-sheet");
+  await expect(fullPage).toBeVisible();
+  const landingName = await fullPage.getByLabel("Character name").inputValue();
+
+  await page.getByTestId("open-workspace").click();
+  const workspace = page.getByTestId("workspace-mode");
+  const sheetWindow = page.getByTestId("character-sheet-window");
+  await expect(workspace).toBeVisible();
+  await expect(sheetWindow).toBeVisible();
+  await expect(page.getByTestId("character-sheet-view")).toHaveCount(1);
+  await expect(sheetWindow.getByLabel("Character name")).toHaveValue(landingName);
+
+  // The window frame, not the sheet itself, handles desktop movement.
+  const beforeDrag = (await sheetWindow.boundingBox())!;
+  const titlebar = page.getByTestId("character-sheet-window-titlebar");
+  const titlebarBox = (await titlebar.boundingBox())!;
+  await page.mouse.move(titlebarBox.x + 70, titlebarBox.y + 16);
+  await page.mouse.down();
+  await page.mouse.move(titlebarBox.x + 150, titlebarBox.y + 66, {
+    steps: 4,
+  });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await sheetWindow.boundingBox())?.x ?? 0)
+    .toBeGreaterThan(beforeDrag.x + 40);
+  await expect
+    .poll(async () => (await sheetWindow.boundingBox())?.y ?? 0)
+    .toBeGreaterThan(beforeDrag.y + 20);
+
+  const beforeResize = (await sheetWindow.boundingBox())!;
+  const resizeHandle = page.getByTestId("character-sheet-window-resize-handle");
+  const handleBox = (await resizeHandle.boundingBox())!;
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + 80, handleBox.y + 50, { steps: 4 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await sheetWindow.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(beforeResize.width + 40);
+  await expect
+    .poll(async () => (await sheetWindow.boundingBox())?.height ?? 0)
+    .toBeGreaterThan(beforeResize.height + 20);
+
+  const sharedName = "Window Shared Hero";
+  await sheetWindow.getByLabel("Character name").fill(sharedName);
+  await expect(page.getByTestId("character-sheet-window-titlebar")).toContainText(
+    sharedName,
+  );
+
+  const minimize = page.getByTestId("character-sheet-window-minimize");
+  await minimize.click();
+  await expect(sheetWindow.getByTestId("character-sheet-view")).toHaveCount(0);
+  await expect(minimize).toHaveAttribute("aria-label", "Restore character sheet");
+  await minimize.click();
+  await expect(sheetWindow.getByLabel("Character name")).toHaveValue(sharedName);
+
+  // Rolls initiated inside the frame still target the one shell-level overlay.
+  await sheetWindow.getByLabel("Roll initiative").click();
+  await expect(page.getByTestId("dice-overlay")).toBeVisible();
+  await expect(page.getByTestId("dice-overlay")).toHaveCount(1);
+  await expect(sheetWindow.getByTestId("dice-overlay")).toHaveCount(0);
+  await dismissDice(page);
+
+  await page.getByTestId("character-sheet-window-close").click();
+  await expect(sheetWindow).toHaveCount(0);
+  await expect(page.getByTestId("workspace-open-sheet")).toBeVisible();
+  await page.getByTestId("workspace-open-sheet").click();
+  await expect(sheetWindow.getByLabel("Character name")).toHaveValue(sharedName);
+
+  // Reframing the sheet never forks its authored draft.
+  await page.getByTestId("workspace-full-page").click();
+  await expect(fullPage).toBeVisible();
+  await expect(fullPage.getByLabel("Character name")).toHaveValue(sharedName);
+  await expect(page.getByTestId("character-sheet-view")).toHaveCount(1);
+});
+
+test("workspace keeps the floating sheet usable on a compact desktop", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/");
+  await page.getByTestId("open-workspace").click();
+
+  const canvas = (await page.getByTestId("workspace-canvas").boundingBox())!;
+  const sheetWindow = page.getByTestId("character-sheet-window");
+  const windowBox = (await sheetWindow.boundingBox())!;
+  const resizeBox = (
+    await page.getByTestId("character-sheet-window-resize-handle").boundingBox()
+  )!;
+
+  expect(windowBox.x).toBeGreaterThanOrEqual(canvas.x);
+  expect(windowBox.y).toBeGreaterThanOrEqual(canvas.y);
+  expect(windowBox.x + windowBox.width).toBeLessThanOrEqual(
+    canvas.x + canvas.width + 1,
+  );
+  expect(windowBox.y + windowBox.height).toBeLessThanOrEqual(
+    canvas.y + canvas.height + 1,
+  );
+  expect(resizeBox.x + resizeBox.width).toBeLessThanOrEqual(
+    canvas.x + canvas.width + 1,
+  );
+  expect(resizeBox.y + resizeBox.height).toBeLessThanOrEqual(
+    canvas.y + canvas.height + 1,
+  );
+  await expect(sheetWindow.getByTestId("character-sheet-window-close")).toBeVisible();
+});
+
 test("character sheet recomputes toggles and exposes provenance", async ({ page }) => {
   await page.goto("/");
   await loadSample(page, "showcase");

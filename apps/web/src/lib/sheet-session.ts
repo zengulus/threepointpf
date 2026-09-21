@@ -5,10 +5,11 @@ import {
 } from "./sample-characters";
 
 /**
- * Which sample this browser is looking at. Like the dice preferences, this is a
- * user-facing display choice with its own storage key: it is never written into
- * authored character state, and a reload comes back to the sheet the user was
- * working on.
+ * Which demo sample the browser last chose. Like the dice preferences, this is
+ * a user-facing display choice with its own storage key: it is never written
+ * into authored character state. The standalone sheet uses it to choose a
+ * default character, while a caller-selected `characterId` deliberately takes
+ * precedence without changing this preference.
  */
 
 export const sampleStorageKey = "threepointpf.sheet.sample";

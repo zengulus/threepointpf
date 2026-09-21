@@ -10,6 +10,8 @@ Updated: 2026-09-18 (roll-presentation pass: the landed dice carry their own val
 
 Updated: 2026-09-18 (appearance pass: the dice drawer is the whole roll surface, and the selected table surface and die colours are applied to the renderer's own Three.js scene rather than around it)
 
+Updated: 2026-09-22 (application-shell pass: one reusable sheet view is framed full-page or in a floating workspace window without duplicating state, roll presentation, or panel markup)
+
 This review compares the implementation with the supplied `Pathfinder Autosheet v6.2.1` workbook and the current vertical-slice brief. The workbook remains a behavioral reference, not a runtime dependency.
 
 ## Overall assessment
@@ -172,6 +174,14 @@ Samples are ordinary authored `CharacterInput` values in `lib/sample-characters.
 
 Two user-facing choices are deliberately *not* character state and have their own storage keys: dice presentation (`threepointpf.dice.presentation`) and the selected sample (`threepointpf.sheet.sample`). The sample selection is browser-scoped so a reload returns to the sheet the user was on, while a saved `CharacterInput` remains the only thing a character owns.
 
+### Reusable sheet and application-shell boundary
+
+`App` accepts an optional authored `characterId`: a host that owns character selection can supply it, while the standalone demo omits it and keeps the existing sample-picker flow. `AppShell` creates the one `useCharacterSheetController` instance and its one dice presentation for that identity. It passes the controller to `CharacterSheetView`, the sole implementation of the sheet's header, tabs, panels, inspectors, and roll controls.
+
+`FullPageSheet` and `CharacterSheetWindow` are presentation frames around that same view; neither owns a second character, controller, rules evaluation, or dice surface. `AppShell` also renders the single application-level `DiceOverlay`, outside either frame, so moving between full-page and windowed presentation cannot create a duplicate overlay or split roll state. The active tab belongs to the shell so it follows the same controller across both frames.
+
+Workspace mode, whether the window is open or minimized, and its bounds are transient shell state: they are not fields of `CharacterInput`, are not saved in browser storage or Supabase, and are not part of a roll request. The workspace is intentionally a neutral future tabletop placeholder, not an implemented VTT: there is no map, token, campaign, multiplayer, or tabletop persistence model hidden behind the window chrome.
+
 The Pages workflow builds with a relative base (`vite build --base=./`) so the same artifact works from a project subpath, and the presentation layer follows `import.meta.env.BASE_URL` when it resolves the renderer's texture and sound directory, so the demo's 3D dice work at `/threepointpf/` exactly as they do at the root.
 
 That claim is checked rather than asserted. `scripts/check-demo-base.mjs` (`pnpm check:demo`) mounts the built artifact at a real `/threepointpf/` prefix, refuses any site-absolute asset reference the document asks for, and fetches the dice textures and sounds back from that path — because a base-path regression is invisible to every other test. A blank page and untextured dice only appear at the published URL, so the check runs in CI and in the Pages workflow, against the same artifact that gets uploaded.
@@ -203,7 +213,7 @@ The draw loop, canvas factory and clock are injectable through the renderer fact
 
 ### Module boundaries
 
-`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. `apps/web/src/App.tsx` is composition only: domain panels live in `components/`, and state plus rules wiring lives in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
+`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. On the web side, `apps/web/src/App.tsx` is the small public composition entry point; `AppShell` owns application presentation, `CharacterSheetView` owns the reusable sheet DOM, presentation frames live in `components/sheet-presentations.tsx`, and authored-state/rules wiring remains in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
 
 ## Workbook parity scenarios
 

@@ -12,6 +12,8 @@ The sheet is published as a static demo on GitHub Pages at **[zengulus.github.io
 
 Opening it lands on a **level 1 fighter sample** — elite array, Power Attack and Weapon Focus with a greatsword, Toughness, a chain shirt, one level of the fighter progression — and a second sample holds the multi-level showcase sheet. Everything is authored state: the engine recomputes every number, saves stay in that browser's storage, and switching samples is a fresh start.
 
+The same sheet can be used full-page or in a draggable, resizable window over a neutral workspace placeholder. Those are two presentations of one character sheet, not a VTT: maps, tokens, tabletop state, and multiplayer tools are intentionally out of scope. The UI remains a client-only static artifact, so it can still be opened directly from the GitHub Pages `/threepointpf/` subpath.
+
 ```bash
 corepack pnpm build:demo   # static demo build, relative base path for Pages
 corepack pnpm dev          # local development, also in demo mode
@@ -51,6 +53,7 @@ CI runs installation, unit/integration tests, build, generated-data freshness, D
 - Class skills derive from all classes actually advanced. Ranks trigger the +3 bonus once. Each skill also has an explicit class-skill override for homebrew/manual use.
 - Set abilities, HP state, size and five movement modes. Add catalog conditions, armor/shields/weapons, or structured custom effects/items. Inspect combat values, abilities, damage, movement, skills and class levels for their dependency/source trails.
 - Start from a sample character (the panel at the top of the sheet). Samples are ordinary authored state, so every derived number is recomputed; **Reset sample** reloads the pristine version, and the browser remembers which sample you were on. Invalid edits retain the last valid character and show an error.
+- Open **Workspace** to put that same sheet in a draggable/resizable window, or return to the full-page sheet at any time. The active tab, workspace mode, window visibility/minimized state, and window geometry are temporary UI state; they do not change or save the character.
 - Optionally select an XP track. XP reports eligibility; advancing classes remains an explicit edit. Age-category adjustments are optional catalog features, not inferred from a character's race.
 - **Save character** persists the sheet across reloads: to Supabase in cloud mode, and to this browser's storage in demo mode. Invalid edits retain the last valid character and show an error.
 
@@ -86,7 +89,7 @@ Catalog IDs distinguish sources (`pf1e.paizo.fighter`, third-party namespaces, `
 
 Numeric order: replace the intrinsic baseline → typed additive stacking → multipliers → strongest minimum → strongest maximum. Operations contribute deltas with source evidence. Conflicting replacements/bounds and non-finite results fail explicitly. Catalog effects and custom effects use the same pipeline.
 
-Only authored `CharacterInput` is persisted. Local storage uses `threepointpf.character.<id>`. User-facing presentation choices have their own keys and never enter character state: `threepointpf.dice.presentation` for dice skins, flourishes, sound and reduced motion, and `threepointpf.sheet.sample` for the sample being viewed. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
+Only authored `CharacterInput` is persisted. Local storage uses `threepointpf.character.<id>`. A host can supply a concrete character ID to the app; without one, the standalone sheet retains its sample-picker behavior. Dice appearance and selected sample have their own browser-scoped keys (`threepointpf.dice.presentation` and `threepointpf.sheet.sample`) and never enter character state. Workspace mode, active tab, and floating-window state are deliberately not persisted at all. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
 
 For Supabase, supply `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with an authenticated client session, apply migrations, and deploy `character-state`, `roll-plan`, and `resolve-roll`. The snapshot migration is included, not applied to any hosted database by this change. Never place a service-role key in the browser.
 

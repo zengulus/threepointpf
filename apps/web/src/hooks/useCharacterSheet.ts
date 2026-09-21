@@ -42,18 +42,69 @@ import {
   defaultSample,
   sampleCharacter,
   sampleCharacters,
+  sampleForCharacterId,
 } from "../lib/sample-characters";
 import { activeSheetEnvironment, sheetModeFor } from "../lib/sheet-mode";
 import {
   loadSelectedSampleId,
   saveSelectedSampleId,
 } from "../lib/sheet-session";
-import { useDicePresentation } from "./useDicePresentation";
+import {
+  useDicePresentation,
+  type DicePresentation,
+} from "./useDicePresentation";
 
-export function useCharacterSheet() {
-  // Dice appearance and flourishes are display preferences owned by this hook,
-  // which persists them under their own key; they never enter character state.
-  const dice = useDicePresentation();
+/**
+ * A caller-selected authored character. Omit `characterId` for the standalone
+ * sheet's existing sample-picker behaviour; provide it when another surface
+ * (such as a future VTT token) owns character selection.
+ */
+export interface CharacterSheetOptions {
+  characterId?: string;
+  /**
+   * Called when a controller-owned UI action wants to open another character.
+   * It makes a supplied `characterId` a conventional controlled value without
+   * forcing the standalone demo to own another piece of application state.
+   */
+  onCharacterIdChange?: (characterId: string) => void;
+}
+
+/** A controller receives the single application-level dice presenter. */
+export interface CharacterSheetControllerOptions extends CharacterSheetOptions {
+  dice: DicePresentation;
+}
+
+interface PendingSampleDraft {
+  character: CharacterInput;
+  notice: string;
+}
+
+function usableCharacterId(value: string | undefined): string | undefined {
+  const id = value?.trim();
+  return id || undefined;
+}
+
+/**
+ * A known sample is the natural seed for its authored id. An unknown id still
+ * gets a valid, isolated draft with that id so a caller never briefly sees the
+ * previously selected character while its repository record is loading.
+ */
+function draftForCharacterId(characterId: string): CharacterInput {
+  const sample = sampleForCharacterId(characterId);
+  if (sample) return clone(sample.character);
+  const draft = clone(defaultSample().character);
+  return { ...draft, id: characterId, name: "Unnamed character" };
+}
+
+/**
+ * The reusable sheet controller. Authored state, rules evaluation and roll
+ * planning live here; chrome and the dice overlay are deliberately outside it.
+ */
+export function useCharacterSheetController({
+  dice,
+  characterId: requestedCharacterId,
+  onCharacterIdChange,
+}: CharacterSheetControllerOptions) {
   // Demo mode is the default and needs no server: it is the published demo and
   // the fallback whenever no Supabase credentials are configured.
   const environment = useMemo(() => activeSheetEnvironment(), []);
@@ -62,13 +113,25 @@ export function useCharacterSheet() {
   // saved snapshot may replace it once, at mount; later sample switches are
   // explicit choices and are never overwritten by a load.
   const startingSampleId = useRef(loadSelectedSampleId()).current;
+  const callerCharacterId = usableCharacterId(requestedCharacterId);
+  const isCharacterIdControlled = callerCharacterId !== undefined;
+  const startingCharacterId = useRef(
+    callerCharacterId ?? sampleCharacter(startingSampleId).character.id,
+  ).current;
   const [sampleId, setSampleId] = useState(startingSampleId);
-  const [character, setCharacter] = useState<CharacterInput>(() =>
-    clone(sampleCharacter(startingSampleId).character),
+  const [uncontrolledCharacterId, setUncontrolledCharacterId] = useState(
+    startingCharacterId,
   );
+  const characterId = callerCharacterId ?? uncontrolledCharacterId;
+  const [character, setCharacter] = useState<CharacterInput>(() =>
+    draftForCharacterId(startingCharacterId),
+  );
+  const startingSample = sampleForCharacterId(startingCharacterId);
   const [notice, setNotice] = useState(
     mode === "demo"
-      ? "Demo mode · " + sampleCharacter(startingSampleId).label + " loaded"
+      ? startingSample
+        ? "Demo mode · " + startingSample.label + " loaded"
+        : "Demo mode · new character draft ready"
       : "Local draft ready",
   );
   const [error, setError] = useState<string | null>(null);
@@ -101,25 +164,69 @@ export function useCharacterSheet() {
   const [profileId, setProfileId] = useState("");
   const [repo] = useState(() => repositoryFor(mode, environment));
   const editRevision = useRef(0);
+  const loadRevision = useRef(0);
+  const pendingSampleDraft = useRef<PendingSampleDraft | null>(null);
   useEffect(() => {
     let active = true;
+    const revision = ++loadRevision.current;
+    // A new target is a distinct authored-state session. Edits to the old
+    // character must not suppress a persisted load for this one.
+    editRevision.current = 0;
+    const pending = pendingSampleDraft.current;
+    if (pending?.character.id === characterId) {
+      pendingSampleDraft.current = null;
+      setCharacter(pending.character);
+      setSelected(null);
+      setError(null);
+      setNotice(pending.notice);
+      return () => {
+        active = false;
+      };
+    }
+
+    const sample = sampleForCharacterId(characterId);
+    setCharacter(draftForCharacterId(characterId));
+    setSelected(null);
+    setError(null);
+    if (!sample)
+      setNotice(
+        mode === "demo"
+          ? "Demo mode · loading character"
+          : "Loading character",
+      );
     void repo
-      .load(sampleCharacter(startingSampleId).character.id)
+      .load(characterId)
       .then((saved) => {
-        if (!active || !saved || editRevision.current !== 0) return;
+        if (
+          !active ||
+          revision !== loadRevision.current ||
+          editRevision.current !== 0
+        )
+          return;
+        if (!saved) {
+          if (!sample) setNotice("No saved character found; new draft ready");
+          return;
+        }
+        if (saved.id !== characterId)
+          throw new Error(
+            "Saved character identity does not match the selected character",
+          );
         new RulesEngine(saved, rulesCatalogs).derive();
         setCharacter(saved);
         setNotice(
-          mode === "demo" ? "Demo mode · reloaded your saved sheet" : "Saved character loaded",
+          mode === "demo"
+            ? "Demo mode · reloaded your saved sheet"
+            : "Saved character loaded",
         );
       })
       .catch((failure) => {
-        if (active) setError(errorText(failure));
+        if (active && revision === loadRevision.current)
+          setError(errorText(failure));
       });
     return () => {
       active = false;
     };
-  }, [startingSampleId, mode, repo]);
+  }, [characterId, mode, repo]);
   const catalog = useMemo(
     () => activeCatalog(character),
     [character.customProgressions],
@@ -136,8 +243,16 @@ export function useCharacterSheet() {
   const engine = evaluated.engine;
   const derived = evaluated.derived;
 
-  const apply = (next: CharacterInput, success?: string) => {
+  const apply = (
+    next: CharacterInput,
+    success?: string,
+    allowCharacterIdChange = false,
+  ) => {
     try {
+      if (!allowCharacterIdChange && next.id !== characterId)
+        throw new Error(
+          "Character identity is selected by the sheet controller, not an authored edit",
+        );
       parseCharacterInput(next);
       new RulesEngine(next, rulesCatalogs).derive();
       editRevision.current += 1;
@@ -411,12 +526,66 @@ export function useCharacterSheet() {
    * Loads a sample from scratch. It is authored state, never a saved snapshot:
    * switching samples is a fresh start, and saving afterwards is what persists.
    */
+  const requestCharacterId = (nextCharacterId: string): boolean => {
+    if (nextCharacterId === characterId) return true;
+    if (isCharacterIdControlled) {
+      if (!onCharacterIdChange) {
+        fail("This sheet's character is controlled by its caller.");
+        return false;
+      }
+      onCharacterIdChange(nextCharacterId);
+      return true;
+    }
+    setUncontrolledCharacterId(nextCharacterId);
+    return true;
+  };
+  /**
+   * Opens an authored character by its real persistence identity. This is the
+   * VTT-facing selection seam; it intentionally does not mutate the demo
+   * sample preference.
+   */
+  const selectCharacter = (id: string) => {
+    const nextCharacterId = usableCharacterId(id);
+    if (!nextCharacterId) {
+      fail("Choose a character with a non-empty id.");
+      return false;
+    }
+    pendingSampleDraft.current = null;
+    return requestCharacterId(nextCharacterId);
+  };
   const loadSample = (id: string) => {
     const sample = sampleCharacter(id);
-    apply(clone(sample.character), "Sample loaded: " + sample.label);
-    setSelected(null);
+    const next = clone(sample.character);
+    const sampleNotice = "Sample loaded: " + sample.label;
+    const targetChanges = next.id !== characterId;
+    if (
+      targetChanges &&
+      isCharacterIdControlled &&
+      !onCharacterIdChange
+    ) {
+      fail("This sheet's character is controlled by its caller.");
+      return;
+    }
+
     setSampleId(id);
     saveSelectedSampleId(id);
+    if (!targetChanges) {
+      apply(next, sampleNotice, true);
+      return;
+    }
+
+    // A sample switch deliberately starts pristine authored state instead of
+    // reloading any browser snapshot for the sample's character id.
+    pendingSampleDraft.current = { character: next, notice: sampleNotice };
+    if (!isCharacterIdControlled) {
+      if (!apply(next, sampleNotice, true)) {
+        pendingSampleDraft.current = null;
+        return;
+      }
+      setUncontrolledCharacterId(next.id);
+      return;
+    }
+    onCharacterIdChange?.(next.id);
   };
   const resetSample = () => loadSample(sampleId);
   const addCustomClass = (definition: ProgressionDefinition) =>
@@ -486,13 +655,18 @@ export function useCharacterSheet() {
   };
   const reload = async () => {
     try {
-      const loaded = await repo.load(character.id);
+      const loaded = await repo.load(characterId);
       if (!loaded) {
         setNotice("No saved character found");
         return;
       }
+      if (loaded.id !== characterId)
+        throw new Error(
+          "Saved character identity does not match the selected character",
+        );
       parseCharacterInput(loaded);
       new RulesEngine(loaded, rulesCatalogs).derive();
+      editRevision.current += 1;
       setCharacter(loaded);
       setError(null);
       setNotice("Reloaded authored state");
@@ -503,6 +677,8 @@ export function useCharacterSheet() {
   return {
     dice,
     mode,
+    characterId,
+    selectCharacter,
     samples: sampleCharacters,
     sampleId,
     loadSample,
@@ -576,4 +752,18 @@ export function useCharacterSheet() {
   } as const;
 }
 
-export type CharacterSheet = ReturnType<typeof useCharacterSheet>;
+/**
+ * Standalone convenience: preserve the existing full-page hook while allowing
+ * an application shell to own one dice presenter via
+ * `useCharacterSheetController({ dice })`.
+ */
+export function useCharacterSheet(options: CharacterSheetOptions = {}) {
+  const dice = useDicePresentation();
+  return useCharacterSheetController({ ...options, dice });
+}
+
+export type CharacterSheetController = ReturnType<
+  typeof useCharacterSheetController
+>;
+/** Backwards-compatible view prop name. */
+export type CharacterSheet = CharacterSheetController;
