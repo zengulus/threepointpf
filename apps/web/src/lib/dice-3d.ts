@@ -54,6 +54,12 @@ export const diceStageSelector = "#dice-stage";
 export interface DiceBoxOptions {
   assetPath: string;
   framerate: number;
+  /**
+   * A modestly larger physical die keeps its baked numeral legible in the
+   * drawer's wide throw field without changing the requested faces or roll
+   * semantics. Upstream uses 100 when this is omitted.
+   */
+  baseScale: number;
   sounds: boolean;
   volume: number;
   shadows: boolean;
@@ -64,11 +70,10 @@ export interface DiceBoxOptions {
     foreground: string;
     background: string;
     /**
-     * The numeral outline. It is derived from the foreground's own luminance —
-     * dark ink under light numerals, off-white under dark ones — rather than
-     * exposed as a setting, so a die's numerals always stay readable. A patched
-     * renderer widens the stroke to scale with the glyph so it is visible on a
-     * die this size.
+     * The numeral outline. It is derived from the foreground's strongest
+     * contrast against the two neutral inks rather than exposed as a setting,
+     * so a die's numerals remain readable. The patched renderer adds a
+     * texture knockout and scales the stroke with the glyph.
      */
     outline: string;
     edge?: string;
@@ -156,6 +161,7 @@ export function diceBoxOptions(
   return {
     assetPath: diceAssetPath,
     framerate: 1 / 60,
+    baseScale: 120,
     sounds: settings.sound,
     volume: settings.intensity,
     shadows: true,
@@ -211,6 +217,8 @@ interface RendererInstance extends DiceLookTarget {
   camera?: SceneObject3D;
   renderer?: {
     render?(scene: unknown, camera: unknown): void;
+    /** Three's renderer uses this for backing-store resolution. */
+    setPixelRatio?(ratio: number): void;
     domElement?: {
       parentNode?: { removeChild?(node: unknown): void } | null;
       remove?(): void;
@@ -235,8 +243,12 @@ type ResizeListener = (event: unknown) => void;
  * callback closes over the renderer, its stage element and its physics world, so
  * leaving it attached keeps a whole discarded renderer alive — on every skin
  * change and every teardown. The registration is the only handle on it, so it is
- * captured here; the listener still reaches the renderer exactly as before, and
- * the captured list is filled even when `run()` throws.
+ * captured here. Upstream 0.0.12 registers its listener synchronously, before
+ * its first `await`; interception is therefore restored as soon as that
+ * synchronous setup returns. Keeping a global method patched over the rest of
+ * initialization would capture unrelated application listeners and later
+ * remove them on teardown. The listener still reaches the renderer exactly as
+ * before, and the captured list is filled even when synchronous setup throws.
  */
 export async function captureResizeListeners<T>(
   target: ResizeListenerTarget,
@@ -254,7 +266,10 @@ export async function captureResizeListeners<T>(
     forward(type, listener, options);
   };
   try {
-    return await run();
+    // Calling an async initializer starts all work before its first await now.
+    // Returning its promise (rather than awaiting it here) lets `finally`
+    // restore the global hook before any unrelated asynchronous work can run.
+    return run();
   } finally {
     target.addEventListener = previous;
   }
@@ -336,6 +351,11 @@ export interface DiceBoxRendererOptions {
   loadModule?: DiceBoxModuleLoader;
   /** The target the renderer subscribes to; `window` in a browser. */
   resizeTarget?: ResizeListenerTarget;
+  /**
+   * Reads the display scale for Three's backing store. It is injectable both
+   * for tests and for hosts that cap their own rendering resolution.
+   */
+  pixelRatio?: () => number;
   /** The scene presentation's environment; the browser's own by default. */
   dieValueEnvironment?: DiceValueEnvironment;
 }
@@ -354,10 +374,22 @@ export function createDiceBoxRenderer(
   const loadModule = options.loadModule ?? loadDiceBoxModule;
   const resizeTarget =
     options.resizeTarget ?? (globalThis as unknown as ResizeListenerTarget);
+  const pixelRatio =
+    options.pixelRatio ??
+    (() => {
+      const value = (globalThis as { devicePixelRatio?: unknown }).devicePixelRatio;
+      return typeof value === "number" ? value : 1;
+    });
   const dieValueEnvironment = options.dieValueEnvironment ?? {};
 
   return (init) => {
     let box: RendererInstance | null = null;
+    /** An instance whose async initializer has not settled yet. */
+    let initializing: RendererInstance | null = null;
+    /** Listener ownership available even while the renderer is loading assets. */
+    let initializingResizeListeners: ResizeListener[] | null = null;
+    /** A disposed handle is terminal; a later overlay gets a fresh one. */
+    let disposed = false;
     let resizeListeners: ResizeListener[] = [];
     /** The last completed throw, kept only so its dice can be paired to faces. */
     let lastResults: unknown = null;
@@ -390,11 +422,45 @@ export function createDiceBoxRenderer(
       return null;
     };
 
+    /**
+     * Keep high-density displays crisp without allowing an unbounded mobile
+     * backing store. `setPixelRatio` is retained by Three across `setSize()`
+     * calls, so the renderer's own resize handler keeps this scale.
+     */
+    const applyPixelRatio = (instance: RendererInstance) => {
+      let requested = 1;
+      try {
+        requested = pixelRatio();
+      } catch {
+        // A host that cannot read display scale still renders at CSS resolution.
+      }
+      const ratio = Number.isFinite(requested)
+        ? Math.min(2, Math.max(1, requested))
+        : 1;
+      try {
+        instance.renderer?.setPixelRatio?.(ratio);
+      } catch {
+        // An older renderer without a live WebGL context can still render normally.
+      }
+    };
+
     return {
       async initialize() {
-        const DiceBox = await loadModule();
+        if (disposed) return;
+        let DiceBox: Awaited<ReturnType<DiceBoxModuleLoader>>;
+        try {
+          DiceBox = await loadModule();
+        } catch (failure) {
+          // Cancellation is not a renderer failure: the presenter will report
+          // the dismissed throw as skipped rather than surfacing a fallback.
+          if (disposed) return;
+          throw failure;
+        }
+        if (disposed) return;
         const instance = new DiceBox(init.selector, init.options) as unknown as RendererInstance;
         const captured: ResizeListener[] = [];
+        initializing = instance;
+        initializingResizeListeners = captured;
         try {
           await captureResizeListeners(resizeTarget, captured, () =>
             instance.initialize(),
@@ -404,10 +470,28 @@ export function createDiceBoxRenderer(
           // listener; neither should outlive the failure.
           removeResizeListeners(resizeTarget, captured);
           disposeRendererInstance(instance);
+          if (initializing === instance) initializing = null;
+          if (initializingResizeListeners === captured)
+            initializingResizeListeners = null;
+          // A renderer can reject after its caller dismissed it. That is a
+          // normal cancellation path, not a user-visible renderer failure.
+          if (disposed) return;
           throw failure;
+        }
+        if (initializing === instance) initializing = null;
+        if (initializingResizeListeners === captured)
+          initializingResizeListeners = null;
+        // `dispose()` may have run while assets were loading. Only now is it
+        // safe to release the upstream context, but it must never become the
+        // handle a later roll can use.
+        if (disposed) {
+          removeResizeListeners(resizeTarget, captured);
+          disposeRendererInstance(instance);
+          return;
         }
         resizeListeners = captured;
         box = instance;
+        applyPixelRatio(instance);
         // The renderer's theme is fixed at construction, so the surface it was
         // built with is applied here — and the die materials are wrapped, so the
         // colours the skin authored survive the factory's own tinting.
@@ -481,6 +565,8 @@ export function createDiceBoxRenderer(
         });
       },
       dispose() {
+        if (disposed) return;
+        disposed = true;
         const instance = box;
         box = null;
         lastResults = null;
@@ -494,6 +580,13 @@ export function createDiceBoxRenderer(
         surface = null;
         removeResizeListeners(resizeTarget, resizeListeners);
         resizeListeners = [];
+        // Upstream registers its resize listener before loading the rest of its
+        // theme. Remove it immediately if dismissal happens in that interval;
+        // once the async initializer settles it releases the GL context too.
+        if (initializingResizeListeners) {
+          removeResizeListeners(resizeTarget, initializingResizeListeners);
+          initializingResizeListeners = null;
+        }
         if (instance) disposeRendererInstance(instance);
       },
     };
@@ -676,6 +769,8 @@ export function createDiceBoxPresenter(
   const selector = options.selector ?? diceStageSelector;
   let settings = options.settings;
   let handle: DiceBoxHandle | null = null;
+  /** A handle whose initializer is still awaiting assets or WebGL setup. */
+  let initializingHandle: DiceBoxHandle | null = null;
   let appliedKey: string | null = null;
   /** The die-local presentation in flight, released on a new throw or teardown. */
   let activeDieValues: DiceDieValuePresentation | null = null;
@@ -703,12 +798,33 @@ export function createDiceBoxPresenter(
   let abandon: (() => void) | null = null;
   /** The stage element the current handle drew into. */
   let appliedStage: HTMLElement | null = null;
+  /**
+   * Invalidates queued and initializing work when an overlay goes away. This is
+   * deliberately separate from normal skin rebuilds, which should not cancel
+   * the request currently being rendered.
+   */
+  let lifecycle = 0;
 
-  const disposeHandle = () => {
+  const releaseRenderer = (candidate: DiceBoxHandle | null) => {
+    if (!candidate) return;
+    try {
+      // `dispose` is the real teardown; `clear` is the fallback for a handle
+      // that has nothing else to release.
+      if (typeof candidate.dispose === "function") candidate.dispose();
+      else candidate.clear?.();
+    } catch {
+      // A renderer that is already gone needs no teardown.
+    }
+  };
+
+  /** Releases both a live renderer and one still inside `initialize()`. */
+  const releaseHandles = () => {
     const previous = handle;
+    const pending = initializingHandle;
     const inFlight = abandon;
     releaseDieValues();
     handle = null;
+    initializingHandle = null;
     appliedKey = null;
     appliedStage = null;
     abandon = null;
@@ -716,23 +832,23 @@ export function createDiceBoxPresenter(
     // tidiness: the presenter queues throws, so a promise that never settles
     // would wedge every later throw for the rest of the session.
     inFlight?.();
-    if (previous) {
-      try {
-        // `dispose` is the real teardown; `clear` is the fallback for a handle
-        // that has nothing to release.
-        if (typeof previous.dispose === "function") previous.dispose();
-        else previous.clear?.();
-      } catch {
-        // A renderer that is already gone needs no teardown.
-      }
-    }
+    releaseRenderer(pending);
+    if (previous !== pending) releaseRenderer(previous);
     clearStage();
+  };
+
+  /** Public teardown also cancels work which has not reached `roll()` yet. */
+  const disposeHandle = () => {
+    lifecycle += 1;
+    releaseHandles();
   };
 
   const ensure = async (
     skin: DiceSkin,
     requestSettings: DicePresentationSettings,
-  ): Promise<DiceBoxHandle> => {
+    expectedLifecycle: number,
+  ): Promise<DiceBoxHandle | null> => {
+    if (expectedLifecycle !== lifecycle) return null;
     const key = diceSkinKey(skin, requestSettings);
     // The renderer resolves its container once, when it is constructed, and
     // appends its own canvas to it. A remounted stage — the overlay is dismissed
@@ -741,22 +857,43 @@ export function createDiceBoxPresenter(
     // screen: a rendered report with no visible dice.
     const stage = options.stage?.() ?? null;
     if (handle && appliedKey === key && appliedStage === stage) return handle;
-    disposeHandle();
-    const created = factory({
-      selector,
-      options: diceBoxOptions(skin, requestSettings),
-    });
+    // A skin rebuild releases the old renderer but leaves this request valid.
+    releaseHandles();
+    if (expectedLifecycle !== lifecycle) return null;
+    let created: DiceBoxHandle;
+    try {
+      created = factory({
+        selector,
+        options: diceBoxOptions(skin, requestSettings),
+      });
+    } catch (failure) {
+      if (expectedLifecycle !== lifecycle) return null;
+      clearStage();
+      throw failure;
+    }
+    initializingHandle = created;
     try {
       await created.initialize();
     } catch (failure) {
-      try {
-        if (typeof created.dispose === "function") created.dispose();
-        else created.clear?.();
-      } catch {
-        // Best effort: the failed renderer may not have a teardown at all.
+      const ownedPendingHandle = initializingHandle === created;
+      if (ownedPendingHandle) {
+        initializingHandle = null;
+        releaseRenderer(created);
       }
+      // Dismissal can make a still-loading renderer reject. It is not a
+      // fallback-worthy rendering failure, and it must not affect a later
+      // request queued after the dismiss.
+      if (expectedLifecycle !== lifecycle || !ownedPendingHandle) return null;
       clearStage();
       throw failure;
+    }
+    const ownedPendingHandle = initializingHandle === created;
+    if (ownedPendingHandle) initializingHandle = null;
+    if (expectedLifecycle !== lifecycle || !ownedPendingHandle) {
+      // When the public teardown did not already release this object, do it
+      // before dropping the stale initializer's result.
+      if (ownedPendingHandle) releaseRenderer(created);
+      return null;
     }
     handle = created;
     appliedKey = key;
@@ -774,7 +911,13 @@ export function createDiceBoxPresenter(
 
   const render = async (
     request: DicePresentationRequest,
+    expectedLifecycle: number,
   ): Promise<DicePresentationReport> => {
+    if (expectedLifecycle !== lifecycle)
+      return {
+        mode: "skipped",
+        reason: "the presentation was dismissed before the renderer initialized",
+      };
     // A new throw clears the table, which takes any presentation objects still
     // riding on the old dice with it.
     releaseDieValues();
@@ -798,7 +941,12 @@ export function createDiceBoxPresenter(
       };
     }
     try {
-      const box = await ensure(request.skin, settings);
+      const box = await ensure(request.skin, settings, expectedLifecycle);
+      if (!box || expectedLifecycle !== lifecycle)
+        return {
+          mode: "skipped",
+          reason: "the presentation was dismissed before the renderer initialized",
+        };
       // Remove the previous throw so each roll starts from a clear table. A
       // renderer that cannot clear still gets to roll.
       try {
@@ -811,13 +959,19 @@ export function createDiceBoxPresenter(
       // throw stopped mid-flight would otherwise never report at all. Racing it
       // against teardown keeps the queue moving.
       const stopped = deferred<"abandoned">();
-      abandon = () => stopped.resolve("abandoned");
+      const stop = () => stopped.resolve("abandoned");
+      abandon = stop;
       try {
         const outcome = await Promise.race([box.roll(notation), stopped.promise]);
         if (outcome === "abandoned")
           return {
             mode: "skipped",
             reason: "the throw was stopped before the dice landed",
+          };
+        if (expectedLifecycle !== lifecycle)
+          return {
+            mode: "skipped",
+            reason: "the presentation was dismissed before the dice landed",
           };
         // The dice have landed. Where their values are shown from here is the
         // caller's business: `presentDieValues` attaches them to the dice meshes
@@ -828,10 +982,18 @@ export function createDiceBoxPresenter(
           handoff: handoffOf(request.faces, outcome),
         };
       } finally {
-        abandon = null;
+        // A subsequent render may already have installed its own callback.
+        if (abandon === stop) abandon = null;
       }
     } catch (failure) {
-      disposeHandle();
+      if (expectedLifecycle !== lifecycle)
+        return {
+          mode: "skipped",
+          reason: "the presentation was dismissed before the renderer initialized",
+        };
+      // A renderer failure releases its resources but does not invalidate a
+      // later request already queued in the same visible presentation.
+      releaseHandles();
       return {
         mode: "fallback",
         reason: failure instanceof Error ? failure.message : String(failure),
@@ -866,9 +1028,12 @@ export function createDiceBoxPresenter(
       return started;
     },
     present(request: DicePresentationRequest): Promise<DicePresentationReport> {
+      // Snapshot before queueing: a dismiss must cancel this request even if it
+      // has not reached the front of the renderer's serialized work yet.
+      const expectedLifecycle = lifecycle;
       const next = queue.then(
-        () => render(request),
-        () => render(request),
+        () => render(request, expectedLifecycle),
+        () => render(request, expectedLifecycle),
       );
       // The chain has to survive a failed presentation, or every later throw
       // would inherit the rejection instead of running.

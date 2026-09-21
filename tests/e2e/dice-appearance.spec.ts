@@ -387,6 +387,14 @@ async function recordGeneratedCanvases(page: Page) {
   });
 }
 
+/** Starts an assertion from the next renderer-generated face textures only. */
+async function clearGeneratedCanvases(page: Page) {
+  await page.evaluate(() => {
+    const scope = window as unknown as { __diceCanvases?: GeneratedCanvasEntry[] };
+    scope.__diceCanvases = [];
+  });
+}
+
 interface FaceTextureReport {
   /** Numeral fills drawn in the skin's foreground colour. */
   fills: number;
@@ -694,6 +702,24 @@ test("the skulls face texture outlines its numerals so they stay readable", asyn
     inverse.inkPixels,
     "the dark numerals are ringed by their off-white outline",
   ).toBeGreaterThan(1000);
+  await dismissDice(page);
+
+  // A custom skin can legitimately choose the same dark ink for its body and
+  // its automatic outline. The upstream `l != a` shortcut used to erase the
+  // outline in that case; the texture knockout plus the actual outline now
+  // produce two dark strokes for every white numeral.
+  await clearGeneratedCanvases(page);
+  await page.getByTestId("dice-color-foreground").fill("#ffffff");
+  await page.getByTestId("dice-color-background").fill("#050608");
+  await applyAppearance(page);
+  await rollToLanding(page);
+  const sameColour = await faceTextureReport(page, "#ffffff", "#050608");
+  expect(sameColour.fills).toBeGreaterThan(0);
+  expect(
+    sameColour.outlineStrokes,
+    "the automatic outline is retained when it matches the die body",
+  ).toBeGreaterThanOrEqual(sameColour.fills * 2);
+  expect(sameColour.minOutlineWidth).toBeGreaterThanOrEqual(8);
   await dismissDice(page);
 });
 

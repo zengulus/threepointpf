@@ -363,8 +363,12 @@ test("the landed values leave the dice inside the renderer's own scene", async (
     }).observe(element, { attributes: true, attributeFilter: ["data-phase"] });
   });
 
-  // This is the animated path: the dice land, and the values are shown on them.
+  // This is the animated path: physical faces get a reading beat before a
+  // value rises from each die.
   await expect(overlay).toHaveAttribute("data-mode", "rendered", {
+    timeout: 20_000,
+  });
+  await expect(overlay).toHaveAttribute("data-phase", "landed", {
     timeout: 20_000,
   });
   await expect(overlay).toHaveAttribute("data-phase", "scene", {
@@ -406,6 +410,7 @@ test("the landed values leave the dice inside the renderer's own scene", async (
   const phases = await page.evaluate(
     () => (window as unknown as { __phases: (string | null)[] }).__phases,
   );
+  expect(phases.indexOf("landed")).toBeLessThan(phases.indexOf("scene"));
   expect(phases.indexOf("scene")).toBeLessThan(phases.indexOf("values"));
   expect(phases.indexOf("values")).toBeLessThan(phases.indexOf("outcome"));
   expect(phases).toContain("pending");

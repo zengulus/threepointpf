@@ -10,6 +10,7 @@ import { classifyRollPresentation, resolveRollPlan } from "@threepointpf/dice";
 import {
   diceSum,
   faceTokens,
+  landedFaceHoldMs,
   revealedAt,
   rollSequenceTimeline,
   sequencePhases,
@@ -111,6 +112,9 @@ describe("the beats of the sequence", () => {
   it("reveals nothing before the dice land, and everything when settled", () => {
     expect(revealedAt("pending", "values")).toBe(false);
     expect(revealedAt("pending", "total")).toBe(false);
+    // Landed faces get a reading beat before a value plaque leaves the die.
+    expect(revealedAt("landed", "values")).toBe(false);
+    expect(revealedAt("landed", "outcome")).toBe(false);
     // While the values are on their dice nothing is in the document at all.
     expect(revealedAt("scene", "values")).toBe(false);
     expect(revealedAt("scene", "outcome")).toBe(false);
@@ -122,8 +126,12 @@ describe("the beats of the sequence", () => {
     expect(revealedAt("settled", "values")).toBe(true);
   });
 
-  it("puts the die-local phase before the handoff, and the arithmetic after it", () => {
-    // The order is the choreography: on the dice, then in the drawer.
+  it("holds landed faces before the die-local handoff and arithmetic", () => {
+    expect(landedFaceHoldMs).toBeGreaterThan(0);
+    expect(sequencePhases.indexOf("landed")).toBeLessThan(
+      sequencePhases.indexOf("scene"),
+    );
+    // The order is the choreography: readable face, on-die value, then drawer.
     expect(sequencePhases.indexOf("scene")).toBeLessThan(
       sequencePhases.indexOf("values"),
     );

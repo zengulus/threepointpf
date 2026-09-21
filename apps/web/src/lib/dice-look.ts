@@ -57,6 +57,7 @@ export interface SceneMaterialLike {
 /** A three.js mesh, as much of it as this module uses. */
 export interface SceneMeshLike {
   material?: unknown;
+  geometry?: { dispose?(): void } | null;
   receiveShadow?: boolean;
 }
 
@@ -75,6 +76,8 @@ export interface SceneTextureLike {
   minFilter?: number;
   magFilter?: number;
   generateMipmaps?: boolean;
+  /** Texture anisotropy, capped by the renderer that owns this texture. */
+  anisotropy?: number;
   repeat?: { x: number; y: number; set?(x: number, y: number): void };
   dispose?(): void;
 }
@@ -85,6 +88,14 @@ export interface DiceLookTarget {
   desk?: SceneMeshLike | null;
   light?: SceneLightLike | null;
   light_amb?: SceneLightLike | null;
+  /**
+   * Upstream's die factory. A tiny compatibility patch exposes its own
+   * MeshStandardMaterial and CanvasTexture constructors here, which prevents a
+   * Matte die's MeshPhongMaterial from deciding how the table is shaded.
+   */
+  DiceFactory?: unknown;
+  /** The upstream WebGL renderer, read only for its texture-anisotropy cap. */
+  renderer?: unknown;
 }
 
 /* ------------------------------------------------------------------ *
@@ -100,16 +111,34 @@ export interface DiceLookTarget {
  * matters is the fill the user chose, and a numeral that cannot be read on the
  * die it was painted on is a defect, not a preference.
  *
- * The threshold is proper sRGB relative luminance, so a saturated mid-tone is
- * judged the way the eye sees it rather than by its raw channel average.
+ * It chooses between the two fixed inks by their contrast ratio against the
+ * fill. That keeps the result stable for saturated and middle-grey custom
+ * colours, where a luminance threshold can choose the weaker of the two.
  */
 export function readableNumeralOutline(foreground: string): string {
-  const [red, green, blue] = hexToRgb(foreground);
-  const luminance =
+  const foregroundLuminance = colourLuminance(foreground);
+  const darkOutline = "#050608";
+  const lightOutline = "#f7f7f2";
+  return contrastRatio(foregroundLuminance, colourLuminance(darkOutline)) >=
+    contrastRatio(foregroundLuminance, colourLuminance(lightOutline))
+    ? darkOutline
+    : lightOutline;
+}
+
+/** Proper sRGB relative luminance, as WCAG defines it. */
+function colourLuminance(hex: string): number {
+  const [red, green, blue] = hexToRgb(hex);
+  return (
     0.2126 * relativeLuminance(red) +
     0.7152 * relativeLuminance(green) +
-    0.0722 * relativeLuminance(blue);
-  return luminance > 0.4 ? "#050608" : "#f7f7f2";
+    0.0722 * relativeLuminance(blue)
+  );
+}
+
+function contrastRatio(first: number, second: number): number {
+  return (
+    (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
+  );
 }
 
 /** One sRGB channel, linearised exactly as WCAG defines it. */
@@ -164,42 +193,44 @@ export const diceSurfaceLooks: Record<string, DiceSurfaceLook> = {
     tint: "#6b4528",
     roughness: 0.78,
     metalness: 0,
-    textureScale: 3,
+    textureScale: 2,
   },
   mahogany: {
     kind: "wood",
     tint: "#4a1e17",
     roughness: 0.7,
     metalness: 0,
-    textureScale: 3,
+    textureScale: 2,
   },
   "green-felt": {
     kind: "felt",
     tint: "#245b3b",
     roughness: 1,
     metalness: 0,
-    textureScale: 10,
+    textureScale: 4,
   },
   "blue-felt": {
     kind: "felt",
     tint: "#24466f",
     roughness: 1,
     metalness: 0,
-    textureScale: 10,
+    textureScale: 4,
   },
   "red-felt": {
     kind: "felt",
     tint: "#6a2833",
     roughness: 1,
     metalness: 0,
-    textureScale: 10,
+    textureScale: 4,
   },
   stainless: {
     kind: "brushed-metal",
     tint: "#9da5ad",
-    roughness: 0.32,
-    metalness: 0.7,
-    textureScale: 6,
+    // A broad desk is much more exposed to the scene spotlight than a die.
+    // This remains recognisably steel without a blinding pin-light hotspot.
+    roughness: 0.48,
+    metalness: 0.55,
+    textureScale: 3,
   },
   cyberpunk: {
     kind: "cyber-grid",
@@ -213,7 +244,7 @@ export const diceSurfaceLooks: Record<string, DiceSurfaceLook> = {
     tint: "#4c4941",
     roughness: 0.96,
     metalness: 0,
-    textureScale: 5,
+    textureScale: 3,
   },
 };
 
@@ -409,56 +440,116 @@ function ellipsePath(
   context.closePath();
 }
 
+/** Draws a short line again across a tile edge when it crosses one. */
+function strokeWrappedSegment(
+  context: SurfaceCanvas2D,
+  size: number,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+): void {
+  const xOffsets = [0];
+  const yOffsets = [0];
+  if (Math.min(fromX, toX) < 0) xOffsets.push(size);
+  if (Math.max(fromX, toX) > size) xOffsets.push(-size);
+  if (Math.min(fromY, toY) < 0) yOffsets.push(size);
+  if (Math.max(fromY, toY) > size) yOffsets.push(-size);
+  for (const offsetX of xOffsets)
+    for (const offsetY of yOffsets) {
+      context.beginPath();
+      context.moveTo(fromX + offsetX, fromY + offsetY);
+      context.lineTo(toX + offsetX, toY + offsetY);
+      context.stroke();
+    }
+}
+
+/** Draws a small mark again on the opposite edge when it straddles a tile. */
+function fillWrappedRect(
+  context: SurfaceCanvas2D,
+  size: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): void {
+  const xOffsets = [0];
+  const yOffsets = [0];
+  if (x < 0) xOffsets.push(size);
+  if (x + width > size) xOffsets.push(-size);
+  if (y < 0) yOffsets.push(size);
+  if (y + height > size) yOffsets.push(-size);
+  for (const offsetX of xOffsets)
+    for (const offsetY of yOffsets)
+      context.fillRect(x + offsetX, y + offsetY, width, height);
+}
+
 /**
- * Wood: about ninety wavy horizontal grain lines and eight stretched knots.
- * Tavern and mahogany share this generator; only their tint differs.
+ * Wood: layered periodic grain and restrained knots. The grain functions close
+ * at both x edges, and marks that touch an edge are mirrored, so a repeated map
+ * does not reveal a ruled-paper seam at normal table scale.
  */
 function drawWood(
   context: SurfaceCanvas2D,
   size: number,
   random: () => number,
 ): void {
-  const lines = 90;
+  const lines = 72;
   for (let index = 0; index < lines; index += 1) {
-    const base = ((index + 0.5) / lines) * size + (random() - 0.5) * 8;
-    context.strokeStyle = rgba(random() < 0.5 ? black : darkGrain, 0.035 + random() * 0.065);
-    context.lineWidth = 0.5 + random() * 1.5;
-    context.beginPath();
-    const segments = 4;
-    let x = 0;
-    let y = base;
-    context.moveTo(0, base);
-    for (let segment = 1; segment <= segments; segment += 1) {
-      const nextX = (size / segments) * segment;
-      const nextY = base + (random() - 0.5) * 8;
-      context.quadraticCurveTo(
-        (x + nextX) / 2,
-        (y + nextY) / 2 + (random() - 0.5) * 8,
-        nextX,
-        nextY,
-      );
-      x = nextX;
-      y = nextY;
+    const base = ((index + 0.5) / lines) * size + (random() - 0.5) * 5;
+    const amplitude = 3 + random() * 9;
+    const harmonic = 1 + Math.floor(random() * 3);
+    const phase = random() * Math.PI * 2;
+    const detailPhase = random() * Math.PI * 2;
+    const yAt = (x: number, offsetY: number) =>
+      base +
+      offsetY +
+      Math.sin((x / size) * Math.PI * 2 * harmonic + phase) * amplitude +
+      Math.sin((x / size) * Math.PI * 2 * (harmonic * 3) + detailPhase) *
+        amplitude *
+        0.22;
+    context.strokeStyle = rgba(
+      random() < 0.5 ? black : darkGrain,
+      0.045 + random() * 0.07,
+    );
+    context.lineWidth = 0.65 + random() * 1.65;
+    const offsets = [0];
+    if (base - amplitude * 1.3 < 0) offsets.push(size);
+    if (base + amplitude * 1.3 > size) offsets.push(-size);
+    for (const offsetY of offsets) {
+      context.beginPath();
+      for (let segment = 0; segment <= 24; segment += 1) {
+        const x = (segment / 24) * size;
+        const y = yAt(x, offsetY);
+        if (segment === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.stroke();
     }
-    context.stroke();
   }
-  for (let knot = 0; knot < 8; knot += 1) {
-    const centreX = random() * size;
-    const centreY = random() * size;
-    const radiusX = 12 + random() * 22;
+  for (let knot = 0; knot < 7; knot += 1) {
+    // Keep knots away from tile borders. The periodic grain remains continuous
+    // around them, rather than a clipped knot appearing at one edge only.
+    const centreX = 48 + random() * (size - 96);
+    const centreY = 48 + random() * (size - 96);
+    const radiusX = 16 + random() * 26;
     const radiusY = radiusX * (0.4 + random() * 0.5);
-    const rings = 3 + Math.floor(random() * 3);
+    const rings = 3 + Math.floor(random() * 4);
     for (let ring = 0; ring < rings; ring += 1) {
       const shrink = 1 - (ring / (rings + 1)) * 0.7;
-      context.strokeStyle = rgba(darkGrain, 0.02 + random() * 0.055);
-      context.lineWidth = 0.75;
+      context.strokeStyle = rgba(darkGrain, 0.045 + random() * 0.065);
+      context.lineWidth = 0.7 + random() * 0.65;
       ellipsePath(context, centreX, centreY, radiusX * shrink, radiusY * shrink);
       context.stroke();
     }
   }
 }
 
-/** Felt: about twelve thousand one-pixel fibres, half lighter, half darker. */
+/**
+ * Felt: short, multi-pixel fibres plus a very low-contrast weave. Individual
+ * fibres survive mip generation; one-pixel noise either aliases or vanishes at
+ * the desk's oblique angle.
+ */
 function drawFelt(
   context: SurfaceCanvas2D,
   size: number,
@@ -467,18 +558,39 @@ function drawFelt(
 ): void {
   const lighter = mix(tint, white, 0.28);
   const darker = mix(tint, black, 0.28);
-  for (let fibre = 0; fibre < 12000; fibre += 1) {
-    const x = Math.floor(random() * size);
-    const y = Math.floor(random() * size);
-    context.fillStyle = rgba(
+  for (let thread = 0; thread < 64; thread += 1) {
+    const at = (thread / 64) * size;
+    context.strokeStyle = rgba(thread % 2 === 0 ? lighter : darker, 0.018);
+    context.lineWidth = 1;
+    strokeWrappedSegment(context, size, 0, at, size, at);
+    strokeWrappedSegment(context, size, at, 0, at, size);
+  }
+  for (let fibre = 0; fibre < 4200; fibre += 1) {
+    const x = random() * size;
+    const y = random() * size;
+    const length = 2.5 + random() * 6;
+    const angle = (random() - 0.5) * Math.PI * 1.3;
+    context.strokeStyle = rgba(
       random() < 0.5 ? lighter : darker,
-      0.025 + random() * 0.055,
+      0.055 + random() * 0.09,
     );
-    context.fillRect(x, y, 1, 1);
+    context.lineWidth = 0.55 + random() * 0.8;
+    strokeWrappedSegment(
+      context,
+      size,
+      x,
+      y,
+      x + Math.cos(angle) * length,
+      y + Math.sin(angle) * length,
+    );
   }
 }
 
-/** Brushed metal: three hundred hairlines under a subtle vertical wash. */
+/**
+ * Brushed metal: periodic luminance drift and fine horizontal machining marks.
+ * There is deliberately no one-way gradient, whose hard restart is obvious when
+ * a map repeats.
+ */
 function drawBrushedMetal(
   context: SurfaceCanvas2D,
   size: number,
@@ -487,26 +599,21 @@ function drawBrushedMetal(
 ): void {
   const lighter = mix(tint, white, 0.35);
   const darker = mix(tint, black, 0.35);
-  for (let line = 0; line < 300; line += 1) {
+  for (let row = 0; row < size; row += 1) {
+    const phase = (row / size) * Math.PI * 2;
+    const sheen =
+      Math.sin(phase * 2.0) * 0.035 + Math.sin(phase * 7.0 + 0.7) * 0.016;
+    context.fillStyle = rgba(sheen >= 0 ? lighter : darker, Math.abs(sheen));
+    context.fillRect(0, row, size, 1);
+  }
+  for (let line = 0; line < 420; line += 1) {
     const y = random() * size;
     context.strokeStyle = rgba(
       line % 2 === 0 ? lighter : darker,
-      0.02 + random() * 0.05,
+      0.025 + random() * 0.065,
     );
-    context.lineWidth = 1;
-    context.beginPath();
-    context.moveTo(0, y);
-    context.lineTo(size, y);
-    context.stroke();
-  }
-  const bands = 32;
-  for (let band = 0; band < bands; band += 1) {
-    const t = band / (bands - 1);
-    const bandHeight = size / bands + 1;
-    context.fillStyle = rgba(white, 0.06 * (1 - t));
-    context.fillRect(0, (size / bands) * band, size, bandHeight);
-    context.fillStyle = rgba(black, 0.04 * t);
-    context.fillRect(0, (size / bands) * band, size, bandHeight);
+    context.lineWidth = 0.45 + random() * 1.15;
+    strokeWrappedSegment(context, size, 0, y, size, y);
   }
 }
 
@@ -554,7 +661,11 @@ function drawCyberGrid(context: SurfaceCanvas2D, size: number): void {
   }
 }
 
-/** Stone: low-contrast deterministic speckle and a few irregular cracks. */
+/**
+ * Cage Town stone: tile-safe grit and long mineral veins. The veins are
+ * periodic at their horizontal boundaries and noise crossing any edge is
+ * mirrored, avoiding the isolated crack ends a repeated random canvas creates.
+ */
 function drawStone(
   context: SurfaceCanvas2D,
   size: number,
@@ -563,51 +674,50 @@ function drawStone(
 ): void {
   const lighter = mix(tint, white, 0.3);
   const darker = mix(tint, black, 0.35);
-  for (let speck = 0; speck < 4000; speck += 1) {
-    const x = Math.floor(random() * size);
-    const y = Math.floor(random() * size);
-    const edge = 1 + Math.floor(random() * 2);
+  for (let speck = 0; speck < 2200; speck += 1) {
+    const x = random() * size;
+    const y = random() * size;
+    const edge = 1 + Math.floor(random() * 3);
     context.fillStyle = rgba(
       random() < 0.5 ? lighter : darker,
-      0.02 + random() * 0.03,
+      0.045 + random() * 0.075,
     );
-    context.fillRect(x, y, edge, edge);
+    fillWrappedRect(context, size, x, y, edge, edge);
   }
-  for (let crack = 0; crack < 7; crack += 1) {
-    context.strokeStyle = rgba(darker, 0.06 + random() * 0.04);
-    context.lineWidth = 1 + random();
-    context.beginPath();
-    let x = random() * size;
-    let y = random() * size;
-    context.moveTo(x, y);
-    const segments = 4 + Math.floor(random() * 4);
-    for (let segment = 0; segment < segments; segment += 1) {
-      const nextX = Math.max(0, Math.min(size, x + (random() - 0.5) * 60));
-      const nextY = Math.max(0, Math.min(size, y + (random() - 0.5) * 60));
-      context.quadraticCurveTo(
-        (x + nextX) / 2 + (random() - 0.5) * 20,
-        (y + nextY) / 2 + (random() - 0.5) * 20,
-        nextX,
-        nextY,
-      );
-      x = nextX;
-      y = nextY;
+  for (let vein = 0; vein < 13; vein += 1) {
+    const base = random() * size;
+    const amplitude = 7 + random() * 18;
+    const harmonic = 1 + Math.floor(random() * 3);
+    const phase = random() * Math.PI * 2;
+    context.strokeStyle = rgba(darker, 0.07 + random() * 0.075);
+    context.lineWidth = 0.75 + random() * 1.35;
+    const offsets = [0];
+    if (base - amplitude < 0) offsets.push(size);
+    if (base + amplitude > size) offsets.push(-size);
+    for (const offsetY of offsets) {
+      context.beginPath();
+      for (let segment = 0; segment <= 32; segment += 1) {
+        const x = (segment / 32) * size;
+        const y =
+          base +
+          offsetY +
+          Math.sin((x / size) * Math.PI * 2 * harmonic + phase) * amplitude;
+        if (segment === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.stroke();
     }
-    context.stroke();
   }
 }
 
 /** `THREE.RepeatWrapping`; stable across the renderer's three versions. */
 export const repeatWrapping = 1000;
-/**
- * `THREE.LinearFilter`, paired with mipmaps off. The generated patterns are
- * fine — single-pixel felt fibres, single-pixel brushed hairlines — and a
- * mipmap would average them into cloudy grey the moment the desk is minified.
- * The surface is meant to read as grain, so its level-0 texels are not blurred.
- */
+/** `THREE.LinearFilter`, used when the plate is magnified. */
 export const linearFilter = 1006;
-/** `THREE.NearestFilter`, for minification: a texel is not averaged away. */
-export const nearestFilter = 1003;
+/** `THREE.LinearMipmapLinearFilter`, for stable minification at table angles. */
+export const linearMipmapLinearFilter = 1008;
+/** A conservative cap: enough for an oblique desk without wasting bandwidth. */
+export const surfaceAnisotropyCap = 8;
 
 /**
  * Sets the texture to tile, so the 512 canvas reads as a finer or coarser
@@ -618,6 +728,7 @@ export const nearestFilter = 1003;
 export function applyTextureRepeat(
   texture: SceneTextureLike | null,
   scale: number,
+  maxAnisotropy?: number,
 ): boolean {
   if (!texture || typeof texture !== "object" || !(scale > 0)) return false;
   const repeat = texture.repeat;
@@ -629,20 +740,80 @@ export function applyTextureRepeat(
   } else return false;
   texture.wrapS = repeatWrapping;
   texture.wrapT = repeatWrapping;
-  texture.generateMipmaps = false;
-  texture.minFilter = nearestFilter;
+  texture.generateMipmaps = true;
+  texture.minFilter = linearMipmapLinearFilter;
   texture.magFilter = linearFilter;
+  if (typeof maxAnisotropy === "number" && Number.isFinite(maxAnisotropy))
+    texture.anisotropy = Math.max(
+      1,
+      Math.min(surfaceAnisotropyCap, Math.floor(maxAnisotropy)),
+    );
   texture.needsUpdate = true;
   return true;
+}
+
+/** Reads the owning renderer's texture cap without assuming a Three.js type. */
+export function rendererTextureAnisotropy(renderer: unknown): number | undefined {
+  const getMaxAnisotropy = (
+    renderer as
+      | { capabilities?: { getMaxAnisotropy?: unknown } }
+      | null
+      | undefined
+  )?.capabilities?.getMaxAnisotropy;
+  if (typeof getMaxAnisotropy !== "function") return undefined;
+  try {
+    const value = getMaxAnisotropy.call(
+      (renderer as { capabilities: unknown }).capabilities,
+    );
+    return typeof value === "number" && Number.isFinite(value) && value > 0
+      ? value
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 type TextureConstructor = new (canvas: unknown) => SceneTextureLike;
 
 /**
- * The texture class the renderer itself uses, read off a die material's own map
- * so the plate's map belongs to the same three.js instance as the scene. A plain
- * object placeholder — which is all a test double has — yields nothing, so the
- * plate carries no map rather than a broken one.
+ * The narrow extension supplied by our upstream compatibility patch. Both
+ * constructors come from the renderer's bundled Three.js, so a table material
+ * can never cross Three instances or inherit a die preset's material class.
+ */
+export interface SurfaceMaterialFactoryLike {
+  createSurfaceMaterial?(parameters?: Record<string, unknown>): unknown;
+  createSurfaceTexture?(canvas: unknown): unknown;
+}
+
+function surfaceMaterialFactory(
+  candidate: unknown,
+): SurfaceMaterialFactoryLike | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const factory = candidate as SurfaceMaterialFactoryLike;
+  return typeof factory.createSurfaceMaterial === "function" ? factory : null;
+}
+
+function createFactoryTexture(
+  candidate: unknown,
+  canvas: HTMLCanvasElement,
+): SceneTextureLike | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const create = (candidate as SurfaceMaterialFactoryLike).createSurfaceTexture;
+  if (typeof create !== "function") return null;
+  try {
+    const texture = create.call(candidate, canvas);
+    return texture && typeof texture === "object"
+      ? (texture as SceneTextureLike)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Legacy fallback for a renderer without the patched factory: reads the texture
+ * class from a live die map, keeping the map in the scene's Three.js instance.
+ * A plain object placeholder — which is all a test double has — yields nothing.
  */
 export function surfaceTextureConstructor(
   template: unknown,
@@ -685,34 +856,46 @@ export function tileSurfaceCanvas(
 }
 
 /**
- * Creates the surface's own map from a die material's texture class. The canvas
- * carries the authored surface colour and the material tint stays white, so
- * nothing multiplies the map dark.
+ * Creates the surface's own map from the patched factory, with a legacy
+ * same-instance die-map fallback for isolated test doubles. The canvas carries
+ * the authored surface colour and the material tint stays white, so nothing
+ * multiplies the map dark.
  */
 export function createSurfaceTexture(
-  material: unknown,
+  source: unknown,
   look: DiceSurfaceLook,
   createCanvas: SurfaceCanvasFactory = defaultSurfaceCanvas,
+  maxAnisotropy?: number,
 ): SceneTextureLike | null {
-  const Texture = surfaceTextureConstructor(material);
-  if (!Texture) return null;
   const canvas = createSurfaceCanvas(look.kind, look.tint, createCanvas);
   if (!canvas) return null;
-  let texture: SceneTextureLike;
-  try {
-    texture = new Texture(canvas);
-  } catch {
-    return null;
+  let texture = createFactoryTexture(source, canvas);
+  if (!texture) {
+    // Keep this fallback for isolated test doubles and an older renderer that
+    // has a live CanvasTexture map but not the compatibility factory. The plate
+    // itself still refuses to clone a die material below.
+    const Texture = surfaceTextureConstructor(source);
+    if (!Texture) return null;
+    try {
+      texture = new Texture(canvas);
+    } catch {
+      return null;
+    }
   }
-  if (applyTextureRepeat(texture, look.textureScale)) return texture;
+  if (applyTextureRepeat(texture, look.textureScale, maxAnisotropy)) return texture;
   const tiled = tileSurfaceCanvas(canvas, look.textureScale, createCanvas);
   if (!tiled || tiled === canvas) return texture;
   let replacement: SceneTextureLike;
   try {
-    replacement = new Texture(tiled);
+    replacement =
+      createFactoryTexture(source, tiled) ??
+      new (surfaceTextureConstructor(source) as TextureConstructor)(tiled);
   } catch {
     return texture;
   }
+  // A texture without repeat support still benefits from mip generation. Its
+  // canvas already contains the repeated pattern, so scale is one at this step.
+  applyTextureRepeat(replacement, 1, maxAnisotropy);
   try {
     texture.dispose?.();
   } catch {
@@ -875,25 +1058,38 @@ function applyColor(color: SceneColorLike | undefined, hex: string): boolean {
 }
 
 /**
- * A clone of the template, normalised into the surface's material: the die's own
- * material class, so the surface is drawn by the same rendering path as the dice
- * themselves, with every die-specific property explicitly overwritten. The clone
- * is why cleanup is safe — the die keeps its own material — and the overwrites
- * are why a glass die cannot make the table transparent and a metal die cannot
- * make felt metallic: the surface is a category of its own, not a function of
- * the dice sitting on it.
- *
- * The map is the generated surface texture; the material colour is white so
- * nothing multiplies that map dark, and the map carries the authored tint.
+ * Makes an independent Standard-material table from the renderer's own bundled
+ * Three.js factory. Cloning a die material was subtly wrong: upstream's Matte
+ * preset is MeshPhongMaterial, where table `metalness` and `roughness` are not
+ * meaningful. A table has one rendering contract regardless of the selected
+ * die material.
  */
 export function surfacePlateMaterial(
-  template: unknown,
+  factoryCandidate: unknown,
   look: DiceSurfaceLook,
   texture: SceneTextureLike | null = null,
 ): SceneMaterialLike | null {
-  const source = template as SceneMaterialLike | null | undefined;
-  if (!source || typeof source.clone !== "function") return null;
-  const material = source.clone() as SceneMaterialLike;
+  const factory = surfaceMaterialFactory(factoryCandidate);
+  const create = factory?.createSurfaceMaterial;
+  if (typeof create !== "function") return null;
+  let material: SceneMaterialLike;
+  try {
+    const created = create.call(factory, {
+      color: 0xffffff,
+      roughness: look.roughness,
+      metalness: look.metalness,
+      transparent: false,
+      opacity: 1,
+      depthTest: true,
+      depthWrite: true,
+      side: 2,
+      envMapIntensity: 0,
+    });
+    if (!created || typeof created !== "object") return null;
+    material = created as SceneMaterialLike;
+  } catch {
+    return null;
+  }
   material.map = texture;
   material.bumpMap = null;
   material.normalMap = null;
@@ -909,13 +1105,13 @@ export function surfacePlateMaterial(
   material.emissive?.setRGB(0, 0, 0);
   if (typeof material.emissiveIntensity === "number")
     material.emissiveIntensity = 0;
-  // Every axis the die's preset could have set is overwritten from the surface
-  // spec, so the two settings never leak into one another.
-  if (typeof material.metalness === "number") material.metalness = look.metalness;
-  if (typeof material.roughness === "number") material.roughness = look.roughness;
-  if (typeof material.transmission === "number") material.transmission = 0;
-  if (typeof material.envMapIntensity === "number")
-    material.envMapIntensity = 0;
+  // The upstream factory returns MeshStandardMaterial. Assign directly rather
+  // than conditionally so a malformed factory cannot silently retain a die
+  // material's values.
+  material.metalness = look.metalness;
+  material.roughness = look.roughness;
+  material.transmission = 0;
+  material.envMapIntensity = 0;
   material.color?.setRGB(1, 1, 1);
   material.needsUpdate = true;
   return material;
@@ -933,6 +1129,20 @@ interface SurfacePlate {
   surface: string;
 }
 
+/** Releases one displaced upstream material without assuming its class. */
+function disposeDeskMaterial(material: unknown, except: unknown = null): void {
+  if (Array.isArray(material)) {
+    for (const entry of material) disposeDeskMaterial(entry, except);
+    return;
+  }
+  if (!material || material === except || typeof material !== "object") return;
+  try {
+    (material as { dispose?: () => void }).dispose?.();
+  } catch {
+    // A context that has already gone away has nothing left to release.
+  }
+}
+
 export interface SurfaceApplierOptions {
   /** Injectable so a runtime without a document, or a test, can supply one. */
   createCanvas?: SurfaceCanvasFactory;
@@ -940,12 +1150,10 @@ export interface SurfaceApplierOptions {
 
 export interface SurfaceApplier {
   /**
-   * Applies the surface now: the neutral light always, and the plate as soon as
-   * a material template exists. The template only becomes reachable once the
-   * renderer has spawned a die, which happens at the start of every throw — that
-   * is, before anything of that throw is on screen — so no frame is ever drawn on
-   * an unpainted surface. Safe to call repeatedly, including after the renderer
-   * has rebuilt its own surface on a resize.
+   * Applies the surface now: the neutral light and, through the patched
+   * renderer-owned material factory, the plate before a die is spawned. Safe to
+   * call repeatedly, including after the renderer has rebuilt its surface on a
+   * resize.
    */
   apply(surface: string, template?: unknown): boolean;
   /**
@@ -968,7 +1176,16 @@ export function createSurfaceApplier(
 ): SurfaceApplier {
   const createCanvas = options.createCanvas ?? defaultSurfaceCanvas;
   let plate: SurfacePlate | null = null;
+  // A patched upstream DiceFactory is available immediately after initialize,
+  // before the first die exists. Keep a material-derived fallback for a renderer
+  // that exposes the factory on its material instead.
+  let factoryCandidate: unknown = target.DiceFactory;
   let template: SceneMaterialLike | null = null;
+  // Upstream replaces the desk mesh on resize but leaves the previous mesh's
+  // geometry and ShadowMaterial allocated. Track it so only detached resources
+  // are released; the current desk remains upstream-owned until its renderer is
+  // torn down.
+  let observedDesk: SceneMeshLike | null = target.desk ?? null;
 
   const disposePlate = () => {
     const previous = plate;
@@ -985,32 +1202,67 @@ export function createSurfaceApplier(
     }
   };
 
+  const releaseDetachedDesk = (desk: SceneMeshLike) => {
+    const ownMaterial = plate?.mesh === desk ? plate.material : null;
+    if (ownMaterial) disposePlate();
+    // A just-rebuilt desk still wears its upstream ShadowMaterial. It becomes
+    // unreachable as soon as the plate replaces it, so its material is ours to
+    // release at that point. Never release our plate twice.
+    disposeDeskMaterial(desk.material, ownMaterial);
+    try {
+      desk.geometry?.dispose?.();
+    } catch {
+      // Geometry disposal is best effort: rendering must survive a context loss.
+    }
+  };
+
   return {
     apply(surface, nextTemplate) {
       let changed = applyNeutralDiceLighting(target);
       const source = dieMaterialTemplate(nextTemplate);
       if (source) template = source;
-      const desk = target.desk;
-      if (!desk || !template) return changed;
+      if (!factoryCandidate && source) factoryCandidate = source;
+      const desk = target.desk ?? null;
+      if (observedDesk && observedDesk !== desk) releaseDetachedDesk(observedDesk);
+      observedDesk = desk;
+      const factory =
+        surfaceMaterialFactory(factoryCandidate) ?? surfaceMaterialFactory(template);
+      if (!desk || !factory) return changed;
       // Upstream rebuilds its mesh on a resize and its material is not ours to
-      // repaint, so a new mesh — or a new surface — is a new plate.
-      if (plate && plate.mesh === desk && plate.surface === surface)
+      // repaint, so a new mesh — a replacement material — or a new surface is
+      // a new plate.
+      if (
+        plate &&
+        plate.mesh === desk &&
+        plate.material === desk.material &&
+        plate.surface === surface
+      )
         return changed;
       const look = diceSurfaceLook(surface);
-      const texture = createSurfaceTexture(template, look, createCanvas);
-      const material = surfacePlateMaterial(template, look, texture);
+      const texture = createSurfaceTexture(
+        factory,
+        look,
+        createCanvas,
+        rendererTextureAnisotropy(target.renderer),
+      );
+      const material = surfacePlateMaterial(factory, look, texture);
       if (!material) {
         texture?.dispose?.();
         return changed;
       }
+      const displaced = desk.material;
+      const previousPlateMaterial = plate?.mesh === desk ? plate.material : null;
       disposePlate();
       desk.material = material;
+      disposeDeskMaterial(displaced, previousPlateMaterial);
       plate = { mesh: desk, material, texture, surface };
       return true;
     },
     dispose() {
       disposePlate();
       template = null;
+      factoryCandidate = null;
+      observedDesk = null;
     },
   };
 }

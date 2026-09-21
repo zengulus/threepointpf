@@ -71,6 +71,8 @@ export function diceSum(tokens: readonly FaceToken[]): number {
  * The staged beats of the result sequence.
  *
  * - `pending` shows nothing: the values must not appear before the dice land.
+ * - `landed` holds the physical faces briefly, so the numerals baked into the
+ *   dice can be read before any value plaque covers them.
  * - `scene` is the die-local half, which happens in the renderer's own scene:
  *   each value rises off the die it was rolled on, with the flourish emitted by
  *   that die. Nothing is in the document yet.
@@ -81,6 +83,7 @@ export function diceSum(tokens: readonly FaceToken[]): number {
  */
 export const sequencePhases = [
   "pending",
+  "landed",
   "scene",
   "values",
   "sum",
@@ -90,6 +93,9 @@ export const sequencePhases = [
   "settled",
 ] as const;
 export type SequencePhase = (typeof sequencePhases)[number];
+
+/** A deliberate reading beat between physics settling and the value flourish. */
+export const landedFaceHoldMs = 700;
 
 /**
  * Whether the beat `at` has already happened. Every revealed beat stays

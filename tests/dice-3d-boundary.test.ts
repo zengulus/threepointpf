@@ -23,6 +23,7 @@ import {
 import {
   createDiceBoxPresenter,
   createDiceBoxRenderer,
+  captureResizeListeners,
   diceBoxOptions,
   diceSkinKey,
   landedDice,
@@ -98,6 +99,8 @@ interface FakeRenderer {
   failInitialize: boolean;
   /** Lets a test hold a throw open, so an overlap is real rather than assumed. */
   onRoll?: (notation: string) => Promise<unknown>;
+  /** Lets a test hold WebGL/theme setup open while the overlay is dismissed. */
+  onInitialize?: () => Promise<void>;
 }
 
 function fakeRenderer(results: unknown = undefined): FakeRenderer {
@@ -113,6 +116,7 @@ function fakeRenderer(results: unknown = undefined): FakeRenderer {
       return {
         async initialize() {
           if (state.failInitialize) throw new Error("WebGL is unavailable");
+          await state.onInitialize?.();
         },
         async roll(notation: string) {
           state.rolls.push(notation);
@@ -743,6 +747,45 @@ describe("an in-flight throw is never interrupted", () => {
     });
   });
 
+  it("cancels a renderer that is still initializing when the overlay closes", async () => {
+    const renderer = fakeRenderer(rendererResult([{ sides: 20, values: [17] }]));
+    let release!: () => void;
+    let initializationStarted = 0;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    renderer.onInitialize = () => {
+      initializationStarted += 1;
+      return gate;
+    };
+    const presenter = createDiceBoxPresenter({
+      settings: defaultDicePresentationSettings,
+      factory: renderer.factory,
+      playCue: () => {},
+    });
+    const plan = engine().createAttackRollPlan("blade", 0);
+    const pending = presenter.present(requestFor(plan, [17]));
+    await waitFor(() => initializationStarted === 1);
+
+    presenter.dispose();
+    // Teardown reaches the pending handle immediately; it does not wait for
+    // the lazy renderer import/theme work to resolve.
+    expect(renderer.disposed).toBe(1);
+
+    release();
+    await expect(pending).resolves.toMatchObject({ mode: "skipped" });
+    expect(renderer.rolls).toEqual([]);
+
+    // A later overlay creates a fresh handle rather than reviving the dismissed
+    // one, and the serial queue remains usable.
+    renderer.onInitialize = undefined;
+    await expect(presenter.present(requestFor(plan, [17]))).resolves.toMatchObject({
+      mode: "rendered",
+      handoff: "matched",
+    });
+    expect(renderer.inits).toHaveLength(2);
+  });
+
   it("keeps accepting throws after a failed one", async () => {
     const renderer = fakeRenderer();
     let broken = true;
@@ -793,6 +836,7 @@ describe("the renderer wrapper releases what upstream keeps", () => {
     clearedDice: number;
     detached: number;
     resizeEvents: number;
+    pixelRatios: number[];
   }
 
   function upstreamLog(): UpstreamLog {
@@ -802,6 +846,7 @@ describe("the renderer wrapper releases what upstream keeps", () => {
       clearedDice: 0,
       detached: 0,
       resizeEvents: 0,
+      pixelRatios: [],
     };
   }
 
@@ -822,6 +867,9 @@ describe("the renderer wrapper releases what upstream keeps", () => {
     return class FakeDiceBox {
       renderer = {
         domElement: { parentNode: parent },
+        setPixelRatio(value: number) {
+          log.pixelRatios.push(value);
+        },
         forceContextLoss() {
           log.contextLost += 1;
         },
@@ -843,10 +891,15 @@ describe("the renderer wrapper releases what upstream keeps", () => {
     };
   }
 
-  function rendererFor(log: UpstreamLog, target: ReturnType<typeof fakeWindow>) {
+  function rendererFor(
+    log: UpstreamLog,
+    target: ReturnType<typeof fakeWindow>,
+    pixelRatio?: () => number,
+  ) {
     return createDiceBoxRenderer({
       loadModule: async () => fakeUpstream(log, target),
       resizeTarget: target,
+      ...(pixelRatio ? { pixelRatio } : {}),
     });
   }
 
@@ -895,6 +948,96 @@ describe("the renderer wrapper releases what upstream keeps", () => {
     expect(target.addEventListener).toBe(original);
     handle.dispose?.();
     expect(target.listeners.size).toBe(0);
+  });
+
+  it("only captures resize work registered before upstream initialization yields", async () => {
+    const target = fakeWindow();
+    const original = target.addEventListener;
+    const captured: Array<(event: unknown) => void> = [];
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const upstream = () => {};
+    const initializing = captureResizeListeners(target, captured, async () => {
+      // This is the real upstream timing: `resizeWorld()` subscribes before it
+      // begins awaiting theme assets.
+      target.addEventListener("resize", upstream);
+      await gate;
+    });
+
+    // The global target has already been restored while the renderer awaits
+    // assets, so an unrelated feature cannot become our teardown responsibility.
+    expect(target.addEventListener).toBe(original);
+    const unrelated = () => {};
+    target.addEventListener("resize", unrelated);
+    expect(captured).toEqual([upstream]);
+
+    release();
+    await initializing;
+    captured.forEach((listener) => target.removeEventListener("resize", listener));
+    expect(target.listeners.has(unrelated)).toBe(true);
+  });
+
+  it("releases a dismissed renderer after its pending initializer settles", async () => {
+    const target = fakeWindow();
+    const log = upstreamLog();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    class DeferredBox {
+      renderer = {
+        domElement: { parentNode: { removeChild: () => (log.detached += 1) } },
+        forceContextLoss: () => (log.contextLost += 1),
+        dispose: () => (log.rendererDisposed += 1),
+      };
+      async initialize() {
+        target.addEventListener("resize", () => (log.resizeEvents += 1));
+        await gate;
+      }
+      async roll() {
+        return rendererResult([{ sides: 20, values: [17] }]);
+      }
+      clearDice() {
+        log.clearedDice += 1;
+      }
+    }
+    const factory = createDiceBoxRenderer({
+      loadModule: async () => DeferredBox,
+      resizeTarget: target,
+    });
+    const handle = factory({ selector: diceStageSelector, options: optionsFor() });
+    const initializing = handle.initialize();
+    await waitFor(() => target.listeners.size === 1);
+
+    // This listener belongs to another part of the page which happens to start
+    // while dice assets load. Dismissing dice must leave it alone.
+    const unrelated = () => {};
+    target.addEventListener("resize", unrelated);
+    handle.dispose?.();
+    expect(target.listeners.has(unrelated)).toBe(true);
+    expect(log.contextLost).toBe(0);
+
+    release();
+    await initializing;
+    expect(target.listeners.has(unrelated)).toBe(true);
+    expect(log.clearedDice).toBe(1);
+    expect(log.detached).toBe(1);
+    expect(log.contextLost).toBe(1);
+    expect(log.rendererDisposed).toBe(1);
+  });
+
+  it("caps high-density backing stores at two device pixels per CSS pixel", async () => {
+    const target = fakeWindow();
+    const log = upstreamLog();
+    const handle = rendererFor(log, target, () => 3)({
+      selector: diceStageSelector,
+      options: optionsFor(),
+    });
+    await handle.initialize();
+    expect(log.pixelRatios).toEqual([2]);
+    handle.dispose?.();
   });
 
   it("releases a renderer that failed to initialize", async () => {
@@ -1138,6 +1281,8 @@ describe("the chosen skin reaches the renderer's own scene", () => {
     DiceFactory: {
       createMaterials(): FakeMaterial[];
       create(): unknown;
+      createSurfaceMaterial(parameters?: Record<string, unknown>): FakeMaterial;
+      createSurfaceTexture(canvas: unknown): FakeCanvasTexture;
     };
   }
 
@@ -1205,6 +1350,27 @@ describe("the chosen skin reaches the renderer's own scene", () => {
           this.diceList.push(die);
           return die;
         },
+        // The compatibility patch exposes these from the same bundled Three
+        // instance. The table must use them instead of cloning this factory's
+        // die material, which can be Phong for Matte.
+        createSurfaceMaterial: (parameters: Record<string, unknown> = {}) => {
+          const material = new FakeMaterial();
+          if (typeof parameters.metalness === "number")
+            material.metalness = parameters.metalness;
+          if (typeof parameters.roughness === "number")
+            material.roughness = parameters.roughness;
+          if (typeof parameters.transparent === "boolean")
+            material.transparent = parameters.transparent;
+          if (typeof parameters.opacity === "number")
+            material.opacity = parameters.opacity;
+          if (typeof parameters.depthTest === "boolean")
+            material.depthTest = parameters.depthTest;
+          if (typeof parameters.depthWrite === "boolean")
+            material.depthWrite = parameters.depthWrite;
+          if (typeof parameters.side === "number") material.side = parameters.side;
+          return material;
+        },
+        createSurfaceTexture: (canvas: unknown) => new FakeCanvasTexture(canvas),
       };
       constructor(_selector: string, options: unknown) {
         this.options = options;
@@ -1272,21 +1438,15 @@ describe("the chosen skin reaches the renderer's own scene", () => {
       options: optionsFor(),
     });
     await handle.initialize();
-    // Before a die exists there is no material of the scene's class to build the
-    // plate from, so the renderer's own shadow material is left alone.
+    // The patched factory is available before a die exists, so the table is
+    // painted immediately rather than inheriting the first die's material type.
     const shadowMaterial = upstream.instance().desk.material;
-    expect(shadowMaterial.map).toEqual({ kind: "shadow-catcher" });
-
-    await handle.roll("1d20@17");
-    const plate = upstream.instance().desk.material;
-    expect(plate).not.toBe(shadowMaterial);
+    const plate = shadowMaterial;
     // White, so the generated map's own colour is not multiplied dark.
     expect(rgbOf(plate.color)).toEqual([255, 255, 255]);
     expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
-    expect(plate.map).not.toBe(shadowMaterial.map);
     // It is still the renderer's mesh, so it still catches the dice's shadow.
     expect(upstream.instance().desk.receiveShadow).toBe(true);
-    expect(shadowMaterial.disposed).toBe(0);
 
     handle.dispose?.();
     expect(plate.disposed).toBe(1);
@@ -1316,8 +1476,6 @@ describe("the chosen skin reaches the renderer's own scene", () => {
       options: optionsFor(),
     });
     await handle.initialize();
-    await handle.roll("1d20@17");
-
     // Upstream rebuilds its surface on the frame after a resize; ours is
     // re-established on that same frame, right after it.
     upstream.instance().resize();
@@ -1325,13 +1483,13 @@ describe("the chosen skin reaches the renderer's own scene", () => {
     expect(rebuilt.map).toEqual({ kind: "shadow-catcher" });
     upstream.target.resize();
     upstream.loop.step();
-    // The rebuilt surface wears a new plate, and the renderer's own material —
-    // which is not ours to repaint — is left where it is.
+    // The rebuilt surface wears a new plate. Its temporary upstream material is
+    // released after replacement instead of accumulating on orientation changes.
     const plate = upstream.instance().desk.material;
     expect(plate).not.toBe(rebuilt);
     expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
     expect(rgbOf(plate.color)).toEqual([255, 255, 255]);
-    expect(rebuilt.map).toEqual({ kind: "shadow-catcher" });
+    expect(rebuilt.disposed).toBe(1);
 
     handle.dispose?.();
     // The extra subscription goes with the renderer it was made for.
@@ -1352,7 +1510,6 @@ describe("the chosen skin reaches the renderer's own scene", () => {
         options,
       });
       await handle.initialize();
-      await handle.roll("1d20@17");
       const plate = upstream.instance().desk.material;
       // The table is the surface's own material, with a generated map on it.
       specs.push(`${plate.roughness}:${plate.metalness}`);

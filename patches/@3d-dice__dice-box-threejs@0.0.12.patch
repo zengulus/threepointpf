@@ -1,20 +1,69 @@
 diff --git a/dist/dice-box-threejs.es.js b/dist/dice-box-threejs.es.js
-index 2c463aba95cf8c64aba21b5ee1e8aaed14dc76f1..98f195cdcf81b0a6002bfea37115efc41f409435 100644
+index 2c463aba95cf8c64aba21b5ee1e8aaed14dc76f1..7fcac3d3d5855ec10f8b874fa1c77d34fbc4ecaf 100644
 --- a/dist/dice-box-threejs.es.js
 +++ b/dist/dice-box-threejs.es.js
-@@ -15718,9 +15718,14 @@ const bp = {
+@@ -15602,6 +15602,14 @@ const bp = {
+   setBumpMapping(e) {
+     this.bumpMapping = e, this.materials_cache = {};
+   }
++  // Expose constructors from this bundled Three.js instance for consumers that
++  // need scene-owned appearance objects without cloning a die material class.
++  createSurfaceMaterial(e = {}) {
++    return new Uu(e);
++  }
++  createSurfaceTexture(e) {
++    return new Rr(e);
++  }
+   create(e) {
+     let t = this.get(e);
+     if (!t)
+@@ -15718,9 +15718,22 @@ const bp = {
          let z = f.measureText("M").width * 1.4, L = d.split(`
  `);
          L.length > 1 && (F = F / L.length, f.font = F + "pt " + e.font, _.font = F + "pt " + e.font, z = f.measureText("M").width * 1.2, P -= z * L.length / 2);
-+        const textureName = String(o?.name ?? "").toLowerCase();
-+        const busyTexture = textureName.includes("skull") || textureName.includes("stained") || textureName.includes("dragon") || textureName.includes("glitter") || textureName.includes("star") || textureName.includes("astral") || textureName.includes("fire") || textureName.includes("marble") || textureName.includes("metal") || textureName.includes("wood");
-+        const outlineWidth = Math.max(8, Math.round(F * (busyTexture ? 0.12 : 0.08)));
++        const textured = Boolean(o?.texture) && o.name != "" && o.name != "none";
++        const drawGlyphBacking = (text, x, y, fontSize) => {
++          if (!textured)
++            return;
++          const backingWidth = Math.max(12, Math.round(fontSize * 0.24));
++          f.strokeStyle = a, f.lineWidth = backingWidth, f.strokeText(text, x, y);
++          _.strokeStyle = "#FFFFFF", _.lineWidth = backingWidth, _.strokeText(text, x, y);
++        };
++        const outlineWidth = Math.max(8, Math.round(F * (textured ? 0.12 : 0.08)));
 +        f.lineJoin = "round", f.miterLimit = 2, f.lineWidth = outlineWidth;
 +        _.lineJoin = "round", _.miterLimit = 2, _.lineWidth = outlineWidth;
          for (let I = 0, D = L.length; I < D; I++) {
            let q = L[I].trim();
 -          l != "none" && l != a && (f.strokeStyle = l, f.lineWidth = 5, f.strokeText(L[I], G, P), _.strokeStyle = "#000000", _.lineWidth = 5, _.strokeText(L[I], G, P), (q == "6" || q == "9") && (f.strokeText("  .", G, P), _.strokeText("  .", G, P))), f.fillStyle = r, f.fillText(L[I], G, P), _.fillStyle = "#000000", _.fillText(L[I], G, P), (q == "6" || q == "9") && (f.fillText("  .", G, P), _.fillText("  .", G, P)), P += z * 1.5;
-+          l != "none" && l != a && (f.strokeStyle = l, f.lineWidth = outlineWidth, f.strokeText(L[I], G, P), _.strokeStyle = "#000000", _.lineWidth = outlineWidth, _.strokeText(L[I], G, P), (q == "6" || q == "9") && (f.strokeText("  .", G, P), _.strokeText("  .", G, P))), f.fillStyle = r, f.fillText(L[I], G, P), _.fillStyle = "#000000", _.fillText(L[I], G, P), (q == "6" || q == "9") && (f.fillText("  .", G, P), _.fillText("  .", G, P)), P += z * 1.5;
++          drawGlyphBacking(L[I], G, P, F);
++          (q == "6" || q == "9") && drawGlyphBacking("  .", G, P, F);
++          l != "none" && (f.strokeStyle = l, f.lineWidth = outlineWidth, f.strokeText(L[I], G, P), _.strokeStyle = "#000000", _.lineWidth = outlineWidth, _.strokeText(L[I], G, P), (q == "6" || q == "9") && (f.strokeText("  .", G, P), _.strokeText("  .", G, P))), f.fillStyle = r, f.fillText(L[I], G, P), _.fillStyle = "#000000", _.fillText(L[I], G, P), (q == "6" || q == "9") && (f.fillText("  .", G, P), _.fillText("  .", G, P)), P += z * 1.5;
          }
        }
      } else {
+@@ -15727,11 +15740,23 @@ const bp = {
+       var x = p.width / 2, M = p.height / 2;
+-      f.font = w / 128 * 24 + "pt " + e.font, _.font = w / 128 * 24 + "pt " + e.font;
++      const fontSize = w / 128 * 24;
++      f.font = fontSize + "pt " + e.font, _.font = fontSize + "pt " + e.font;
++      const textured = Boolean(o?.texture) && o.name != "" && o.name != "none";
++      const drawGlyphBacking = (text, x, y, fontSize) => {
++        if (!textured)
++          return;
++        const backingWidth = Math.max(12, Math.round(fontSize * 0.24));
++        f.strokeStyle = a, f.lineWidth = backingWidth, f.strokeText(text, x, y);
++        _.strokeStyle = "#FFFFFF", _.lineWidth = backingWidth, _.strokeText(text, x, y);
++      };
++      const outlineWidth = Math.max(8, Math.round(fontSize * (textured ? 0.12 : 0.08)));
++      f.lineJoin = "round", f.miterLimit = 2, f.lineWidth = outlineWidth;
++      _.lineJoin = "round", _.miterLimit = 2, _.lineWidth = outlineWidth;
+       for (let F = 0; F < d.length; F++) {
+         if (d[F] instanceof HTMLImageElement) {
+           let P = d[F].width / p.width;
+           f.drawImage(d[F], 0, 0, d[F].width, d[F].height, 100 / P, 25 / P, 60 / P, 60 / P);
+         } else
+-          l != "none" && l != a && (f.strokeStyle = l, f.lineWidth = 5, f.strokeText(d[F], x, M - w * 0.3), _.strokeStyle = "#000000", _.lineWidth = 5, _.strokeText(d[F], x, M - w * 0.3)), f.fillStyle = r, f.fillText(d[F], x, M - w * 0.3), _.fillStyle = "#000000", _.fillText(d[F], x, M - w * 0.3);
++          drawGlyphBacking(d[F], x, M - w * 0.3, fontSize), l != "none" && (f.strokeStyle = l, f.lineWidth = outlineWidth, f.strokeText(d[F], x, M - w * 0.3), _.strokeStyle = "#000000", _.lineWidth = outlineWidth, _.strokeText(d[F], x, M - w * 0.3)), f.fillStyle = r, f.fillText(d[F], x, M - w * 0.3), _.fillStyle = "#000000", _.fillText(d[F], x, M - w * 0.3);
+         f.translate(x, M), f.rotate(Math.PI * 2 / 3), f.translate(-x, -M), _.translate(x, M), _.rotate(Math.PI * 2 / 3), _.translate(-x, -M);
+       }
+     }

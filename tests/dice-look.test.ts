@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { diceSurfaceOptions } from "@threepointpf/dice";
 import {
@@ -13,13 +14,15 @@ import {
   diceSurfaceLooks,
   firstDieMaterial,
   linearFilter,
-  nearestFilter,
+  linearMipmapLinearFilter,
   neutralDiceLighting,
   normalizeDieMaterial,
   patchDieCreation,
   patchDieMaterials,
   readableNumeralOutline,
+  rendererTextureAnisotropy,
   repeatWrapping,
+  surfaceAnisotropyCap,
   surfacePlateMaterial,
   surfaceTextureSize,
   type DiceLookTarget,
@@ -29,6 +32,7 @@ import {
   type SceneMaterialLike,
   type SceneMeshLike,
   type SceneTextureLike,
+  type SurfaceMaterialFactoryLike,
 } from "../apps/web/src/lib/dice-look";
 import { asCanvas } from "./helpers/fake-three";
 
@@ -131,6 +135,45 @@ class FakeCanvasTexture implements SceneTextureLike {
   }
 }
 
+/** A patched upstream DiceFactory: every table material is Standard-shaped. */
+class FakeSurfaceFactory implements SurfaceMaterialFactoryLike {
+  readonly materials: FakeMaterial[] = [];
+  readonly textures: FakeCanvasTexture[] = [];
+
+  createSurfaceMaterial(parameters: Record<string, unknown> = {}) {
+    const material = fakeMaterial({
+      map: null,
+      bumpMap: null,
+      normalMap: null,
+      transparent: false,
+      depthTest: true,
+      depthWrite: true,
+    });
+    if (typeof parameters.metalness === "number")
+      material.metalness = parameters.metalness;
+    if (typeof parameters.roughness === "number")
+      material.roughness = parameters.roughness;
+    if (typeof parameters.transparent === "boolean")
+      material.transparent = parameters.transparent;
+    if (typeof parameters.opacity === "number") material.opacity = parameters.opacity;
+    if (typeof parameters.depthTest === "boolean")
+      material.depthTest = parameters.depthTest;
+    if (typeof parameters.depthWrite === "boolean")
+      material.depthWrite = parameters.depthWrite;
+    if (typeof parameters.side === "number") material.side = parameters.side;
+    if (typeof parameters.envMapIntensity === "number")
+      material.envMapIntensity = parameters.envMapIntensity;
+    this.materials.push(material);
+    return material;
+  }
+
+  createSurfaceTexture(canvas: unknown) {
+    const texture = new FakeCanvasTexture(canvas);
+    this.textures.push(texture);
+    return texture;
+  }
+}
+
 /** A die material whose map belongs to a real texture class. */
 function fakeTexturedDie(texture: FakeCanvasTexture = new FakeCanvasTexture(null)) {
   return { material: [fakeMaterial({ map: texture })] };
@@ -146,14 +189,17 @@ function fakeLight(intensity = 1) {
 
 function fakeTarget() {
   const ambient = { ...fakeLight(), groundColor: fakeColor() };
+  const DiceFactory = new FakeSurfaceFactory();
   return {
     desk: { material: fakeMaterial(), receiveShadow: true } as SceneMeshLike,
     light: fakeLight() as SceneLightLike,
     light_amb: ambient as SceneLightLike,
+    DiceFactory,
   } satisfies DiceLookTarget & {
     desk: SceneMeshLike;
     light: SceneLightLike;
     light_amb: SceneLightLike;
+    DiceFactory: FakeSurfaceFactory;
   };
 }
 
@@ -285,17 +331,49 @@ describe("readableNumeralOutline", () => {
     expect(readableNumeralOutline("#2b2b34")).toBe("#f7f7f2");
   });
 
-  it("judges luminance, not raw channel average", () => {
+  it("chooses the ink with the higher contrast, not a luminance threshold", () => {
     // A saturated yellow is bright to the eye even though it is not a light
     // grey; it takes the dark outline.
     expect(readableNumeralOutline("#f2d21a")).toBe("#050608");
     // A saturated blue is dark to the eye; it takes the light outline.
     expect(readableNumeralOutline("#1020d0")).toBe("#f7f7f2");
+    // These colours sit below the old 0.4 threshold, but the dark ink has much
+    // stronger contrast than off-white (8.36:1 and 8.71:1 respectively).
+    expect(readableNumeralOutline("#a5a5a5")).toBe("#050608");
+    expect(readableNumeralOutline("#00aa00")).toBe("#050608");
   });
 
   it("never returns the fill colour itself", () => {
     for (const fill of ["#ffffff", "#111111", "#f3c877", "#2b2b34", "#245b3b"])
       expect(readableNumeralOutline(fill)).not.toBe(fill);
+  });
+});
+
+describe("the patched upstream numeral canvas", () => {
+  it("backs every real texture and gives d4 the same proportional treatment", () => {
+    const patch = readFileSync(
+      "patches/@3d-dice__dice-box-threejs@0.0.12.patch",
+      "utf8",
+    );
+
+    // Texture objects, rather than their display names, decide whether a face
+    // needs its base-colour knockout. This covers every shipped texture and
+    // future custom ones with the same upstream shape.
+    expect(patch).toContain(
+      '+        const textured = Boolean(o?.texture) && o.name != "" && o.name != "none";',
+    );
+    expect(patch).toContain(
+      "+          f.strokeStyle = a, f.lineWidth = backingWidth, f.strokeText(text, x, y);",
+    );
+    expect(patch).toContain(
+      '+      const fontSize = w / 128 * 24;',
+    );
+    expect(patch).toContain(
+      "+          drawGlyphBacking(d[F], x, M - w * 0.3, fontSize),",
+    );
+    // Removed diff lines retain the old condition, so inspect additions only.
+    expect(patch).not.toMatch(/^\+.*l != a/m);
+    expect(patch).not.toContain("textureName");
   });
 });
 
@@ -345,28 +423,28 @@ describe("surface looks", () => {
       tint: "#6b4528",
       roughness: 0.78,
       metalness: 0,
-      textureScale: 3,
+      textureScale: 2,
     });
     expect(diceSurfaceLooks.mahogany).toEqual({
       kind: "wood",
       tint: "#4a1e17",
       roughness: 0.7,
       metalness: 0,
-      textureScale: 3,
+      textureScale: 2,
     });
     expect(diceSurfaceLooks["green-felt"]).toEqual({
       kind: "felt",
       tint: "#245b3b",
       roughness: 1,
       metalness: 0,
-      textureScale: 10,
+      textureScale: 4,
     });
     expect(diceSurfaceLooks.stainless).toEqual({
       kind: "brushed-metal",
       tint: "#9da5ad",
-      roughness: 0.32,
-      metalness: 0.7,
-      textureScale: 6,
+      roughness: 0.48,
+      metalness: 0.55,
+      textureScale: 3,
     });
     expect(diceSurfaceLooks.cyberpunk).toEqual({
       kind: "cyber-grid",
@@ -380,7 +458,7 @@ describe("surface looks", () => {
       tint: "#4c4941",
       roughness: 0.96,
       metalness: 0,
-      textureScale: 5,
+      textureScale: 3,
     });
   });
 
@@ -405,22 +483,24 @@ describe("generated surface textures", () => {
     expect(solid.strokes).toBe(0);
 
     const wood = generate("wood", "#6b4528");
-    // Ninety grain lines plus the knot rings.
-    expect(wood.strokes).toBeGreaterThanOrEqual(90);
+    // Periodic grain plus several knot rings; it is visibly more than a tint.
+    expect(wood.strokes).toBeGreaterThanOrEqual(72);
 
     const felt = generate("felt", "#245b3b");
-    expect(felt.rects).toBeGreaterThanOrEqual(12000);
+    // Multi-pixel fibres are stroked so they survive mip generation.
+    expect(felt.strokes).toBeGreaterThanOrEqual(4200);
 
     const metal = generate("brushed-metal", "#9da5ad");
-    expect(metal.strokes).toBeGreaterThanOrEqual(300);
+    expect(metal.strokes).toBeGreaterThanOrEqual(420);
+    expect(metal.rects).toBeGreaterThanOrEqual(surfaceTextureSize);
 
     const grid = generate("cyber-grid", "#171526");
     // Minor, major and accent lines, each drawn both ways.
     expect(grid.strokes).toBeGreaterThan(32);
 
     const stone = generate("stone", "#4c4941");
-    expect(stone.rects).toBeGreaterThanOrEqual(4000);
-    expect(stone.strokes).toBeGreaterThanOrEqual(7);
+    expect(stone.rects).toBeGreaterThanOrEqual(2200);
+    expect(stone.strokes).toBeGreaterThanOrEqual(13);
   });
 
   it("is deterministic: the same kind and tint draw the same pixels", () => {
@@ -465,22 +545,37 @@ describe("generated surface textures", () => {
 
 describe("surface textures own their repetition and lifetime", () => {
   it("tiles the generated canvas at the look's scale", () => {
+    const factory = new FakeSurfaceFactory();
     const texture = createSurfaceTexture(
-      fakeMaterial({ map: new FakeCanvasTexture(null) }),
+      factory,
       diceSurfaceLook("green-felt"),
       recordingFactory,
+      16,
     ) as FakeCanvasTexture;
     expect(texture).toBeInstanceOf(FakeCanvasTexture);
-    expect(texture.repeat.x).toBe(10);
-    expect(texture.repeat.y).toBe(10);
+    expect(texture.repeat.x).toBe(4);
+    expect(texture.repeat.y).toBe(4);
     expect(texture.wrapS).toBe(repeatWrapping);
     expect(texture.wrapT).toBe(repeatWrapping);
-    // The pattern is fine grain: it is sampled at level 0 rather than averaged
-    // into cloudy grey by a mipmap.
-    expect(texture.generateMipmaps).toBe(false);
-    expect(texture.minFilter).toBe(nearestFilter);
+    expect(texture.generateMipmaps).toBe(true);
+    expect(texture.minFilter).toBe(linearMipmapLinearFilter);
     expect(texture.magFilter).toBe(linearFilter);
+    expect(texture.anisotropy).toBe(surfaceAnisotropyCap);
     expect(texture.needsUpdate).toBe(true);
+  });
+
+  it("uses the renderer cap for anisotropy without assuming a renderer class", () => {
+    expect(
+      rendererTextureAnisotropy({
+        capabilities: { getMaxAnisotropy: () => 6 },
+      }),
+    ).toBe(6);
+    expect(rendererTextureAnisotropy({ capabilities: {} })).toBeUndefined();
+    expect(
+      rendererTextureAnisotropy({
+        capabilities: { getMaxAnisotropy: () => Number.NaN },
+      }),
+    ).toBeUndefined();
   });
 
   it("reports a texture that cannot express a repeat instead of guessing", () => {
@@ -736,7 +831,7 @@ describe("surfacePlateMaterial", () => {
   it("wears the surface's own map with a white tint, so it cannot be multiplied dark", () => {
     const look = diceSurfaceLook("stainless");
     const texture = new FakeCanvasTexture(null);
-    const plate = surfacePlateMaterial(fakeMaterial(), look, texture)!;
+    const plate = surfacePlateMaterial(new FakeSurfaceFactory(), look, texture)!;
     expect(plate.map).toBe(texture);
     expect(rgbOf(plate.color as FakeColor)).toEqual([255, 255, 255]);
     expect(plate.bumpMap).toBeNull();
@@ -746,8 +841,9 @@ describe("surfacePlateMaterial", () => {
     expect(plate.roughness).toBe(look.roughness);
   });
 
-  it("leaves the die's own material untouched", () => {
+  it("does not clone, inspect, or mutate the die material", () => {
     const template = fakeMaterial();
+    template.clone = vi.fn(() => fakeMaterial());
     const before = {
       map: template.map,
       bumpMap: template.bumpMap,
@@ -755,17 +851,18 @@ describe("surfacePlateMaterial", () => {
       depthTest: template.depthTest,
       color: { ...template.color },
     };
-    surfacePlateMaterial(template, diceSurfaceLook("red-felt"), null);
+    surfacePlateMaterial(new FakeSurfaceFactory(), diceSurfaceLook("red-felt"), null);
     expect(template.map).toBe(before.map);
     expect(template.bumpMap).toBe(before.bumpMap);
     expect(template.transparent).toBe(before.transparent);
     expect(template.depthTest).toBe(before.depthTest);
     expect(rgbOf(template.color)).toEqual(rgbOf(before.color as FakeColor));
+    expect(template.clone).not.toHaveBeenCalled();
   });
 
   it("stays depth-tested and opaque so the dice land on top of it", () => {
     const plate = surfacePlateMaterial(
-      fakeMaterial(),
+      new FakeSurfaceFactory(),
       diceSurfaceLook("taverntable"),
       null,
     )!;
@@ -775,7 +872,7 @@ describe("surfacePlateMaterial", () => {
     expect(plate.opacity).toBe(1);
   });
 
-  it("reports nothing for a material it cannot clone", () => {
+  it("fails loudly when the upstream Standard-material factory is unavailable", () => {
     expect(surfacePlateMaterial(null, diceSurfaceLook("default"))).toBeNull();
     expect(
       surfacePlateMaterial({ color: fakeColor() }, diceSurfaceLook("default")),
@@ -846,30 +943,44 @@ describe("the surface material does not depend on the die material", () => {
     });
   });
 
-  it("zeroes a glass material's transmission rather than inheriting it", () => {
+  it("uses Standard surface controls even when the only die is Matte/Phong", () => {
+    const target = fakeTarget();
+    const matte = {
+      map: new FakeCanvasTexture(null),
+      // Deliberately lacks roughness and metalness, as MeshPhongMaterial does.
+      shininess: 5,
+    };
+    const applier = createSurfaceApplier(target, { createCanvas: recordingFactory });
+    applier.apply("stainless", { material: [matte] });
+    const plate = plateOf(target);
+    expect(plate).toBe(target.DiceFactory.materials[0]);
+    expect(plate.metalness).toBe(diceSurfaceLook("stainless").metalness);
+    expect(plate.roughness).toBe(diceSurfaceLook("stainless").roughness);
+    applier.dispose();
+  });
+
+  it("zeroes transmission on a new table material rather than inheriting glass", () => {
     const glass = fakeMaterial({ transmission: 1 });
     const plate = surfacePlateMaterial(
-      glass,
+      new FakeSurfaceFactory(),
       diceSurfaceLook("green-felt"),
       null,
     )!;
     expect(plate.transmission).toBe(0);
-    // The die's own material is only read; its transmission is untouched.
+    // The die's own material is not consulted and remains untouched.
     expect(glass.transmission).toBe(1);
   });
 });
 
 describe("the surface applier", () => {
-  it("lights the scene before there is a die to take a material from", () => {
+  it("paints the table before the first die is spawned", () => {
     const target = fakeTarget();
     const applier = createSurfaceApplier(target, {
       createCanvas: recordingFactory,
     });
     expect(applier.apply("cyberpunk")).toBe(true);
     expect(target.light.intensity).toBe(neutralDiceLighting.spot.intensity);
-    // The renderer's own shadow-catcher material is untouched until a plate can
-    // be built from a material of the scene's own class.
-    expect(plateOf(target).map).toEqual({ kind: "die-texture" });
+    expect(plateOf(target).map).toBeInstanceOf(FakeCanvasTexture);
     applier.dispose();
   });
 
@@ -884,6 +995,15 @@ describe("the surface applier", () => {
     expect(plate.map).toBeInstanceOf(FakeCanvasTexture);
     // It is still the renderer's mesh, so it still catches the dice's shadow.
     expect(target.desk.receiveShadow).toBe(true);
+    applier.dispose();
+  });
+
+  it("releases the displaced upstream ShadowMaterial after replacing it", () => {
+    const target = fakeTarget();
+    const shadowMaterial = target.desk.material as FakeMaterial;
+    const applier = createSurfaceApplier(target, { createCanvas: recordingFactory });
+    applier.apply("green-felt");
+    expect(shadowMaterial.disposed).toBe(1);
     applier.dispose();
   });
 
@@ -921,9 +1041,14 @@ describe("the surface applier", () => {
     const applier = createSurfaceApplier(target, {
       createCanvas: recordingFactory,
     });
+    const oldDesk = target.desk;
+    let oldGeometryDisposals = 0;
+    oldDesk.geometry = { dispose: () => oldGeometryDisposals += 1 };
     applier.apply("green-felt", fakeTexturedDie());
+    const oldPlate = plateOf(target);
+    const rebuiltShadow = fakeMaterial();
     const rebuilt: SceneMeshLike = {
-      material: fakeMaterial(),
+      material: rebuiltShadow,
       receiveShadow: true,
     };
     target.desk = rebuilt;
@@ -931,18 +1056,19 @@ describe("the surface applier", () => {
     expect(rgbOf((rebuilt.material as FakeMaterial).color)).toEqual([
       255, 255, 255,
     ]);
+    expect(oldPlate.disposed).toBe(1);
+    expect(oldGeometryDisposals).toBe(1);
+    expect(rebuiltShadow.disposed).toBe(1);
     applier.dispose();
   });
 
-  it("gets the plate in place as soon as a die supplies a material", () => {
+  it("gets the plate in place without waiting for a die material", () => {
     const target = fakeTarget();
     const applier = createSurfaceApplier(target, {
       createCanvas: recordingFactory,
     });
     const original = target.desk.material;
     applier.apply("mahogany");
-    expect(target.desk.material).toBe(original);
-    applier.apply("mahogany", fakeTexturedDie());
     expect(target.desk.material).not.toBe(original);
     applier.dispose();
   });

@@ -16,6 +16,7 @@ import type { DicePresentation } from "../hooks/useDicePresentation";
 import {
   diceSum,
   faceTokens,
+  landedFaceHoldMs,
   naturalFaceIndex,
   revealedAt,
   rollSequenceTimeline,
@@ -104,30 +105,39 @@ function DiceSequence({
       .then((result) => {
         if (!active) return;
         setReport(result);
-        // Only a renderer with a live scene can put the values on the dice. With
-        // no scene — reduced motion, a fallback, a test double — the same values,
-        // arithmetic and outcome are shown directly instead.
-        const started =
-          result.mode === "rendered"
-            ? (presenter.presentDieValues?.({
-                faces: stage.resolved.faces,
-                naturalFaceIndex: naturalFaceIndex(stage.plan),
-                event: stage.presentation.event,
-                flourish: stage.flourish,
-                settings,
-              }) ?? null)
-            : null;
-        if (!started) {
+        // With no renderer scene — reduced motion, a fallback or a test double
+        // — the authoritative values and arithmetic appear directly.
+        if (result.mode !== "rendered") {
           setPhase("settled");
           return;
         }
-        dieValues = started;
-        setPhase("scene");
-        // The handoff: the values have left their dice and the drawer's
-        // arithmetic picks them up.
-        void started.done.then(() => {
-          if (active) setPhase("values");
-        });
+
+        // The physical landed face is the first answer a player should see.
+        // Hold it long enough to read the baked numeral before a die-local
+        // value plaque deliberately rises out of the same die.
+        setPhase("landed");
+        const hold = window.setTimeout(() => {
+          if (!active) return;
+          const started = presenter.presentDieValues?.({
+            faces: stage.resolved.faces,
+            naturalFaceIndex: naturalFaceIndex(stage.plan),
+            event: stage.presentation.event,
+            flourish: stage.flourish,
+            settings,
+          }) ?? null;
+          if (!started) {
+            setPhase("settled");
+            return;
+          }
+          dieValues = started;
+          setPhase("scene");
+          // The handoff: the values have left their dice and the drawer's
+          // arithmetic picks them up.
+          void started.done.then(() => {
+            if (active) setPhase("values");
+          });
+        }, landedFaceHoldMs);
+        timers.current.push(hold);
       });
     return () => {
       active = false;

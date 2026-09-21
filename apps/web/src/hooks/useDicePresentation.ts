@@ -106,7 +106,13 @@ export function useDicePresentation() {
     [],
   );
 
-  const dismiss = useCallback(() => setStage(null), []);
+  const dismiss = useCallback(() => {
+    // Closing the overlay also owns the renderer's lifetime. In particular,
+    // this cancels a lazy WebGL initialization that may still be awaiting dice
+    // assets, rather than letting it attach a canvas after the stage is gone.
+    presenter.dispose();
+    setStage(null);
+  }, [presenter]);
 
   return {
     settings,
