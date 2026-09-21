@@ -8,7 +8,13 @@ import type { CharacterSheet } from "../hooks/useCharacterSheet";
  * panels elsewhere on the page: the compact surface is a live view over the
  * same authored state, rather than a second, lossy representation of it.
  */
-export function SummarySheet({ sheet }: { sheet: CharacterSheet }) {
+export function SummarySheet({
+  sheet,
+  onSelectTab,
+}: {
+  sheet: CharacterSheet;
+  onSelectTab: (tab: "skills") => void;
+}) {
   const { character, derived } = sheet;
   const level =
     derived.advancement?.slotCount ?? character.hitDiceCount ?? 1;
@@ -92,7 +98,10 @@ export function SummarySheet({ sheet }: { sheet: CharacterSheet }) {
           <SummaryValue
             label="Initiative"
             value={formatModifier(derived.initiative.value)}
-            onClick={() => sheet.inspect("Initiative", derived.initiative)}
+            ariaLabel="Roll initiative"
+            onClick={() =>
+              sheet.roll("initiative", () => sheet.engine.createInitiativeRollPlan())
+            }
           />
           <SummaryValue
             label="BAB"
@@ -125,7 +134,15 @@ export function SummarySheet({ sheet }: { sheet: CharacterSheet }) {
               key={save}
               label={save}
               value={formatModifier(derived.saves[save].value)}
-              onClick={() => sheet.inspect(save, derived.saves[save])}
+              ariaLabel={"Roll " + save + " save"}
+              onClick={() =>
+                sheet.roll(save + " save", () =>
+                  sheet.engine.createSaveRollPlan(
+                    save,
+                    sheet.dcDefense ? { defense: sheet.dcDefense } : {},
+                  ),
+                )
+              }
             />
           ))}
         </div>
@@ -139,8 +156,11 @@ export function SummarySheet({ sheet }: { sheet: CharacterSheet }) {
                   type="button"
                   className="summary-attack-name"
                   onClick={() =>
-                    sheet.inspect(attack.definition.name + " attack", attack.attack)
+                    sheet.roll(attack.definition.name + " attack", () =>
+                      sheet.engine.createAttackRollPlan(attack.definition.id, 0),
+                    )
                   }
+                  title={"Roll " + attack.definition.name}
                 >
                   <span>{attack.definition.name}</span>
                   <small>{attack.damage.formula}</small>
@@ -172,9 +192,16 @@ export function SummarySheet({ sheet }: { sheet: CharacterSheet }) {
               className="summary-skill"
               type="button"
               key={skill.id}
-              aria-label="Inspect summary skill"
-              onClick={() => sheet.inspect(skill.label, skill.total)}
-              title={"Inspect " + skill.label}
+              aria-label={"Roll " + skill.label}
+              onClick={() =>
+                sheet.roll(skill.label + " check", () =>
+                  sheet.engine.createSkillRollPlan(
+                    skill.id,
+                    sheet.dcDefense ? { defense: sheet.dcDefense } : {},
+                  ),
+                )
+              }
+              title={"Roll " + skill.label}
             >
               <span className="summary-skill-die" aria-hidden="true">◆</span>
               <span>
@@ -185,9 +212,13 @@ export function SummarySheet({ sheet }: { sheet: CharacterSheet }) {
             </button>
           ))}
         </div>
-        <a className="summary-all-skills" href="#skills">
+        <button
+          className="summary-all-skills"
+          type="button"
+          onClick={() => onSelectTab("skills")}
+        >
           View and edit all skills →
-        </a>
+        </button>
       </section>
     </section>
   );
@@ -197,13 +228,21 @@ function SummaryValue({
   label,
   value,
   onClick,
+  ariaLabel,
 }: {
   label: string;
   value: string | number;
   onClick: () => void;
+  ariaLabel?: string;
 }) {
   return (
-    <button className="summary-value" type="button" onClick={onClick}>
+    <button
+      className="summary-value"
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+    >
       <span>{label}</span>
       <b>{value}</b>
     </button>

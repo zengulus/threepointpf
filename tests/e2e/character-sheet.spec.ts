@@ -11,29 +11,57 @@ async function dismissDice(page: Page) {
   await expect(overlay).toHaveCount(0);
 }
 
+async function selectTab(page: Page, name: string) {
+  const tab = page.getByRole("tab", { name, exact: true });
+  if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+}
+
 /**
  * Loads a sample character. The demo build opens on the level 1 fighter, so a
  * test that exercises deeper content says so instead of depending on the
  * landing sample.
  */
 async function loadSample(page: Page, id: string) {
+  await selectTab(page, "Summary");
   await page.getByTestId("sample-character").selectOption(id);
   await expect(page.getByTestId("sample-character")).toHaveValue(id);
 }
 
+test("sheet tabs swap panels and compact roll controls invoke dice", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("tabpanel", { name: "Summary" })).toBeVisible();
+  await selectTab(page, "Combat");
+  await expect(page.getByRole("tabpanel", { name: "Summary" })).toBeHidden();
+  await expect(page.getByTestId("stat-ac")).toBeVisible();
+
+  await selectTab(page, "Summary");
+  await page.getByLabel("Roll initiative").click();
+  await expect(page.getByTestId("dice-overlay")).toBeVisible();
+  await dismissDice(page);
+
+  await page.getByLabel("Roll Climb").click();
+  await expect(page.getByTestId("dice-overlay")).toBeVisible();
+  await dismissDice(page);
+});
+
 test("character sheet recomputes toggles and exposes provenance", async ({ page }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-ac")).toContainText("12");
   await expect(page.getByTestId("stat-max-hp")).toContainText("52");
   await expect(page.getByTestId("stat-current-hp")).toContainText("47 / 52");
   await expect(page.getByTestId("roll-attack-greatsword")).toBeVisible();
+  await selectTab(page, "Features");
   await page.getByRole("button", { name: "Toggle Rage" }).click();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-ac")).toContainText("10");
   await expect(page.getByTestId("stat-current-hp")).toContainText("49 / 54");
   await page.getByTestId("stat-ac").click();
   await expect(page.locator(".breakdown")).toContainText("Base AC");
   await expect(page.locator(".breakdown")).toContainText("Rage");
+  await selectTab(page, "Skills");
   await page.getByLabel("Acrobatics ranks").fill("4");
   await expect(page.getByRole("button", { name: /Acrobatics/ })).toContainText("+11");
 });
@@ -41,6 +69,7 @@ test("character sheet recomputes toggles and exposes provenance", async ({ page 
 test("N-track advancement editor persists ordered choices and exposes a shared BAB fact", async ({ page }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Advancement");
   await page.getByTestId("advancement-start").click();
   await page.getByTestId("advancement-add-track").click();
   await page.getByLabel("Level 1 track 2 progression").selectOption("pf1e.paizo.wizard");
@@ -52,15 +81,18 @@ test("N-track advancement editor persists ordered choices and exposes a shared B
   await expect(page.getByTestId("progression-level-pf1e.paizo.fighter")).toContainText("Level 2");
   await page.getByTestId("progression-level-pf1e.paizo.fighter").click();
   await expect(page.locator(".breakdown")).toContainText("Fighter level 2");
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-bab")).toContainText("+2");
   await page.getByTestId("stat-bab").click();
   await expect(page.locator(".breakdown")).toContainText("Track track-1 BAB");
   await expect(page.locator(".breakdown")).toContainText("Character-global");
   await page.getByRole("button", { name: "Save character" }).click();
+  await selectTab(page, "Advancement");
   await page.getByLabel("Level 2 track 2 progression").selectOption("pf1e.paizo.rogue");
   await page.getByRole("button", { name: "Reload" }).click();
   await expect(page.getByLabel("Level 2 track 2 progression")).toHaveValue("pf1e.paizo.fighter");
   await page.reload();
+  await selectTab(page, "Advancement");
   await expect(page.getByLabel("Level 2 track 2 progression")).toHaveValue("pf1e.paizo.fighter");
 });
 
@@ -69,6 +101,7 @@ test("custom classes, granted effects, equipment and movement survive browser re
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Advancement");
   await page.locator(".custom-content-panel summary").click();
   await page.getByLabel("Class name", { exact: true }).fill("Star Knight");
   await page.getByLabel("Custom class BAB progression").selectOption("full");
@@ -84,22 +117,31 @@ test("custom classes, granted effects, equipment and movement survive browser re
   await page.getByTestId("advancement-start").click();
   await page.getByLabel("Level 1 track 1 progression").selectOption("homebrew.local.star-knight");
   await expect(page.getByTestId("progression-level-homebrew.local.star-knight")).toContainText("Level 1");
+  await selectTab(page, "Skills");
   await page.getByLabel("Spellcraft ranks", { exact: true }).fill("1");
   await expect(page.getByRole("button", { name: /^Spellcraft/ })).toContainText("class");
+  await selectTab(page, "Inventory");
   await page.getByLabel("Catalog equipment").selectOption("pf1e.autosheet.chain-shirt");
   await page.getByRole("button", { name: "+ Equip selected" }).click();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-ac")).toContainText("16");
+  await selectTab(page, "Attributes");
   await page.getByLabel("fly base speed").fill("60");
+  await selectTab(page, "Features");
   await page.getByLabel("Catalog feature or condition").selectOption("pf1e.paizo.haste");
   await page.getByRole("button", { name: "+ Add", exact: true }).click();
+  await selectTab(page, "Attributes");
   await expect(page.getByTestId("speed-fly")).toContainText("90 ft");
   await page.getByTestId("speed-fly").click();
   await expect(page.locator(".breakdown")).toContainText("Haste");
   await page.getByRole("button", { name: "Save character" }).click();
   await page.reload();
+  await selectTab(page, "Attributes");
   await expect(page.getByTestId("speed-fly")).toContainText("90 ft");
+  await selectTab(page, "Advancement");
   await expect(page.getByLabel("Experience points", { exact: true })).toHaveValue("2500");
   await expect(page.getByTestId("progression-level-homebrew.local.star-knight")).toBeVisible();
+  await selectTab(page, "Inventory");
   await expect(page.getByLabel("Equip Chain Shirt")).toBeChecked();
   expect(errors).toEqual([]);
 });
@@ -107,38 +149,47 @@ test("custom classes, granted effects, equipment and movement survive browser re
 test("invalid custom charts produce a visible error and preserve the prior character", async ({ page }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Advancement");
   await page.locator(".custom-content-panel summary").click();
   await page.getByLabel("Class name", { exact: true }).fill("Broken Chart");
   await page.getByRole("button", { name: "+ Chart row" }).click();
   await page.getByLabel("Chart row 1 level").fill("2");
   await page.getByTestId("custom-class-save").click();
   await expect(page.getByRole("alert")).toContainText("contiguous");
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-bab")).toContainText("+6");
+  await selectTab(page, "Advancement");
   await expect(page.getByLabel("Class name", { exact: true })).toHaveValue("Broken Chart");
 });
 
 test("custom armor and profile-based weapons persist with inspectable numeric effects", async ({ page }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Inventory");
   await page.getByText("Custom armor, shield or magic item", { exact: true }).click();
   await page.getByLabel("Custom item name", { exact: true }).fill("Rune coat");
   await page.getByLabel("Item bonus", { exact: true }).fill("5");
   await page.getByLabel("Maximum Dexterity (blank = no limit)").fill("0");
   await page.getByLabel("Armor check penalty", { exact: true }).fill("-3");
   await page.getByRole("button", { name: "+ Custom item", exact: true }).click();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-ac")).toContainText("15");
   await expect(page.getByTestId("stat-touch-ac")).toContainText("10");
+  await selectTab(page, "Inventory");
   await page.getByLabel("Custom equipment name", { exact: true }).fill("Starblade");
   await page.getByLabel("Custom equipment dice", { exact: true }).fill("2d6");
   await page.getByLabel("Custom equipment attack profile", { exact: true }).selectOption("pf1e.autosheet.finesse");
   await page.getByLabel("Weapon enhancement", { exact: true }).fill("2");
   await page.getByRole("button", { name: "+ Custom weapon", exact: true }).click();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("roll-attack-equipment.equipment-starblade-1")).toContainText("+13");
   await page.getByRole("button", { name: "Inspect Starblade damage", exact: true }).click();
   await expect(page.locator(".breakdown")).toContainText("Weapon enhancement");
   await page.getByRole("button", { name: "Save character" }).click();
   await page.reload();
+  await selectTab(page, "Inventory");
   await expect(page.getByLabel("Equip Rune coat", { exact: true })).toBeChecked();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("roll-attack-equipment.equipment-starblade-1")).toContainText("+13");
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
@@ -149,8 +200,10 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   // The curated Power Attack declares contextual damage variants; the demo
   // greatsword is two-handed, so the one-handed and off-hand variants are
   // authored but excluded, and that exclusion is visible.
+  await selectTab(page, "Features");
   await page.getByLabel("Catalog feature or condition").selectOption("pf1e.paizo.power-attack");
   await page.getByRole("button", { name: "+ Add", exact: true }).click();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("roll-attack-greatsword")).toContainText("PRIMARY");
   await page.getByRole("button", { name: "Inspect Greatsword damage" }).click();
   await expect(page.locator(".breakdown")).toContainText("EXCLUDED BY CONTEXT");
@@ -190,6 +243,7 @@ test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
   // sample character rather than an empty sheet.
   await expect(page.getByTestId("sheet-mode")).toHaveText("DEMO");
   await expect(page.getByTestId("sample-character")).toHaveValue("level-1-fighter");
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-bab")).toContainText("+1");
   await expect(page.getByTestId("stat-ac")).toContainText("15");
   await expect(page.getByTestId("stat-current-hp")).toContainText("15 / 15");
@@ -215,12 +269,16 @@ test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
     "Saved in this browser",
   );
   await page.reload();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-ac")).toContainText("15");
   // Switching samples re-derives the whole sheet from different authored state.
   await loadSample(page, "showcase");
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-bab")).toContainText("+6");
   await expect(page.getByTestId("roll-standard-greatsword")).toBeVisible();
+  await selectTab(page, "Summary");
   await page.getByTestId("sample-reset").click();
+  await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-bab")).toContainText("+6");
   await expect(page.locator(".top-actions")).toContainText(
     "Sample loaded: Showcase",
@@ -230,6 +288,7 @@ test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
 test("an optional entered DC resolves a check or leaves it unresolved", async ({ page }) => {
   // This one deliberately runs on the demo build's landing sample.
   await page.goto("/");
+  await selectTab(page, "Skills");
   // A skill check has no automatic face rule and no known DC, so nothing is
   // resolved: the face facts are reported and no verdict is invented.
   await page.getByTestId("roll-skill-perception").click();
@@ -256,6 +315,7 @@ test("an optional entered DC resolves a check or leaves it unresolved", async ({
   await expect(page.locator(".top-actions")).not.toContainText("unresolved");
   await dismissDice(page);
   // Saves use the defense field in the defenses panel the same way.
+  await selectTab(page, "Combat");
   await page.getByTestId("roll-dc-saves").fill("1");
   await page.getByTestId("roll-fortitude").click();
   await expect(page.locator(".top-actions")).toContainText(
@@ -276,6 +336,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
 }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Combat");
   await page.getByTestId("roll-standard-greatsword").click();
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toBeVisible();
@@ -308,6 +369,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   await dismissDice(page);
 
   // Dice preferences persist under their own key and stay out of character state.
+  await selectTab(page, "Summary");
   await page.getByTestId("dice-skin").selectOption("arcane");
   await page.getByTestId("dice-flourish-natural-1").selectOption("shards");
   await page.getByTestId("dice-sound").uncheck();
@@ -331,6 +393,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
 
   // Reduced motion still shows the authoritative result, just without a throw.
   await page.getByTestId("dice-reduced-motion").check();
+  await selectTab(page, "Combat");
   await page.getByTestId("roll-standard-greatsword").click();
   await expect(page.getByTestId("dice-stage-mode")).toContainText("reduced motion");
   await expect(overlay).toHaveAttribute("data-mode", "skipped");
@@ -348,6 +411,7 @@ test("the landed values leave the dice inside the renderer's own scene", async (
 }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Combat");
   await page.getByTestId("roll-standard-greatsword").click();
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toHaveAttribute("data-phase", "pending");
@@ -421,6 +485,7 @@ test("mobile editors fit the viewport while N-track tables scroll within their p
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Advancement");
   await page.locator(".custom-content-panel summary").click();
   await page.getByTestId("advancement-start").click();
   await page.getByTestId("advancement-add-track").click();

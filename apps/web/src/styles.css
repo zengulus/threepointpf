@@ -1379,16 +1379,19 @@ select {
   overflow: hidden;
 }
 
-.chrome-nav a {
+.chrome-nav button {
+  border: 0;
+  background: transparent;
   color: #e9e3c5;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: -0.015em;
+  padding: 0;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.chrome-nav a:hover {
+.chrome-nav button:hover {
   color: var(--gold);
 }
 
@@ -1671,11 +1674,12 @@ select {
   scrollbar-width: thin;
 }
 
-.sheet-tabs a {
+.sheet-tabs button {
   display: block;
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: 17px 17px 0 0;
+  background: transparent;
   color: #3f351f;
   font-family: Georgia, serif;
   font-size: 17px;
@@ -1685,12 +1689,12 @@ select {
   white-space: nowrap;
 }
 
-.sheet-tabs a:hover {
+.sheet-tabs button:hover {
   color: var(--wine);
   background: rgba(255, 250, 222, 0.45);
 }
 
-.sheet-tabs a.active {
+.sheet-tabs button.active {
   position: relative;
   top: 1px;
   border-color: #97875d;
@@ -1749,7 +1753,7 @@ select {
 }
 
 .summary-ability > span {
-  color: var(--teal);
+  color: #125368;
   font-size: 23px;
   font-variant: small-caps;
   font-weight: 700;
@@ -1932,24 +1936,24 @@ select {
 }
 
 .summary-value span {
-  color: var(--gold);
+  color: #513114;
   font-family: Georgia, serif;
   font-size: 17px;
   font-variant: small-caps;
+  font-weight: 700;
   line-height: 17px;
-  text-shadow: 0 1px 0 #5c4919;
+  text-shadow: none;
 }
 
 .summary-value b {
   color: #513114;
   font-family: Georgia, serif;
   font-size: 24px;
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .summary-save-grid .summary-value span {
-  color: var(--teal);
-  text-shadow: none;
+  color: #08475a;
 }
 
 .summary-quick-actions {
@@ -2075,6 +2079,8 @@ select {
 }
 
 .summary-all-skills {
+  border: 0;
+  background: transparent;
   display: inline-block;
   color: #2e7488;
   font-size: 12px;
@@ -2111,6 +2117,67 @@ select {
   color: #715f39;
   font-size: 12px;
   margin: 0;
+}
+
+/* True tab panels: only the selected section is presented, but sections stay
+   mounted so partially authored forms do not reset when a player changes tabs. */
+.sheet-tab-panel[hidden] {
+  display: none !important;
+}
+
+.sheet-tab-panel:not([hidden]) {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  min-height: calc(100vh - 282px);
+  padding: 12px;
+  background:
+    radial-gradient(circle at 74% 4%, rgba(255, 250, 217, 0.72), transparent 27rem),
+    var(--paper);
+}
+
+.summary-tab-panel:not([hidden]) {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.tab-workspace {
+  min-width: 0;
+}
+
+.tab-workspace.has-inspector {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+  align-items: start;
+}
+
+.tab-main,
+.tab-inspector {
+  min-width: 0;
+}
+
+.tab-inspector {
+  padding: 12px 12px 12px 0;
+}
+
+.tab-inspector .breakdown {
+  margin: 0;
+}
+
+.summary-utilities {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  align-items: start;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(#e2d4a2, #d2c18a);
+  border-top: 3px solid var(--wine);
+}
+
+.notes-tab-panel .side-note {
+  margin-top: 4px;
 }
 
 .layout {
@@ -2459,11 +2526,11 @@ summary:focus-visible {
     gap: 8px;
   }
 
-  .chrome-nav a {
+  .chrome-nav button {
     font-size: 10px;
   }
 
-  .sheet-tabs a {
+  .sheet-tabs button {
     padding: 0 11px;
   }
 }
@@ -2489,6 +2556,14 @@ summary:focus-visible {
 
   .summary-quick-actions {
     min-height: 180px;
+  }
+
+  .tab-workspace.has-inspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tab-inspector {
+    padding: 0 12px 12px;
   }
 
   .layout {
@@ -2611,7 +2686,7 @@ summary:focus-visible {
     min-height: 37px;
   }
 
-  .sheet-tabs a {
+  .sheet-tabs button {
     font-size: 14px;
     line-height: 30px;
     padding: 0 10px;
@@ -2639,6 +2714,20 @@ summary:focus-visible {
 
   .summary-quick-actions {
     min-height: 125px;
+  }
+
+  .sheet-tab-panel:not([hidden]) {
+    min-height: 0;
+    padding: 8px;
+  }
+
+  .summary-tab-panel:not([hidden]) {
+    padding: 0;
+  }
+
+  .summary-utilities {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px;
   }
 
   .detail-divider {
