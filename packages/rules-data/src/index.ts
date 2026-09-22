@@ -9,6 +9,7 @@ import {
   type SkillDefinition,
 } from "@threepointpf/rules-schema";
 import {
+  abilityCatalog,
   attackFromProfile,
   attackProfileCatalog,
   autosheetEquipmentCatalog,
@@ -54,6 +55,7 @@ export const rulesCatalogs = {
   progressionCatalog,
   skillCatalog,
   featureCatalog,
+  abilityCatalog,
   equipmentCatalog,
   attackProfileCatalog,
   experienceCatalog,
@@ -72,6 +74,7 @@ export function skillOptions(
 }
 
 export {
+  abilityCatalog,
   attackFromProfile,
   attackProfileCatalog,
   autosheetEquipmentCatalog,

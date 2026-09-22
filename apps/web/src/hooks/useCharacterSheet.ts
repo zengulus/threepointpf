@@ -750,6 +750,11 @@ export function useCharacterSheetController({
   };
   const criticalMultiplierFor = (damage: RollPlan) => {
     const critical = createCriticalDamagePlan(damage);
+    const semanticMultiplier = Math.max(
+      0,
+      ...(critical.provenance?.damageTerms ?? []).map((term) => term.multiplier),
+    );
+    if (semanticMultiplier >= 2) return semanticMultiplier;
     const ordinaryCount = damage.dice.reduce((count, die) => count + die.count, 0);
     const criticalCount = critical.dice.reduce((count, die) => count + die.count, 0);
     return ordinaryCount ? Math.max(2, Math.round(criticalCount / ordinaryCount)) : 2;

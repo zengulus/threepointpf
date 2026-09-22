@@ -1,6 +1,6 @@
 # 3.PF character sheet
 
-A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics live in `rules-core`; imported and authored content is injected by callers.
+A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics — including the domain-only character lifecycle — live in `rules-core`; imported and authored content is injected by callers.
 
 ## ▶️ [Live demo](https://zengulus.github.io/threepointpf/)
 
@@ -46,16 +46,36 @@ corepack pnpm dev
 
 CI runs installation, unit/integration tests, build, generated-data freshness, Deno checks, and Chromium smoke tests. Browser tests use the production build, so build first.
 
+## Character lifecycle API
+
+`rules-core` provides a UI-independent lifecycle layer for character creation and level-up. It is designed for a small trusted table with unusual content, not as a universal Pathfinder legality checker or a replacement for the sheet.
+
+A caller supplies a `CampaignCharacterProfile`: named advancement tracks, a starting level, the available injected progression/catalog sources, HP-acquisition policy, skill-allocation policy, and whether deliberate manual/GM overrides are allowed. One track, gestalt, and arbitrary N-track campaigns differ only in that profile and the ordinary ordered advancement slots; a prestige class, monster class, racial progression, imported class, and locally authored progression use the same catalog and evaluator.
+
+The APIs follow `beginCharacterCreation` → `proposeCharacterCreation` → `validateCharacterCreation` → `previewCharacterCreation` → `commitCharacterCreation`, with the parallel `beginAdvancement` → `proposeAdvancement` → `validateAdvancement` → `previewAdvancement` → `commitAdvancement` flow for the next character-global level. Creation proposals retain the ordinary authored field names while intentionally allowing required fields to be incomplete; validation materializes the candidate `CharacterInput` only when enough facts exist. A proposal can therefore be inspected or abandoned without changing persisted state and without converting a separate builder format. Validation distinguishes blocking structural errors (bad IDs, missing definitions, invalid topology or data) from policy warnings that a permitted, named override can accept. Preview reports semantic changes — progression levels, best-track BAB/saves, winning HD and skill chassis, features, HP gain, skill budget/allocation, and issues — instead of requiring a UI to diff all derived facts.
+
+Commit returns ordinary authored character state usable by the current sheet and repository. Durable choices such as a per-slot HP gain, skill allocation, selected option, or override provenance may live in optional `CharacterInput.lifecycle` facts; proposal state and a future wizard's current step never do. This repository does **not** add a polished character-creation or level-up wizard in this pass: the lifecycle is the foundation a future player-facing flow can consume.
+
 ## Use the sheet
 
-- Start advancement, choose classes by name, and add levels or track columns. One track, gestalt and N-stalt use the same structure. A class may appear only once in a character-level row, but can move between tracks over its career.
-- Open **Author a local class** to create any named class or copy an imported one. Supply its HD, BAB/saves, class skills, skill points, optional explicit cumulative chart, and level-gated features/effects. Local definitions are saved with the character; imported definitions are not overwritten.
+- The existing advancement panel is an expert/debugging editor, not a guided lifecycle wizard. It can start advancement, choose progressions by name, and add levels or track columns. One track, gestalt and N-stalt use the same structure. A progression may appear only once in a character-level row, but can move between tracks over its career.
+- Open **Author a local class** to create any named progression or copy an imported one. Supply its HD, BAB/saves, class skills, skill points, optional explicit cumulative chart, and level-gated features/effects. A custom monster or homebrew progression is evaluated exactly like imported content. Local definitions are saved with the character; imported definitions are not overwritten.
 - Class skills derive from all classes actually advanced. Ranks trigger the +3 bonus once. Each skill also has an explicit class-skill override for homebrew/manual use.
-- Set abilities, HP state, size and five movement modes. Add catalog conditions, armor/shields/weapons, or structured custom effects/items. Inspect combat values, abilities, damage, movement, skills and class levels for their dependency/source trails.
+- Set abilities, HP state, size and five movement modes. The lifecycle records HP acquisition separately from runtime damage/temporary HP; it does not add a second health tracker. Add catalog conditions, armor/shields/weapons, or structured custom effects/items. Inspect combat values, abilities, damage, movement, skills and class levels for their dependency/source trails.
 - Start from a sample character (the panel at the top of the sheet). Samples are ordinary authored state, so every derived number is recomputed; **Reset sample** reloads the pristine version, and the browser remembers which sample you were on. Invalid edits retain the last valid character and show an error.
 - Open **Workspace** to put that same sheet in a draggable/resizable window, or return to the full-page sheet at any time. The active tab, workspace mode, window visibility/minimized state, and window geometry are temporary UI state; they do not change or save the character.
 - Optionally select an XP track. XP reports eligibility; advancing classes remains an explicit edit. Age-category adjustments are optional catalog features, not inferred from a character's race.
 - **Save character** persists the sheet across reloads: to Supabase in cloud mode, and to this browser's storage in demo mode. Invalid edits retain the last valid character and show an error.
+
+## Abilities, resources, and damage terms
+
+The Features tab includes expert structured editors for first-class abilities and resources. An ability may be passive, toggleable, or activated; may contain several ordinary typed effects; and may consume one or more independently defined resources. Several abilities can share the same pool. Activating is transactional, toggle costs are paid only when switching on, and the sheet exposes maximum, remaining, spent, refresh, manual spend/restore, and manual refresh without putting counters inside ability definitions.
+
+Resource maxima can be fixed, manual, or derived from an explicit base plus an ability modifier in the UI (the domain also supports progression-level and constant terms). Refresh metadata covers manual, per-round, encounter, rest, daily, fixed-round interval, recharge-roll, and unlimited resources. Imported abilities can be added as catalog instances or cloned into local editable content; imported definitions are never mutated. Removing a resource that an ability still references is blocked with the referring ability names.
+
+Abilities can author numeric operations, grants, threat-range changes, and additional typed damage dice with contextual filters. Damage plans retain each dice term's source, optional damage label/type, and whether it multiplies on a critical. This permits ordinary riders and precision damage to coexist without flattening them into an average or losing provenance.
+
+Existing characters and `FeatureInstance` behavior remain compatible: `abilities`, `resources`, and `resourceStates` are optional additive snapshot fields. Full spellcasting progression is intentionally deferred. The intended next seam is spellcasting source → spell-slot/spell-point resource → spell ability → resource cost, with spell levels, preparation, known spells, caster level, concentration, save DCs, and spell lists remaining dedicated future models.
 
 ## Autosheet ingestion
 
@@ -85,11 +105,13 @@ See [Autosheet coverage and next frontier](docs/AUTOSHEET.md) and the [generated
 
 Progression level is character-global; each increment is credited to the track occupying that slot. BAB and each save select the best **complete-track total**, not a sum of per-row winners. HD counts one die per slot, using the best die type there. `combat.bab` is a first-class derived fact consumed once by attacks, CMB and CMD. Explicit chart limits are enforced rather than extrapolated.
 
+Character creation and advancement reuse those facts rather than maintaining a second rules engine. The lifecycle's campaign profile selects track topology and HP/skill policy; its proposal validates and previews a candidate before commit. HP acquisition records how a winning per-slot HD became pre-Constitution HP, while `damageTaken` and `temporaryHp` remain runtime state. Skill allocation can show a policy budget and allocation, while still allowing a deliberate documented override for a trusted table.
+
 Catalog IDs distinguish sources (`pf1e.paizo.fighter`, third-party namespaces, `ffd20.autosheet.*`, `homebrew.local.*`). Historic `fighter`/`wizard`/`rogue` aliases are normalized at persistence/evaluation boundaries, including duplicate detection. Query `progression.<canonical-id>.level` or `experience.level` through the engine; neither is an authorable effect target.
 
 Numeric order: replace the intrinsic baseline → typed additive stacking → multipliers → strongest minimum → strongest maximum. Operations contribute deltas with source evidence. Conflicting replacements/bounds and non-finite results fail explicitly. Catalog effects and custom effects use the same pipeline.
 
-Only authored `CharacterInput` is persisted. Local storage uses `threepointpf.character.<id>`. A host can supply a concrete character ID to the app; without one, the standalone sheet retains its sample-picker behavior. Dice appearance and selected sample have their own browser-scoped keys (`threepointpf.dice.presentation` and `threepointpf.sheet.sample`) and never enter character state. Workspace mode, active tab, and floating-window state are deliberately not persisted at all. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
+Only authored `CharacterInput` is persisted. A lifecycle commit produces that same snapshot; transient proposals, validation displays, and a future wizard's step state are never saved. Optional lifecycle facts retain only durable decisions and their provenance. Local storage uses `threepointpf.character.<id>`. A host can supply a concrete character ID to the app; without one, the standalone sheet retains its sample-picker behavior. Dice appearance and selected sample have their own browser-scoped keys (`threepointpf.dice.presentation` and `threepointpf.sheet.sample`) and never enter character state. Workspace mode, active tab, and floating-window state are deliberately not persisted at all. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
 
 For Supabase, supply `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with an authenticated client session, apply migrations, and deploy `character-state`, `roll-plan`, and `resolve-roll`. The snapshot migration is included, not applied to any hosted database by this change. Never place a service-role key in the browser.
 

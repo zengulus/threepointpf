@@ -88,5 +88,7 @@ export function describeEffect(effect: Effect): string {
       labelFor(effect.target) +
       (effect.appliesWhen ? " (situational)" : "")
     );
+  if (effect.kind === "damageDice")
+    return `+${effect.dice.count}d${effect.dice.sides}${effect.damageType ? ` ${effect.damageType}` : ""} → ${labelFor(effect.target)} (${effect.criticalBehavior === "normal" ? "multiplies on critical" : "not multiplied"})`;
   return "grant " + effect.grant + " → " + labelFor(effect.target);
 }

@@ -8,6 +8,7 @@ import {
   type ContextualModifiers,
   type Contribution,
   type CriticalRangeEffect,
+  type DamageDiceEffect,
   type Effect,
   type EffectApplicability,
   type EvaluationResult,
@@ -181,7 +182,7 @@ function describeApplicability(applicability: EffectApplicability): string {
  * being silently dropped.
  */
 export function applicabilityOf(
-  effect: ModifierEffect | CriticalRangeEffect,
+  effect: ModifierEffect | CriticalRangeEffect | DamageDiceEffect,
   options: { attack?: AttackDefinition; context?: RollContext } = {},
 ): { applies: boolean; reason?: string } {
   const selector = "attackSelector" in effect ? effect.attackSelector : undefined;

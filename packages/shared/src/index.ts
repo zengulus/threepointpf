@@ -57,6 +57,7 @@ function isRulesEngineOptions(
     "progressionAliases" in value ||
     "skillCatalog" in value ||
     "featureCatalog" in value ||
+    "abilityCatalog" in value ||
     "equipmentCatalog" in value ||
     "attackProfileCatalog" in value ||
     "experienceCatalog" in value

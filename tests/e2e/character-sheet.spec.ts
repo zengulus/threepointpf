@@ -355,6 +355,65 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   await dismissDice(page);
 });
 
+test("expert ability authoring connects resources, composed damage, activation and persistence", async ({ page }) => {
+  await page.goto("/");
+  await loadSample(page, "showcase");
+  await selectTab(page, "Features");
+
+  await page.getByLabel("Catalog ability").selectOption("pf1e.paizo.power-attack");
+  await page.getByRole("button", { name: "Clone → local edit", exact: true }).click();
+  await expect(page.getByLabel("Ability name")).toHaveValue("Power Attack");
+  await page.getByLabel("Ability name").fill("Local Power Attack");
+  await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
+  await expect(page.getByLabel("Edit ability Local Power Attack")).toBeVisible();
+
+  await page.getByLabel("Resource name").fill("Titan Charges");
+  await page.getByLabel("Resource maximum", { exact: true }).fill("3");
+  await page.getByRole("button", { name: "+ Add resource", exact: true }).click();
+  await expect(page.getByLabel("Resources")).toContainText("Maximum: 3 · Remaining: 3 · Spent: 0");
+
+  await page.getByLabel("Ability name").fill("Titan Stance");
+  await page.getByLabel("Ability effect target").selectOption("attack.melee");
+  await page.getByLabel("Ability effect value").fill("-2");
+  await page.getByRole("button", { name: "+ Add effect", exact: true }).click();
+  await page.getByLabel("Ability effect kind").selectOption("damageDice");
+  await page.getByLabel("Ability effect target").selectOption("damage.melee");
+  await page.getByLabel("Ability damage dice").fill("2d6");
+  await page.getByLabel("Ability damage type").fill("force");
+  await page.getByRole("button", { name: "+ Add effect", exact: true }).click();
+  await page.getByLabel("Ability cost resource").selectOption({ label: "Titan Charges" });
+  await page.getByLabel("Ability cost amount").fill("1");
+  await page.getByRole("button", { name: "+ Add cost", exact: true }).click();
+  await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
+
+  await selectTab(page, "Combat");
+  const attack = page.locator(".attack-row").filter({ hasText: "Greatsword" }).first();
+  const before = await attack.locator(".attack-name strong").textContent();
+  await selectTab(page, "Features");
+  await page.getByLabel("Toggle ability Titan Stance").click();
+  await expect(page.getByLabel("Resources")).toContainText("Remaining: 2 · Spent: 1");
+  await selectTab(page, "Combat");
+  await expect(attack.locator(".attack-name strong")).not.toHaveText(before ?? "");
+  await expect(attack.locator(".attack-name small")).toContainText("2d6 force");
+  await page.getByTestId("roll-damage-greatsword").click();
+  await expect(page.locator(".sheet-notice")).toContainText(/dice \d+(, \d+)+/);
+  await dismissDice(page);
+
+  await page.getByRole("button", { name: "Save character" }).click();
+  await page.reload();
+  await selectTab(page, "Features");
+  await expect(page.getByLabel("Abilities")).toContainText("Titan Stance");
+  await expect(page.getByLabel("Resources")).toContainText("Remaining: 2 · Spent: 1");
+  await page.getByLabel("Edit ability Titan Stance").click();
+  await page.getByLabel("Ability description").fill("Edited and persisted");
+  await page.getByRole("button", { name: "Save ability", exact: true }).click();
+  await page.getByRole("button", { name: "Save character" }).click();
+  await page.reload();
+  await selectTab(page, "Features");
+  await page.getByLabel("Edit ability Titan Stance").click();
+  await expect(page.getByLabel("Ability description")).toHaveValue("Edited and persisted");
+});
+
 test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
   await page.goto("/");
   // No server and no credentials: the build reports demo mode and lands on the

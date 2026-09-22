@@ -5,6 +5,7 @@ import {
   advancementSlotsSchema,
   type AdvancementSlot,
   type BabProgression,
+  type ChoiceRequirement,
   type ProgressionAliasMap,
   type ProgressionCatalog,
   type ProgressionDefinition,
@@ -54,12 +55,25 @@ export interface AdvancementFeatureGrant {
   trackId: string;
   description?: string;
   effects?: Effect[];
+  /** Structured player-facing selections unlocked by this feature. */
+  choices?: ChoiceRequirement[];
 }
 
 export interface SlotHitDie {
   slotId: string;
   trackId: string;
+  /** Canonical progression supplying this slot's winning die. */
+  progressionId: string;
   sides: number;
+}
+
+/** The highest skill-point chassis available in one ordered advancement slot. */
+export interface SlotSkillPointSource {
+  slotId: string;
+  trackId: string;
+  /** Canonical progression supplying this slot's winning chassis. */
+  progressionId: string;
+  skillPoints: number;
 }
 
 export interface AdvancementEvaluation {
@@ -72,6 +86,8 @@ export interface AdvancementEvaluation {
   hitDiceCount: number;
   hitDieSides: number[];
   hitDieSources: SlotHitDie[];
+  /** One winning skill-point chassis per ordered slot, in slot order. */
+  skillPointSources: SlotSkillPointSource[];
   skillPoints: number;
 }
 
@@ -184,7 +200,7 @@ export function evaluateAdvancement(
   const byTrack = new Map<string, TrackAdvancementResult>();
   const globalProgressionLevels = new Map<string, ProgressionLevelResult>();
   const hitDieSources: SlotHitDie[] = [];
-  const slotSkillPoints: number[] = [];
+  const skillPointSources: SlotSkillPointSource[] = [];
   const featureGrants: AdvancementFeatureGrant[] = [];
 
   for (const slot of canonicalSlots) {
@@ -258,6 +274,7 @@ export function evaluateAdvancement(
           trackId: track.id,
           ...(feature.description ? { description: feature.description } : {}),
           ...(feature.effects ? { effects: feature.effects } : {}),
+          ...(feature.choices ? { choices: feature.choices } : {}),
         });
       }
     }
@@ -270,15 +287,24 @@ export function evaluateAdvancement(
     hitDieSources.push({
       slotId: slot.id,
       trackId: bestHitDie.trackId,
+      progressionId: bestHitDie.definition.id,
       sides: bestHitDie.definition.hitDieSides,
     });
-    slotSkillPoints.push(
-      Math.max(
-        ...slotCandidates.map(
-          (candidate) => candidate.definition.skillPointsPerLevel ?? 0,
-        ),
-      ),
+    // Keep the same stable, first-track tie breaker used by bestTrack and the
+    // hit-die source above. This makes a slot's chassis explainable to a
+    // lifecycle UI without changing the existing max-per-slot semantics.
+    const bestSkillPoints = slotCandidates.reduce((best, candidate) =>
+      (candidate.definition.skillPointsPerLevel ?? 0) >
+      (best.definition.skillPointsPerLevel ?? 0)
+        ? candidate
+        : best,
     );
+    skillPointSources.push({
+      slotId: slot.id,
+      trackId: bestSkillPoints.trackId,
+      progressionId: bestSkillPoints.definition.id,
+      skillPoints: bestSkillPoints.definition.skillPointsPerLevel ?? 0,
+    });
   }
 
   const tracks = [...byTrack.values()];
@@ -296,7 +322,11 @@ export function evaluateAdvancement(
     hitDiceCount: slots.length,
     hitDieSides: hitDieSources.map((source) => source.sides),
     hitDieSources,
-    skillPoints: slotSkillPoints.reduce((total, value) => total + value, 0),
+    skillPointSources,
+    skillPoints: skillPointSources.reduce(
+      (total, source) => total + source.skillPoints,
+      0,
+    ),
   };
 }
 

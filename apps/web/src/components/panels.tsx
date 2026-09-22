@@ -17,6 +17,7 @@ import {
   type EffectTargetId,
 } from "@threepointpf/rules-schema";
 import { CustomEquipmentEditor } from "./custom-equipment-editor";
+import { AbilityResourceEditor } from "./ability-resource-editor";
 import { Field, StatCard } from "./primitives";
 import { RollTargetField, WeaponActionControls } from "./roll-actions";
 import {
@@ -440,6 +441,11 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
               <span>{attack.definition.name}</span>
               <strong>{formatModifier(attack.attack.value)}</strong>
               <small>{attack.damage.formula}</small>
+              <span className="damage-term-provenance">
+                {attack.damage.terms.map((term) =>
+                  `${term.dice.count}d${term.dice.sides} ${term.source.label}${term.damageType ? ` (${term.damageType})` : ""}${term.criticalBehavior === "notMultiplied" ? " · not multiplied" : ""}`,
+                ).join(" · ")}
+              </span>
             </button>
             <div className="attack-sequence">
               <button
@@ -835,10 +841,12 @@ export function FeaturesPanel({ sheet }: { sheet: CharacterSheet }) {
       <section className="panel features-panel">
         <div className="panel-heading">
           <div>
-            <span className="eyebrow">FEATURES / CONDITIONS</span>
-            <h2>Catalog choices & effects</h2>
+            <span className="eyebrow">ABILITIES / RESOURCES / LEGACY FEATURES</span>
+            <h2>Structured authoring & runtime state</h2>
           </div>
         </div>
+        <AbilityResourceEditor sheet={sheet} />
+        <h3>Legacy features and conditions</h3>
         <div className="catalog-add-row">
           <select
             aria-label="Catalog feature or condition"

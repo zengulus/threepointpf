@@ -92,7 +92,11 @@ export function CharacterSheetView({
   const { character, derived } = sheet;
   const level = derived.advancement?.slotCount || character.hitDiceCount || 1;
   const landSpeed = derived.speeds.land.value;
-  const featureCount = character.features.filter((feature) => feature.enabled).length;
+  const featureCount = character.features.filter((feature) => feature.enabled).length +
+    (character.abilities ?? []).filter((ability) =>
+      ability.activation === "passive" ||
+      (ability.activation === "toggleable" && ability.active),
+    ).length;
   const equippedCount = (character.equipment ?? []).filter(
     (item) => item.equipped,
   ).length;

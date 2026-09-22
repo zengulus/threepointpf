@@ -8,6 +8,7 @@ import {
   type AttackDefinition,
   type AttackMode,
   type Contribution,
+  type DamageDiceTerm,
   type DamageEvaluation,
   type DerivedAttack,
   type EvaluationResult,
@@ -21,7 +22,7 @@ import {
 } from "@threepointpf/rules-schema";
 import { base, lookup, sourceContribution } from "./contributions.js";
 import { babContribution, evaluateCombatManeuver } from "./defenses.js";
-import { attackModeOf, resolveContextFlags } from "./effects.js";
+import { applicabilityOf, attackModeOf, resolveContextFlags } from "./effects.js";
 import { labelForTarget } from "./labels.js";
 import {
   attackCriticalMultiplier,
@@ -278,12 +279,40 @@ export function evaluateDamage(
     excluded: modifiers.excluded,
   });
   const modifier = damageResult.value;
+  const terms: DamageDiceTerm[] = [
+    {
+      kind: "dice",
+      dice: definition.baseDamage,
+      label: definition.name,
+      source: {
+        id: `attack.${definition.id}.base-damage`,
+        label: definition.name,
+        ...(definition.source ? { content: definition.source } : {}),
+      },
+      criticalBehavior: "normal",
+      multiplier: 1,
+    },
+    ...runtime.effects.flatMap((effect): DamageDiceTerm[] => {
+      if (effect.kind !== "damageDice" || effect.target !== damageTarget) return [];
+      if (!applicabilityOf(effect, { attack: definition, context }).applies) return [];
+      return [{
+        kind: "dice",
+        dice: effect.dice,
+        label: effect.label ?? effect.source?.label ?? effect.damageType ?? "Additional damage",
+        source: effect.source ?? { id: "effect", label: "Damage dice effect" },
+        ...(effect.damageType ? { damageType: effect.damageType } : {}),
+        criticalBehavior: effect.criticalBehavior,
+        multiplier: 1,
+      }];
+    }),
+  ];
   return {
-    formula: `${definition.baseDamage.count}d${definition.baseDamage.sides}${modifier === 0 ? "" : modifier > 0 ? ` + ${modifier}` : ` - ${Math.abs(modifier)}`}`,
+    formula: `${terms.map((term) => `${term.dice.count}d${term.dice.sides}${term.damageType ? ` ${term.damageType}` : ""}`).join(" + ")}${modifier === 0 ? "" : modifier > 0 ? ` + ${modifier}` : ` - ${Math.abs(modifier)}`}`,
     dice: definition.baseDamage,
     modifier,
     criticalMultiplier: attackCriticalMultiplier(runtime, definition),
     contributions: damageResult.contributions,
+    terms,
     ...(damageResult.excluded ? { excluded: damageResult.excluded } : {}),
   };
 }
@@ -338,12 +367,11 @@ function damagePlanFrom(
     id: `damage:${runtime.character.id}:${definition.id}${suffix}${criticalDamage ? ":critical" : ""}`,
     characterId: runtime.character.id,
     label: `${definition.name} damage${standard || step === 0 ? "" : ` ${step + 1}`}${criticalDamage ? ` (critical ×${times})` : ""}`,
-    dice: [
-      {
-        sides: definition.baseDamage.sides,
-        count: definition.baseDamage.count * times,
-      },
-    ],
+    dice: evaluation.terms.map((term) => ({
+      sides: term.dice.sides,
+      count: term.dice.count *
+        (criticalDamage && term.criticalBehavior === "normal" ? times : 1),
+    })),
     modifier: evaluation.modifier * times,
     context,
     outcomePolicy: runtime.outcomePolicies.plain,
@@ -366,6 +394,10 @@ function damagePlanFrom(
           ]
         : evaluation.contributions,
       excluded: evaluation.excluded ?? [],
+      damageTerms: evaluation.terms.map((term) => ({
+        ...term,
+        multiplier: criticalDamage && term.criticalBehavior === "normal" ? times : 1,
+      })),
     },
   };
 }

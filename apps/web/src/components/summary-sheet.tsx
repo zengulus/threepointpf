@@ -41,8 +41,13 @@ export function SummarySheet({
     )
     .slice(0, 4);
   const attacks = derived.attacks.slice(0, 3);
-  const activeFeatures = character.features
-    .filter((feature) => feature.enabled)
+  const activeFeatures = [
+    ...character.features.filter((feature) => feature.enabled),
+    ...(character.abilities ?? []).filter((ability) =>
+      ability.activation === "passive" ||
+      (ability.activation === "toggleable" && ability.active),
+    ),
+  ]
     .slice(0, 6);
 
   return (

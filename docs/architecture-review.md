@@ -12,6 +12,8 @@ Updated: 2026-09-18 (appearance pass: the dice drawer is the whole roll surface,
 
 Updated: 2026-09-22 (application-shell pass: one reusable sheet view is framed full-page or in a floating workspace window without duplicating state, roll presentation, or panel markup)
 
+Updated: 2026-09-22 (character-lifecycle pass: campaign policy and pure creation/advancement proposals turn back into ordinary authored character state without adding a wizard UI)
+
 This review compares the implementation with the supplied `Pathfinder Autosheet v6.2.1` workbook and the current vertical-slice brief. The workbook remains a behavioral reference, not a runtime dependency.
 
 ## Overall assessment
@@ -28,7 +30,27 @@ The architecture is sound for a first slice. The most important boundary is alre
 
 Advancement is represented as ordered `AdvancementSlot[]`. Each slot contains any number of named `AdvancementTrack` entries, so track count expresses normal, gestalt, tristalt, or another campaign structure without an `isGestalt` boolean. An entry references a `ProgressionDefinition` supplied by an injected catalog. `rules-core` owns no class corpus; `rules-data` validates the Autosheet-derived Fighter, Rogue, and Wizard chassis facts and their source rows.
 
-Progression/class levels are character-global in ordered slot/track traversal. Each cumulative chassis delta is credited to the track that occupies the entry, so moving Fighter between tracks never restarts its good-save or fractional-BAB progression. Aggregation is then property-specific: BAB chooses the highest complete track total, each save chooses its highest complete track total, and hit dice provide one die per slot using the highest die type available in that slot. BAB is never maximized independently at each slot, so staggered fractional tracks cannot manufacture full BAB. The selected track, global levels, and individual increments appear as nested provenance. Hit-die sides are available for a future HP-from-HD layer; the current authored `baseHpBeforeConstitution` remains the HP baseline.
+Progression/class levels are character-global in ordered slot/track traversal. Each cumulative chassis delta is credited to the track that occupies the entry, so moving Fighter between tracks never restarts its good-save or fractional-BAB progression. Aggregation is then property-specific: BAB chooses the highest complete track total, each save chooses its highest complete track total, and hit dice provide one die per slot using the highest die type available in that slot. BAB is never maximized independently at each slot, so staggered fractional tracks cannot manufacture full BAB. The selected track, global levels, and individual increments appear as nested provenance. The evaluator also retains the winning HD and skill-point chassis for each slot, including their progression and track sources, so a lifecycle policy can explain its HP and skill decisions without recalculating advancement.
+
+### Character lifecycle and campaign policy
+
+A class is one kind of `ProgressionDefinition`, not a privileged application primitive. An imported class, prestige class, monster class, racial progression, or locally authored homebrew progression enters the same injected catalog and the same ordered-track evaluator. There is no `isMonsterClass` or `isGestalt` branch: campaign topology and content are data.
+
+`CampaignCharacterProfile` is the small caller-supplied policy boundary for creation and level-up. It declares the named advancement tracks and starting level, which catalog sources/progressions are offered, the HP-acquisition policy, the skill-allocation policy, and whether an explicit manual/GM override is permitted. It is deliberately not a universal Pathfinder legality schema or a required cloud campaign record. A trusted table can express its own N-track, homebrew-heavy rules without teaching React, persistence, or the evaluator a special case.
+
+The lifecycle is a collection of pure domain transactions, not a second mutable character model:
+
+`beginCharacterCreation` / `proposeCharacterCreation` / `validateCharacterCreation` / `previewCharacterCreation` / `commitCharacterCreation`
+
+`beginAdvancement` / `proposeAdvancement` / `validateAdvancement` / `previewAdvancement` / `commitAdvancement`
+
+Creation begins from an empty proposal under a profile; its incomplete fields retain `CharacterInput` names and materialize directly into a candidate `CharacterInput` as choices arrive. Advancement begins from an existing `CharacterInput` and proposes exactly the next ordered slot. Both can be inspected or abandoned without mutating the input character, and neither introduces a separate builder format that later needs conversion. The proposal accepts progression choices by track, feature/choice selections where the current content can express them, HP acquisition, skill ranks, and explicit overrides; the existing advancement evaluation supplies global progression levels, unlocked features, winning chassis and provenance.
+
+Choice requirements are structured domain data, not raw form paths: a requirement identifies its slot/track/progression source, exposes its available options and explanatory text, and records a selection with provenance. That is enough for a future UI to say “choose a progression for Track B” or “this monster level grants one adaptation” without encoding a Pathfinder-specific picker. Features whose source is only prose still remain visible unlocks rather than fabricated mechanics.
+
+Validation returns structured issues rather than making every unproven rule a hard failure. Malformed IDs, unknown progressions, illegal topology, duplicate tracks, and invalid data shape are structural errors and block commit. A budget overage, unmodelled prerequisite, unusual progression combination, or manual allocation can instead be a policy warning when the profile allows an explicit override. An override names what was accepted and why, and is retained as lifecycle provenance; it cannot turn an unrelated structural error into a valid character.
+
+Preview compares the before and candidate evaluations as semantic changes rather than asking a future UI to diff the entire derived tree: character and progression levels, winning BAB/save/HD/skill chassis, newly unlocked features, HP acquisition, skill budget/allocation, and structured warnings are all visible. Commit returns the candidate as ordinary authored state. Only durable lifecycle facts — for example a per-slot HP gain, a rank allocation, selected option, or override note — belong in optional `CharacterInput.lifecycle` facts; an open step, temporary proposal, or UI route does not.
 
 ### Set and replacement semantics
 
@@ -65,7 +87,9 @@ AC context is represented as `normal`, `touch` or `flatFooted`. A modifier targe
 
 ### HP meaning is explicit
 
-The authored fields are `baseHpBeforeConstitution`, `damageTaken`, and `temporaryHp` in advancement mode; manual mode additionally accepts `baseBab`, `baseSaves`, and `hitDiceCount`. `maxHp` is derived as the baseline plus the effective Constitution modifier once per hit die. `currentHp` is derived from `maxHp - damageTaken`, so a temporary Constitution change updates current HP consistently without rewriting damage state; temporary HP remains a separate value. The web and TTS state contracts receive the derived HP state from the TypeScript engine.
+HP acquisition is a lifecycle decision, distinct from runtime health. A campaign profile can require maximum first level, a fixed/average amount, a caller-supplied roll, or an explicitly manual gain. For an advancement slot the lifecycle reads the evaluator's winning HD source, records the accepted pre-Constitution gain with its policy and slot/track/progression provenance, and updates the ordinary `baseHpBeforeConstitution` baseline on commit. This makes a gestalt or N-track result explainable without silently choosing one table-wide HP convention.
+
+Runtime health remains the existing authored/derived boundary: `baseHpBeforeConstitution`, `damageTaken`, and `temporaryHp` describe the durable HP state; manual mode additionally accepts `baseBab`, `baseSaves`, and `hitDiceCount`. `maxHp` is derived as the baseline plus the effective Constitution modifier once per hit die. `currentHp` is derived from `maxHp - damageTaken`, so a temporary Constitution change updates current HP consistently without rewriting damage state; temporary HP remains separate. The lifecycle does not add a second damage tracker.
 
 ### Provenance preserves dependencies
 
@@ -110,6 +134,24 @@ Multiple weapons are never concatenated into a fake combined full attack, and ac
 Contextual filtering preserves provenance in both directions: `EvaluationResult.excluded` and `DamageEvaluation.excluded` report each authored-but-filtered effect with a reason (`does not apply to touch attacks`, `requires flags combat-expertise`, `excluded for tags weapon.two-handed, weapon.off-hand`), and `actionExclusions` flattens an action's exclusions for display. Every exclusion is structured data (target, source, value, reason), so the machine-readable record does not depend on prose. The sheet shows what contributed *and* why other authored effects did not.
 
 Server authority is unchanged by the extra context: `roll-plan` accepts either an action request or a single-sequence-member request, and `resolve-roll` rebuilds the request from the plan's own metadata, so a client never supplies a modifier and every contextual plan is recomputed from authored state plus context before raw die faces are resolved. The TTS panel requests the same contextual plans, carries an explicit standard/full attack choice, and exposes maneuver buttons; it still derives no modifiers itself. That client is deferred and frozen at this scope (see the TTS gate in `docs/open-decisions.md`), so new plan families do not wait on it.
+
+### Abilities, resources, and composed damage
+
+An ability is a named semantic object, not an alias for one effect. `AbilityDefinition` is imported catalog content; `AbilityInstance` records possession and may instead carry a complete character-local editable definition. An ability declares `passive`, `toggleable`, or `activated` semantics, zero or more ordinary typed `Effect` values, and zero or more `ResourceCost` references. Passive ability effects always enter the existing effect pipeline, toggleable effects enter it only while the instance is active, and activated abilities spend their costs without pretending to be a persistent toggle. Legacy `FeatureInstance` values remain valid and use the same reducer pipeline.
+
+Resources are independent authored objects. `ResourceDefinition` owns identity, display text, a fixed/manual/derived maximum, and a refresh rule; `ResourceState` owns only mutable spent and timer state. Derived maxima can compose a base with explicit constants, ability modifiers, and character-global progression levels. `DerivedResource` reports maximum, spent, remaining, refresh metadata, and maximum provenance. Spending never rewrites capacity. Pure resource operations support spend, restore, set, manual refresh, event refresh (`round`, `encounter`, `rest`, `daily`), and round advancement for fixed intervals and deterministic recharge-roll timers. Ability activation validates every cost before returning a new character snapshot, so a failed multi-resource activation cannot partially spend anything. Turning off a toggle costs nothing; turning it on pays once rather than evaluation or React renders consuming a resource.
+
+`damageDice` is a first-class effect with a damage target, `DiceExpression`, optional damage type/label, contextual applicability, source, and explicit `normal` or `notMultiplied` critical behavior. Damage evaluation and `RollPlan.provenance.damageTerms` retain separate sourced terms: weapon base dice, flaming dice, precision dice, and stance dice do not collapse into an average or an anonymous combined expression. Critical plans multiply only `normal` terms; precision-style terms remain one copy. Numeric damage contributions continue through the existing contribution reducer and follow the weapon/profile's authored critical multiplier.
+
+The expert Features tab now contains structured resource and ability editors. Resources expose capacity policy, refresh, remaining/spent state, and manual controls. Abilities support catalog addition, catalog-to-local cloning, editing, multiple reorderable effects, costs selected by resource name/ID, activation, and typed applicability fields. Referenced resources cannot be silently deleted. Local abilities/resources and mutable use state travel in the existing atomic `CharacterInput` snapshot; editor drafts do not. Older snapshots omit the optional collections and retain their exact legacy feature behavior.
+
+This is intentionally a spellcasting seam, not a spellcasting implementation:
+
+```text
+spellcasting source → slot/spell-point resource → spell ability → resource cost → roll/effect execution
+```
+
+Spell level metadata, prepared/spontaneous progression, spells known/prepared, spellbooks, caster-level rules, concentration, DC construction, metamagic, and full spell lists remain dedicated future concepts. They should reference this resource/activation layer without erasing spell-specific identity.
 
 ### The roll and outcome contract
 
@@ -213,7 +255,7 @@ The draw loop, canvas factory and clock are injectable through the renderer fact
 
 ### Module boundaries
 
-`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement` and `character` (orchestration). Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. On the web side, `apps/web/src/App.tsx` is the small public composition entry point; `AppShell` owns application presentation, `CharacterSheetView` owns the reusable sheet DOM, presentation frames live in `components/sheet-presentations.tsx`, and authored-state/rules wiring remains in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
+`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement`, `lifecycle` (campaign profiles, proposals, validation, previews and commits), and `character` (orchestration). The lifecycle depends on the evaluator; the evaluator does not depend on a lifecycle UI. Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. On the web side, `apps/web/src/App.tsx` is the small public composition entry point; `AppShell` owns application presentation, `CharacterSheetView` owns the reusable sheet DOM, presentation frames live in `components/sheet-presentations.tsx`, and authored-state/rules wiring remains in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
 
 ## Workbook parity scenarios
 
@@ -223,13 +265,13 @@ The draw loop, canvas factory and clock are injectable through the renderer fact
 
 The following are known scope boundaries, not hidden assumptions:
 
-- HP-before-Constitution remains an authored baseline. Manual BAB/saves/HD are retained for legacy mode; validated Autosheet chassis data now supplies advancement BAB, saves, HD count, and HD sides.
+- HP acquisition is policy-driven in the lifecycle: a committed per-slot gain contributes to the authored pre-Constitution baseline, while damage and temporary HP remain runtime state. Manual BAB/saves/HD are retained for legacy mode; validated Autosheet chassis data supplies advancement BAB, saves, HD count, HD sources, and skill-point chassis sources. Rolling integrity, every average convention, and exotic HP systems remain campaign-policy choices rather than a universal rule.
 - AC supports the current base, Dexterity, natural armor and explicit AC effects. Armor/equipment inventories, shield handling, size, concealment, cover, conditions and special defenses are not yet modeled.
 - Movement currently reduces additive speed contributions. Multipliers, caps and all non-land modes need a future operation model; the target IDs already leave room for those modes.
 - Attack entries now derive an action: a standard attack, a full attack with BAB iteratives and explicit extra attacks, or a maneuver, each producing explicit roll plans with semantic outcomes, and each step also carrying the damage roll it deals. Critical damage is the damage rolled twice, expressed by the plan rather than by a caller. Two-weapon fighting penalties, off-hand sequence limits, precision-damage exemptions from critical doubling, ammunition, range increments and special attack text are still outside this slice.
 - CMD consumes the applicable AC categories semantically, but cover, concealment, miss chance and special defenses are not modeled, and maneuver resolution stops at the CMB/CMD modifier: opposed checks, size limits ("cannot trip a creature two sizes larger") and maneuver defense DCs remain author reminders.
 - Situational flags are authored slugs. There is no registry, so a homebrew flag only matters if an effect requires it; conditions contribute flags rather than running an autonomous condition engine.
-- Skills use authored ranks, governing ability, class-skill flag, misc and armor/size adjustments. Class-based skill configuration and trained-only rules are future data, not inferred from a class string.
+- Skills use authored ranks, governing ability, class-skill flag, misc and armor/size adjustments. Lifecycle policy can expose a per-slot budget, validate an allocation, and record an override, but it does not claim to settle every PF1e/3.5 cap, fractional-rank, trained-only, or variant-skill rule. Those remain explicit campaign/content choices rather than inferred from a class string.
 - Gestalt is not represented by an `isGestalt` boolean; track count in ordered advancement slots supplies that structure.
 
 These omissions are preferable to spreadsheet-shaped special cases because they leave the calculation path declarative and testable.
@@ -238,13 +280,13 @@ These omissions are preferable to spreadsheet-shaped special cases because they 
 
 The browser and TTS script are untrusted clients. They may request a plan and submit raw physical die faces, but they do not hold rules authority. `roll-plan` reloads the authored character and creates the plan server-side. `resolve-roll` reloads the character, rebuilds the plan from the submitted plan's own context (never from its modifier or provenance), validates the submitted faces against that rebuild, resolves the roll, and records the result in `roll_history`. The TTS script contains UI, die spawning, settle detection and transport only; it does not contain PF formulas or a service-role key.
 
-Supabase stores authored character inputs, feature state, attack definitions and roll history. Derived totals are not persisted as authoritative state. Edge Function request bodies and character rows are validated before use, and the public browser/TTS credentials are bearer tokens rather than service-role credentials. The remaining production work is operational—short-lived token issuance, row-level policy review, rate limiting, replay/idempotency policy and deployment secrets—not a reason to move rules into clients.
+Supabase stores authored character inputs, feature state, attack definitions and roll history. Derived totals and transient lifecycle proposals are not persisted as authoritative state: a lifecycle commit yields the same ordinary `CharacterInput` snapshot used by the current repository abstraction, including only durable optional lifecycle facts where present. Edge Function request bodies and character rows are validated before use, and the public browser/TTS credentials are bearer tokens rather than service-role credentials. The remaining production work is operational—short-lived token issuance, row-level policy review, rate limiting, replay/idempotency policy and deployment secrets—not a reason to move rules into clients.
 
 The HP migration preserves pre-`cacd050` rows by reconstructing `damage_taken` from the old derived maximum (`base_hp_before_con` plus the old effective base Constitution modifier) before dropping absolute `current_hp`; it also converts legacy baseline-effect names and makes manual baseline columns nullable for advancement mode.
 
 ## Maintainability decisions
 
-The core remains small and auditable, with advancement isolated in its dedicated module and content isolated in `rules-data`. If conditions, equipment or operation types are added, continue splitting along those boundaries (`reducers`, `provenance`, `advancement`, `defense`, `combat`) before the code becomes the new spreadsheet. The current tests exercise the invariants that should survive that split: typed reduction, replacement, dependency propagation, explicit AC contexts, nested provenance, character-global progression levels, whole-track aggregation, N-track persistence, contextual action membership, deterministic outcome classification and TTS roll-plan parity.
+The core remains small and auditable, with advancement and lifecycle isolated from content in `rules-data`. If conditions, equipment or operation types are added, continue splitting along those boundaries (`reducers`, `provenance`, `advancement`, `lifecycle`, `defense`, `combat`) before the code becomes the new spreadsheet. The current tests exercise the invariants that should survive that split: typed reduction, replacement, dependency propagation, explicit AC contexts, nested provenance, character-global progression levels, whole-track aggregation, N-track persistence, proposal non-mutation, structured validation/override provenance, contextual action membership, deterministic outcome classification and TTS roll-plan parity.
 
 ## Recommended next increments
 
@@ -252,6 +294,6 @@ The core remains small and auditable, with advancement isolated in its dedicated
 2. Model concealment, cover and miss chance as explicit defense/roll contexts rather than modifier guesses.
 3. Derive off-hand and two-weapon sequence limits so a selected off-hand weapon stops being authored as a full independent sequence.
 4. Let an action offer its critical damage plan automatically: the authored `criticalMultiplier` exists (`criticalDamage`), but a caller must still ask for it after resolving a `criticalSuccess`, and precision damage is currently multiplied with everything else.
-5. Expand validated progression content and add HP-from-HD without changing the global-level/track aggregation contract.
+5. Expand validated progression content and choice metadata without changing the global-level/track aggregation contract; spellcasting, feat prerequisites and other large class systems still need their own schemas.
 6. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary; the demo mode above is deliberately unauthenticated, and cloud mode still relies on deployment-side policy.
-7. Give samples the same treatment as authored sheets once character creation exists: point-buy/rolled ability generation, race selection and a feat picker would let a sample be generated instead of hand-authored.
+7. Decide whether to build a guided creation/level-up presentation on top of the lifecycle APIs. Point-buy/rolled ability generation, race selection, feat selection and full prerequisite automation remain future product/rules work; the current sheet's direct editor stays an expert surface.

@@ -2,9 +2,9 @@
 
 These decisions are genuinely unresolved. Each entry states the options and what
 the code does in the meantime, so ordinary implementation work never has to stop
-for them. Content-policy items (ingestion exclusions, HP/skill allocation,
-missing class-skill rows, large class systems) live in `AUTOSHEET.md` and are not
-repeated here.
+for them. Dataset-policy items (ingestion exclusions, missing class-skill rows,
+large class systems) live in `AUTOSHEET.md`; character HP and skill allocation
+are now explicit campaign-profile concerns and are summarized here.
 
 ## Deferred (do this later)
 
@@ -52,17 +52,33 @@ critical multiplier is authored per weapon/profile, a plan declares its own
 primary check die, and threat-range expansion covers Improved Critical/Keen
 doubling with weapon scoping and nonstacking.
 
+Settled by the character-lifecycle pass, and no longer open: creation and
+level-up are pure domain transactions over ordinary `CharacterInput`, not an
+incrementally saved builder or a React workflow. A caller supplies a campaign
+character profile, proposes choices, receives structured validation and a
+semantic preview, then commits the resulting authored state. The profile makes
+track topology, content sources, HP acquisition, skill allocation, and explicit
+trusted-table overrides visible; it does not declare one universal Pathfinder
+answer, create a backend campaign service, or add a player-facing wizard.
+
+Settled by the ability/resource pass, and no longer open: abilities group zero
+or more effects and have explicit passive/toggleable/activated state; resources
+are independent shared pools with separate maximum and spent state; activation
+spends referenced resources transactionally; and additional damage dice remain
+separate sourced terms with explicit critical multiplication behavior. Imported
+abilities can be added or cloned into local editable definitions, while legacy
+feature instances remain compatible.
+
 ## Product decisions
 
-1. **Character creation for samples.** Samples are hand-authored
-   `CharacterInput` values, including the level 1 fighter's ability assignment
+1. **Character-creation presentation and samples.** The lifecycle can construct
+   and commit a normal `CharacterInput`, but the demo samples remain
+   hand-authored values, including the level 1 fighter's ability assignment
    (elite array with the human +2 already applied) and its three feats. There is
-   no point-buy, race or feat-picker subsystem, so nothing currently *generates*
-   a legal character; changing the sample means editing data. Options: keep
-   hand-authored samples as documentation of what the sheet can represent, or
-   add a small creation assistant (ability generation, race/class choice, feat
-   slots) that emits authored state. The sheet itself does not need the
-   assistant: it validates and derives whatever it is given.
+   still no point-buy, race, or full feat-picker UI. The open product choice is
+   whether samples should stay curated fixtures or be generated through a small
+   creation surface, and how much guidance a newcomer needs before the sheet's
+   existing expert editor is appropriate.
 2. **Sample selection scope.** The selected sample is browser-scoped
    (`threepointpf.sheet.sample`), not per character and not synced. A reload
    returns to the same sample, but a second browser starts on the default. If
@@ -78,6 +94,25 @@ doubling with weapon scoping and nonstacking.
    `docs/architecture-review.md`. Demo mode is not a substitute for that work and
    is not meant to become an unauthenticated cloud client.
 
+## Lifecycle policy decisions
+
+1. **Campaign-profile ownership and defaults.** A caller supplies the profile
+   that names tracks, sources, HP/skill policies, and allowed overrides. This
+   pass deliberately does not decide whether profiles become persisted campaign
+   records, who may edit them, which source lists a campaign exposes, or a
+   universal default for a new table. The static demo can remain entirely local.
+2. **Character-choice coverage.** The lifecycle can expose a structured
+   requirement/selection where content models one, but it does not turn
+   descriptions into a feat, race, spellcasting, or prerequisite engine. The
+   table must still decide how to represent and review those systems before a
+   guided player flow claims to prove legal builds.
+3. **HP and skill variants.** The profile makes maximum-first-level, fixed,
+   rolled/caller-supplied, and manual HP gains explicit and can report a skill
+   budget/allocation with an override. It does not settle random-roll auditing,
+   fractional ranks, every class-skill/cap interpretation, retraining, or the
+   3.5/PF1e variants. Those remain local policy decisions, recorded rather than
+   silently guessed.
+
 ## Rule semantics
 
 1. **Opposed maneuvers and maneuver legality.** The engine computes a contextual
@@ -87,13 +122,12 @@ doubling with weapon scoping and nonstacking.
    at the modifiers plus an author reminder, or add a `ManeuverResolution` that
    carries both contexts. Today a maneuver is a contextual CMB plan compared
    against the caller's CMD and the table adjudicates the rest.
-2. **Precision damage and automatic critical damage.** A critical damage plan
-   applies the weapon's or profile's authored `criticalMultiplier` (default ×2),
-   so the multiplication is content and the arithmetic is server-side. What is
-   not modelled: precision damage (sneak attack, a ranger's favored-enemy dice)
-   should not be multiplied, and nothing yet offers the critical variant
-   automatically after a `criticalSuccess` — the caller decides when the attack
-   crit. Both remain a rules decision, not an implementation detail.
+2. **Automatic critical follow-up.** Additional damage dice now explicitly
+   declare whether they multiply, so precision damage can remain one sourced
+   copy while ordinary riders follow the weapon's authored multiplier. What is
+   still not modelled is automatically offering or resolving the critical
+   damage plan after a `criticalSuccess`; the caller decides when to roll that
+   variant.
 3. **Multiple extra-attack sources.** Haste grants exactly one extra attack per
    full-attack action (decided, and covered by tests). Whether Rapid Shot, Haste
    and a future *speed* weapon stack, or whether extra attacks of the same class
@@ -163,8 +197,11 @@ doubling with weapon scoping and nonstacking.
     reason, and the sheet shows them for the inspected target. If players need
     "why is my ray not getting Deadly Aim" without inspecting, the plan needs a
     deliberate exclusion summary instead of raw contributions.
-14. **Homebrew authoring surface.** Homebrew can express applicability, tags,
-    action roles and critical-range widening, but there is no editor for
-    `appliesWhen`, flags, step roles or threat ranges; it is authored as JSON
-    today. Whether that stays a power-user path or gains a form is a product
-    choice, and it should follow decision 9.
+14. **Homebrew authoring and lifecycle-choice surface.** A local progression,
+    including a monster-style progression, travels with the character and uses
+    the same lifecycle/evaluator pipeline as imported content. Homebrew can
+    also express applicability, tags, action roles and critical-range widening,
+    but there is no editor for `appliesWhen`, flags, step roles, threat ranges,
+    or generic lifecycle choices; those are authored as data/JSON today.
+    Whether that stays a power-user path or gains a form is a product choice,
+    and it should follow decision 9 and the lifecycle-choice decision above.

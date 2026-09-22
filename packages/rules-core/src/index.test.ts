@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { AdvancementSlot, CharacterInput, Contribution, Effect, ProgressionCatalog } from "@threepointpf/rules-schema";
-import { RulesEngine, abilityModifier, evaluate, reduceContributions } from "./index.js";
+import {
+  RulesEngine,
+  abilityModifier,
+  evaluate,
+  evaluateAdvancement,
+  reduceContributions,
+} from "./index.js";
 
 const fixture: CharacterInput = {
   id: "human-martial", campaignId: "demo", name: "Nathan's Character",
@@ -339,6 +345,48 @@ describe("declarative advancement", () => {
     expect(derived.advancement?.trackIds).toEqual(["martial", "arcane", "scout"]);
     expect(derived.attacks[0]?.attack.value).toBe(2);
     expect(derived.advancement?.hitDieSides).toEqual([10, 10]);
+  });
+
+  it("retains the best per-slot skill chassis with deterministic source provenance", () => {
+    const evaluation = evaluateAdvancement(
+      advancementSlots({
+        martial: ["fighter", "guard"],
+        scout: ["rogue", "wizard"],
+        arcane: ["wizard", "fighter"],
+      }),
+      testProgressionCatalog,
+    );
+    expect(evaluation.skillPoints).toBe(10);
+    expect(evaluation.skillPointSources).toEqual([
+      {
+        slotId: "level-1",
+        trackId: "scout",
+        progressionId: "pf1e.test.rogue",
+        skillPoints: 8,
+      },
+      {
+        // Wizard and Fighter tie at 2; the first winning track remains stable.
+        slotId: "level-2",
+        trackId: "scout",
+        progressionId: "pf1e.test.wizard",
+        skillPoints: 2,
+      },
+    ]);
+    expect(evaluation.hitDieSources).toEqual([
+      {
+        slotId: "level-1",
+        trackId: "martial",
+        progressionId: "pf1e.test.fighter",
+        sides: 10,
+      },
+      {
+        // Guard and Fighter tie at d10; the first winning track remains stable.
+        slotId: "level-2",
+        trackId: "martial",
+        progressionId: "homebrew.test.guard",
+        sides: 10,
+      },
+    ]);
   });
 
   it("aggregates whole tracks across four tracks without an N-stalt special case", () => {

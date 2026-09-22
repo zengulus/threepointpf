@@ -11,6 +11,7 @@ import {
   saveIds,
   resolveProgressionId,
   type AbilityId,
+  type AbilityCatalog,
   type ActionPlan,
   type AttackDefinition,
   type AttackProfileCatalog,
@@ -103,6 +104,12 @@ import {
   type AdvancementEvaluation,
   type ProgressionLevelResult,
 } from "./advancement.js";
+import {
+  abilityContextFlags,
+  collectAbilityEffects,
+  deriveResources,
+  validateAbilityReferences,
+} from "./ability-resources.js";
 
 /**
  * The situational inputs a caller may supply for one roll: which flags to add or
@@ -126,6 +133,7 @@ export interface RulesEngineOptions {
   /** Skill governing abilities and trained metadata are injected content. */
   skillCatalog?: SkillCatalog;
   featureCatalog?: FeatureCatalog;
+  abilityCatalog?: AbilityCatalog;
   equipmentCatalog?: EquipmentCatalog;
   attackProfileCatalog?: AttackProfileCatalog;
   experienceCatalog?: ExperienceCatalog;
@@ -187,10 +195,13 @@ export class RulesEngine implements RulesRuntime {
     } else {
       this.character = character;
     }
+    const abilityIssues = validateAbilityReferences(this.character, options.abilityCatalog);
+    if (abilityIssues.length) throw new Error(abilityIssues.map((issue) => issue.message).join("; "));
     const effects = collectFeatureEffects(
       this.character,
       options.featureCatalog,
     );
+    effects.push(...collectAbilityEffects(this.character, options.abilityCatalog));
     for (const feature of this.advancement?.features ?? []) {
       const definition = this.progressionCatalog?.[feature.progressionId];
       for (const effect of feature.effects ?? [])
@@ -206,10 +217,10 @@ export class RulesEngine implements RulesRuntime {
     this.equipment = resolveEquipment(character, options.equipmentCatalog);
     effects.push(...collectEquipmentEffects(this.equipment));
     this.effects = effects.map((effect) => effectSchema.parse(effect));
-    this.featureFlags = featureContextFlags(
-      this.character,
-      options.featureCatalog,
-    );
+    this.featureFlags = [...new Set([
+      ...featureContextFlags(this.character, options.featureCatalog),
+      ...abilityContextFlags(this.character, options.abilityCatalog),
+    ])].sort();
     this.attackDefinitions = [
       ...character.attacks,
       ...this.equipment
@@ -885,6 +896,12 @@ export class RulesEngine implements RulesRuntime {
       attacks: this.attackDefinitions.map((attack) =>
         deriveAttack(this, attack),
       ),
+      resources: deriveResources(this.character, {
+        abilityModifier: (id) => this.abilityModifierValue(id),
+        progressionLevel: (id) => this.advancement
+          ? (this.advancement.progressionLevels.find((item) => item.id === id)?.level ?? 0)
+          : 0,
+      }),
     };
   }
 

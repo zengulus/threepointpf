@@ -3,6 +3,7 @@ import {
   equipmentCatalogSchema,
   featureCatalogSchema,
   movementModes,
+  type AbilityCatalog,
   type AttackDefinition,
   type AttackTag,
   type BonusType,
@@ -404,6 +405,19 @@ export const featureCatalog = featureCatalogSchema.parse({
     ]),
   ),
 });
+
+/** Additive migration seam from curated features to first-class abilities. */
+export const abilityCatalog: AbilityCatalog = Object.fromEntries(
+  Object.values(featureCatalog).map((definition) => [definition.id, {
+    id: definition.id,
+    name: definition.name,
+    ...(definition.description ? { description: definition.description } : {}),
+    activation: "toggleable" as const,
+    effects: definition.effects,
+    ...(definition.contextFlags ? { contextFlags: definition.contextFlags } : {}),
+    ...(definition.source ? { source: definition.source } : {}),
+  }]),
+);
 
 export const attackProfileCatalog = attackProfileCatalogSchema.parse(
   generatedAutosheetAttackProfileCatalog,

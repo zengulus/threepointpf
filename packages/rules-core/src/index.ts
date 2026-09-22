@@ -16,6 +16,8 @@
  * - `outcomes`       outcome policies and effective critical-range derivation
  * - `experience`     XP eligibility
  * - `advancement`    ordered progression/chassis evaluation
+ * - `lifecycle`      pure creation and advancement transactions
+ * - `ability-resources` ability activation and independent resource state
  * - `character`      RulesEngine orchestration and the public evaluation API
  */
 export { RulesEngine, evaluateCharacter, evaluate } from "./character.js";
@@ -90,10 +92,75 @@ export {
 } from "./outcomes.js";
 export { experienceResult } from "./experience.js";
 export type { RulesRuntime, EquipmentEntry, ResultOptions } from "./runtime.js";
+export {
+  acceptLifecycleWarning,
+  beginAdvancement,
+  beginCharacterCreation,
+  commitAdvancement,
+  commitCharacterCreation,
+  LifecycleCommitError,
+  previewAdvancement,
+  previewCharacterCreation,
+  progressionChoicesForCampaign,
+  proposeAdvancement,
+  proposeCharacterCreation,
+  tryCommitAdvancement,
+  tryCommitCharacterCreation,
+  validateAdvancement,
+  validateCharacterCreation,
+} from "./lifecycle.js";
+export {
+  abilityContextFlags,
+  abilityIsEffective,
+  advanceResourceRound,
+  cloneAbilityDefinition,
+  collectAbilityEffects,
+  commitAbilityActivation,
+  deriveResources,
+  refreshResource,
+  refreshResources,
+  resolveAbility,
+  restoreResource,
+  setResourceSpent,
+  spendResource,
+  validateAbilityActivation,
+  validateAbilityReferences,
+} from "./ability-resources.js";
+export type {
+  AbilityActivationProposal,
+  AbilityActivationResult,
+  AbilityValidationIssue,
+  ResourceFacts,
+} from "./ability-resources.js";
+export type {
+  AdvancementPreview,
+  AdvancementProgressionSelection,
+  AdvancementProposal,
+  AdvancementProposalChange,
+  CharacterCreationPreview,
+  CharacterCreationProposal,
+  CharacterCreationProposalChange,
+  FeatureChoiceRequirement,
+  HpAcquisitionPreview,
+  HpAcquisitionProposal,
+  LifecycleChange,
+  LifecycleChoiceRequirement,
+  LifecycleCommitFailure,
+  LifecycleCommitResult,
+  LifecycleCommitSuccess,
+  LifecycleIssue,
+  LifecycleIssueSeverity,
+  LifecycleProgressionOption,
+  LifecycleValidationResult,
+  ProgressionChoiceRequirement,
+  SkillAllocationPreview,
+  SkillRankAllocationProposal,
+} from "./lifecycle.js";
 export { evaluateAdvancement, progressionLevel } from "./advancement.js";
 export type {
   AdvancementEvaluation,
   SlotHitDie,
+  SlotSkillPointSource,
   TrackAdvancementResult,
   ProgressionIncrement,
   ProgressionLevelResult,
@@ -103,6 +170,7 @@ export type {
 export {
   acModifierAppliesToCmd,
   actionKinds,
+  campaignCharacterProfileSchema,
   cmdExcludedBonusTypes,
   criticalRangeOperations,
   d20CheckDie,
@@ -112,6 +180,7 @@ export {
   isFullAttackAction,
   isManeuverAction,
   isSelectorTarget,
+  parseCampaignCharacterProfile,
   naturalFaceClassifications,
   rollDefenseKinds,
   rollOutcomeKinds,
@@ -122,6 +191,10 @@ export {
 } from "@threepointpf/rules-schema";
 export type {
   ActionAttackPlan,
+  AbilityActivationType,
+  AbilityCatalog,
+  AbilityDefinition,
+  AbilityInstance,
   ActionContext,
   ActionKind,
   ActionPlan,
@@ -130,6 +203,13 @@ export type {
   AttackStepRole,
   AttackTag,
   CharacterInput,
+  CampaignCharacterProfile,
+  CampaignAdvancementTrack,
+  CharacterLifecycleState,
+  ChoiceOption,
+  ChoiceRequirement,
+  ChoiceRequirementReference,
+  ChoiceSelection,
   ContextualModifiers,
   Contribution,
   CriticalRange,
@@ -137,6 +217,9 @@ export type {
   CriticalRangeEvaluation,
   CriticalRangeOperation,
   DamageEvaluation,
+  DamageCriticalBehavior,
+  DamageDiceEffect,
+  DamageDiceTerm,
   DerivedAttack,
   DerivedCharacter,
   DerivedProgressionFeature,
@@ -148,6 +231,18 @@ export type {
   NaturalFacePolicy,
   PrimaryCheckDie,
   ProgressionCatalog,
+  ResourceCost,
+  ResourceDefinition,
+  ResourceMaximum,
+  ResourceMaximumTerm,
+  ResourceRefreshRule,
+  ResourceState,
+  DerivedResource,
+  HpAcquisition,
+  HpAcquisitionPolicy,
+  HpAcquisitionRule,
+  LifecycleOverride,
+  LifecycleOverrideScope,
   RollContext,
   RollDefense,
   RollDefenseKind,
@@ -158,6 +253,8 @@ export type {
   RollOutcomePolicySet,
   RollPlan,
   RollPlanProvenance,
+  SkillAllocationPolicy,
+  SkillRankAllocation,
   TargetContext,
   TargetId,
 } from "@threepointpf/rules-schema";

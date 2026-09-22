@@ -131,13 +131,14 @@ export type TargetId =
   | "speed.burrow"
   | "skill.all"
   | `skill.${string}`
+  | `resource.${string}.maximum`
   /** A character-global level in a named progression, such as progression.fighter.level. */
   | `progression.${string}.level`;
 
 /** Progression levels are derived queries and cannot be authored as effects. */
 export type EffectTargetId = Exclude<
   TargetId,
-  `progression.${string}.level` | "experience.level"
+  `progression.${string}.level` | `resource.${string}.maximum` | "experience.level"
 >;
 
 export type DefenseContext = "normal" | "touch" | "flatFooted";
@@ -371,6 +372,21 @@ export interface CriticalRangeEffect {
   source?: SourceReference;
 }
 
+export const damageCriticalBehaviors = ["normal", "notMultiplied"] as const;
+export type DamageCriticalBehavior = (typeof damageCriticalBehaviors)[number];
+
+/** A sourced dice term added to weapon damage without reducing it to an average. */
+export interface DamageDiceEffect {
+  kind: "damageDice";
+  target: "damage.melee" | "damage.ranged";
+  dice: DiceExpression;
+  damageType?: string;
+  label?: string;
+  criticalBehavior: DamageCriticalBehavior;
+  appliesWhen?: EffectApplicability;
+  source?: SourceReference;
+}
+
 /**
  * Semantic classification of a resolved roll. `natural20` / `natural1` mean the
  * raw d20 showed that face, which is not the same event as a rule-defined
@@ -515,6 +531,8 @@ export interface RollPlanProvenance {
   /** Contextual effects that were authored but filtered out, with reasons. */
   excluded: ExcludedContribution[];
   criticalRange?: CriticalRangeEvaluation;
+  /** Damage dice remain separate, sourced semantic terms through execution. */
+  damageTerms?: DamageDiceTerm[];
 }
 
 /**
@@ -622,7 +640,10 @@ export function isTargetId(value: string): value is TargetId {
     (value.startsWith("skill.") && value.length > 6) ||
     (value.startsWith("progression.") &&
       value.endsWith(".level") &&
-      value.length > "progression..level".length)
+      value.length > "progression..level".length) ||
+    (value.startsWith("resource.") &&
+      value.endsWith(".maximum") &&
+      value.length > "resource..maximum".length)
   );
 }
 
@@ -728,8 +749,306 @@ export type Effect =
   | MultiplyEffect
   | MinimumEffect
   | MaximumEffect
-  | CriticalRangeEffect;
+  | CriticalRangeEffect
+  | DamageDiceEffect;
 export type EffectDefinition = Effect;
+
+export const abilityActivationTypes = [
+  "passive",
+  "toggleable",
+  "activated",
+] as const;
+export type AbilityActivationType = (typeof abilityActivationTypes)[number];
+
+export interface ResourceCost {
+  resourceId: string;
+  amount: number;
+  /** Optional availability gate greater than the amount actually spent. */
+  minimumRemaining?: number;
+}
+
+export interface AbilityDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  activation: AbilityActivationType;
+  effects: Effect[];
+  costs?: ResourceCost[];
+  contextFlags?: string[];
+  source?: ProgressionSourceMetadata;
+}
+export type AbilityCatalog = Record<string, AbilityDefinition>;
+
+/** A possessed ability. Local abilities carry their editable mechanics directly. */
+export interface AbilityInstance {
+  id: string;
+  definitionId?: string;
+  name: string;
+  description?: string;
+  activation: AbilityActivationType;
+  /** Only toggleable abilities use active; passive abilities are always effective. */
+  active?: boolean;
+  effects: Effect[];
+  costs?: ResourceCost[];
+  contextFlags?: string[];
+}
+
+export type ResourceMaximumTerm =
+  | { kind: "abilityModifier"; ability: AbilityId; multiplier?: number }
+  | { kind: "progressionLevel"; progressionId: string; multiplier?: number }
+  | { kind: "constant"; value: number; label?: string };
+
+export type ResourceMaximum =
+  | { kind: "fixed"; value: number }
+  | { kind: "manual"; value: number }
+  | { kind: "derived"; base?: number; terms: ResourceMaximumTerm[] };
+
+export type ResourceRefreshRule =
+  | { kind: "manual" }
+  | { kind: "round" }
+  | { kind: "encounter" }
+  | { kind: "rest" }
+  | { kind: "daily" }
+  | { kind: "interval"; rounds: number }
+  | { kind: "rechargeRoll"; dice: DiceExpression }
+  | { kind: "unlimited" };
+
+export interface ResourceDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  maximum: ResourceMaximum;
+  refresh: ResourceRefreshRule;
+}
+
+/** Mutable usage is separate from the authored definition/capacity. */
+export interface ResourceState {
+  resourceId: string;
+  spent: number;
+  /** Timed/recharge resources count down without changing their maximum. */
+  roundsUntilRefresh?: number;
+}
+
+/** One explicitly selectable result of a level-granted feature. */
+export interface ChoiceOption {
+  id: string;
+  name: string;
+  description?: string;
+  /** Optional mechanics use the ordinary effect pipeline when a lifecycle service materializes the selection. */
+  effects?: Effect[];
+}
+
+/**
+ * Content-owned prompt for a future creation/advancement UI. This intentionally
+ * models only a bounded selection; it does not imply a universal feat or
+ * spellcasting-choice system.
+ */
+export interface ChoiceRequirement {
+  id: string;
+  prompt: string;
+  description?: string;
+  minimum: number;
+  maximum: number;
+  options: ChoiceOption[];
+  /** Lets a trusted campaign record a named option outside the supplied list. */
+  allowCustom?: boolean;
+}
+
+/** Stable provenance for a choice requirement unlocked by a progression feature. */
+export interface ChoiceRequirementReference {
+  progressionId: string;
+  featureId: string;
+  slotId: string;
+  trackId: string;
+  requirementId: string;
+}
+
+/** An authored answer to one content-owned choice requirement. */
+export interface ChoiceSelection {
+  id: string;
+  requirement: ChoiceRequirementReference;
+  optionIds: string[];
+  /** Named homebrew answers are retained alongside catalog option ids. */
+  customOptions?: ChoiceOption[];
+  note?: string;
+}
+
+export const hpAcquisitionMethods = [
+  "maximum",
+  "fixed",
+  "rolled",
+  "manual",
+  "custom",
+] as const;
+export type HpAcquisitionMethod = (typeof hpAcquisitionMethods)[number];
+
+/** Historical winning-HD evidence retained with an authored HP gain. */
+export interface HpAcquisitionSource {
+  trackId: string;
+  progressionId: string;
+  sides: number;
+}
+
+/** One level slot's authored HP-before-Constitution result. */
+export interface HpAcquisition {
+  slotId: string;
+  method: HpAcquisitionMethod;
+  amount: number;
+  /** Identifies a campaign policy/custom procedure without making it engine logic. */
+  policyId?: string;
+  note?: string;
+  /** Snapshot provenance; the current evaluator can also explain it from the slot. */
+  source?: HpAcquisitionSource;
+}
+
+export const skillAllocationMethods = ["policy", "manual", "custom"] as const;
+export type SkillAllocationMethod = (typeof skillAllocationMethods)[number];
+
+/** Historical winning skill-chassis evidence retained with an allocation. */
+export interface SkillAllocationSource {
+  trackId: string;
+  progressionId: string;
+  skillPoints: number;
+}
+
+/** The rank deltas authored for one level slot, not the character's aggregate ranks. */
+export interface SkillRankAllocation {
+  slotId: string;
+  ranks: Record<string, number>;
+  method: SkillAllocationMethod;
+  note?: string;
+  source?: SkillAllocationSource;
+  /** Calculated policy budget at the time of the committed allocation. */
+  budget?: number;
+}
+
+/** A narrow, explicit target for a deliberately accepted lifecycle warning. */
+export interface LifecycleOverrideScope {
+  slotId?: string;
+  trackId?: string;
+  progressionId?: string;
+  featureId?: string;
+  choiceRequirementId?: string;
+  skillId?: string;
+}
+
+/**
+ * A real authored fact, rather than a global validation bypass. Lifecycle
+ * services match its code and narrow nonempty scope only to overridable warnings.
+ */
+export interface LifecycleOverride {
+  id: string;
+  code: string;
+  reason: string;
+  scope: LifecycleOverrideScope;
+}
+
+/** Optional authored lifecycle provenance; temporary proposal UI state never belongs here. */
+export interface CharacterLifecycleState {
+  hpAcquisitions?: HpAcquisition[];
+  skillAllocations?: SkillRankAllocation[];
+  choiceSelections?: ChoiceSelection[];
+  overrides?: LifecycleOverride[];
+}
+
+export interface CampaignAdvancementTrack {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface MaximumHpAcquisitionRule {
+  kind: "maximum";
+}
+
+export interface FixedHpAcquisitionRule {
+  kind: "fixed";
+  amount: number;
+}
+
+export interface RolledHpAcquisitionRule {
+  kind: "rolled";
+  minimum?: number;
+  maximum?: number;
+}
+
+export interface ManualHpAcquisitionRule {
+  kind: "manual";
+}
+
+export interface CustomHpAcquisitionRule {
+  kind: "custom";
+  id: string;
+  label: string;
+}
+
+export type HpAcquisitionRule =
+  | MaximumHpAcquisitionRule
+  | FixedHpAcquisitionRule
+  | RolledHpAcquisitionRule
+  | ManualHpAcquisitionRule
+  | CustomHpAcquisitionRule;
+
+/** A campaign can use a different HP procedure for level 1 and later slots. */
+export interface HpAcquisitionPolicy {
+  firstLevel: HpAcquisitionRule;
+  laterLevels: HpAcquisitionRule;
+}
+
+export interface CharacterLevelSkillRankCap {
+  kind: "characterLevel";
+  multiplier?: number;
+  offset?: number;
+}
+
+export interface FixedSkillRankCap {
+  kind: "fixed";
+  value: number;
+}
+
+export type SkillRankCap = CharacterLevelSkillRankCap | FixedSkillRankCap;
+
+export interface CalculatedSkillAllocationPolicy {
+  kind: "calculated";
+  includeIntelligenceModifier: boolean;
+  minimumPerLevel?: number;
+  firstLevelMultiplier?: number;
+  rankCap?: SkillRankCap;
+}
+
+export interface ManualSkillAllocationPolicy {
+  kind: "manual";
+  rankCap?: SkillRankCap;
+}
+
+export interface CustomSkillAllocationPolicy {
+  kind: "custom";
+  id: string;
+  label: string;
+  rankCap?: SkillRankCap;
+}
+
+export type SkillAllocationPolicy =
+  | CalculatedSkillAllocationPolicy
+  | ManualSkillAllocationPolicy
+  | CustomSkillAllocationPolicy;
+
+/**
+ * Deliberately small campaign policy used by lifecycle services. Catalogs are
+ * still injected at runtime; ids/sources here constrain what that service may offer.
+ */
+export interface CampaignCharacterProfile {
+  id: string;
+  name?: string;
+  startingLevel: number;
+  tracks: CampaignAdvancementTrack[];
+  availableProgressionIds?: string[];
+  catalogSourceIds?: string[];
+  allowCustomProgressions?: boolean;
+  hpPolicy: HpAcquisitionPolicy;
+  skillAllocationPolicy: SkillAllocationPolicy;
+  allowManualOverrides?: boolean;
+}
 
 export interface FeatureDefinition {
   id: string;
@@ -888,6 +1207,8 @@ export interface ProgressionFeatureDefinition {
   level: number;
   description?: string;
   effects?: Effect[];
+  /** Bounded choices the feature asks its owner to make at unlock time. */
+  choices?: ChoiceRequirement[];
 }
 
 /** A source reference for imported progression content. */
@@ -969,12 +1290,20 @@ export interface CharacterInput {
   advancementSlots?: AdvancementSlot[];
   /** Character-owned classes, including explicit charts, travel with the save. */
   customProgressions?: ProgressionCatalog;
+  /** Authored lifecycle provenance; never use this for in-progress UI state. */
+  lifecycle?: CharacterLifecycleState;
   /** XP is optional and advisory; it never creates advancement slots. */
   experience?: { points: number; trackId: string };
   skillRanks: Record<string, number>;
   skills?: Record<string, SkillConfiguration>;
   attacks: AttackDefinition[];
   features: FeatureInstance[];
+  /** First-class possessed abilities; legacy features remain supported. */
+  abilities?: AbilityInstance[];
+  /** Character-local resource definitions travel with the authored snapshot. */
+  resources?: ResourceDefinition[];
+  /** Mutable play state, conceptually separate but snapshot-persisted for compatibility. */
+  resourceStates?: ResourceState[];
   equipment?: EquipmentInstance[];
   /** Mutable damage state; current HP is derived from max HP minus this value. */
   damageTaken: number;
@@ -1004,8 +1333,10 @@ export const targetIdSchema = z
 /** Progression levels are inspectable derived facts, never authorable effect targets. */
 const effectTargetIdSchema = targetIdSchema.refine(
   (target) =>
-    !target.startsWith("progression.") && target !== "experience.level",
-  "Progression level targets and experience levels are query-only",
+    !target.startsWith("progression.") &&
+    !target.startsWith("resource.") &&
+    target !== "experience.level",
+  "Progression levels, resource maxima, and experience levels are query-only",
 ) as z.ZodType<EffectTargetId>;
 const defenseContextSchema = z.enum(["normal", "touch", "flatFooted"]);
 const attackTagSchema = z.enum(attackTagValues);
@@ -1209,6 +1540,16 @@ export const effectSchema: z.ZodType<Effect> = z
       appliesWhen: applicabilitySchema.optional(),
       source: sourceReferenceSchema.optional(),
     }),
+    z.object({
+      kind: z.literal("damageDice"),
+      target: z.enum(["damage.melee", "damage.ranged"]),
+      dice: diceExpressionSchema,
+      damageType: z.string().min(1).optional(),
+      label: z.string().min(1).optional(),
+      criticalBehavior: z.enum(damageCriticalBehaviors),
+      appliesWhen: applicabilitySchema.optional(),
+      source: sourceReferenceSchema.optional(),
+    }),
   ])
   .superRefine((effect, context) => {
     if (
@@ -1287,6 +1628,342 @@ export const effectSchema: z.ZodType<Effect> = z
         });
     }
   }) as z.ZodType<Effect>;
+
+export const choiceOptionSchema: z.ZodType<ChoiceOption> = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1).optional(),
+  effects: z.array(effectSchema).optional(),
+});
+export const choiceRequirementSchema: z.ZodType<ChoiceRequirement> = z
+  .object({
+    id: z.string().min(1),
+    prompt: z.string().min(1),
+    description: z.string().min(1).optional(),
+    minimum: z.number().finite().int().nonnegative(),
+    maximum: z.number().finite().int().nonnegative(),
+    options: z.array(choiceOptionSchema),
+    allowCustom: z.boolean().optional(),
+  })
+  .superRefine((requirement, context) => {
+    if (requirement.minimum > requirement.maximum)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["minimum"],
+        message: "Choice minimum cannot exceed maximum",
+      });
+    if (!requirement.allowCustom && requirement.maximum > requirement.options.length)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["maximum"],
+        message: "Choice maximum cannot exceed the supplied option count without allowCustom",
+      });
+    const ids = new Set<string>();
+    for (const [index, option] of requirement.options.entries()) {
+      if (ids.has(option.id))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["options", index, "id"],
+          message: `Duplicate choice option id ${option.id}`,
+        });
+      ids.add(option.id);
+    }
+  }) as z.ZodType<ChoiceRequirement>;
+export const choiceRequirementReferenceSchema: z.ZodType<ChoiceRequirementReference> =
+  z.object({
+    progressionId: progressionIdSchema,
+    featureId: z.string().min(1),
+    slotId: z.string().min(1),
+    trackId: z.string().min(1),
+    requirementId: z.string().min(1),
+  });
+export const choiceSelectionSchema: z.ZodType<ChoiceSelection> = z
+  .object({
+    id: z.string().min(1),
+    requirement: choiceRequirementReferenceSchema,
+    optionIds: z.array(z.string().min(1)),
+    customOptions: z.array(choiceOptionSchema).optional(),
+    note: z.string().min(1).optional(),
+  })
+  .superRefine((selection, context) => {
+    const optionIds = new Set<string>();
+    for (const [index, id] of selection.optionIds.entries()) {
+      if (optionIds.has(id))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["optionIds", index],
+          message: `Duplicate selected choice option id ${id}`,
+        });
+      optionIds.add(id);
+    }
+    const customIds = new Set<string>();
+    for (const [index, option] of (selection.customOptions ?? []).entries()) {
+      if (customIds.has(option.id) || optionIds.has(option.id))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["customOptions", index, "id"],
+          message: `Duplicate selected custom choice option id ${option.id}`,
+        });
+      customIds.add(option.id);
+    }
+    if (selection.optionIds.length + (selection.customOptions?.length ?? 0) === 0)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["optionIds"],
+        message: "A choice selection requires at least one selected option",
+      });
+  }) as z.ZodType<ChoiceSelection>;
+
+export const hpAcquisitionSchema: z.ZodType<HpAcquisition> = z.object({
+  slotId: z.string().min(1),
+  method: z.enum(hpAcquisitionMethods),
+  amount: z.number().finite().nonnegative(),
+  policyId: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
+  source: z
+    .object({
+      trackId: z.string().min(1),
+      progressionId: progressionIdSchema,
+      sides: z.number().finite().int().positive(),
+    })
+    .optional(),
+});
+export const skillRankAllocationSchema: z.ZodType<SkillRankAllocation> = z.object({
+  slotId: z.string().min(1),
+  ranks: z.record(z.number().finite().int().nonnegative()),
+  method: z.enum(skillAllocationMethods),
+  note: z.string().min(1).optional(),
+  source: z
+    .object({
+      trackId: z.string().min(1),
+      progressionId: progressionIdSchema,
+      skillPoints: z.number().finite().int().nonnegative(),
+    })
+    .optional(),
+  budget: z.number().finite().int().nonnegative().optional(),
+});
+export const lifecycleOverrideScopeSchema: z.ZodType<LifecycleOverrideScope> =
+  z
+    .object({
+      slotId: z.string().min(1).optional(),
+      trackId: z.string().min(1).optional(),
+      progressionId: progressionIdSchema.optional(),
+      featureId: z.string().min(1).optional(),
+      choiceRequirementId: z.string().min(1).optional(),
+      skillId: skillIdSchema.optional(),
+    })
+    .refine(
+      (scope) => Object.values(scope).some((value) => value !== undefined),
+      "A lifecycle override must identify a slot, track, progression, feature, choice, or skill",
+    );
+export const lifecycleOverrideSchema: z.ZodType<LifecycleOverride> = z.object({
+  id: z.string().min(1),
+  code: z.string().min(1),
+  reason: z.string().min(1),
+  scope: lifecycleOverrideScopeSchema,
+});
+export const characterLifecycleStateSchema: z.ZodType<CharacterLifecycleState> = z
+  .object({
+    hpAcquisitions: z.array(hpAcquisitionSchema).optional(),
+    skillAllocations: z.array(skillRankAllocationSchema).optional(),
+    choiceSelections: z.array(choiceSelectionSchema).optional(),
+    overrides: z.array(lifecycleOverrideSchema).optional(),
+  })
+  .superRefine((lifecycle, context) => {
+    const ensureUnique = <T>(
+      values: readonly T[] | undefined,
+      field: string,
+      keyOf: (value: T) => string,
+      label: string,
+    ) => {
+      const keys = new Set<string>();
+      for (const [index, value] of (values ?? []).entries()) {
+        const key = keyOf(value);
+        if (keys.has(key))
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field, index],
+            message: `Duplicate ${label} ${key}`,
+          });
+        keys.add(key);
+      }
+    };
+    ensureUnique(
+      lifecycle.hpAcquisitions,
+      "hpAcquisitions",
+      (item) => item.slotId,
+      "HP acquisition slot",
+    );
+    ensureUnique(
+      lifecycle.skillAllocations,
+      "skillAllocations",
+      (item) => item.slotId,
+      "skill allocation slot",
+    );
+    ensureUnique(
+      lifecycle.choiceSelections,
+      "choiceSelections",
+      (item) => item.id,
+      "choice selection id",
+    );
+    ensureUnique(
+      lifecycle.overrides,
+      "overrides",
+      (item) => item.id,
+      "lifecycle override id",
+    );
+    const requirements = new Set<string>();
+    for (const [index, selection] of (lifecycle.choiceSelections ?? []).entries()) {
+      const requirement = selection.requirement;
+      const key = [
+        requirement.progressionId,
+        requirement.featureId,
+        requirement.slotId,
+        requirement.trackId,
+        requirement.requirementId,
+      ].join("\u0000");
+      if (requirements.has(key))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["choiceSelections", index, "requirement"],
+          message: "Duplicate choice selection for one requirement",
+        });
+      requirements.add(key);
+    }
+  }) as z.ZodType<CharacterLifecycleState>;
+
+export const hpAcquisitionRuleSchema: z.ZodType<HpAcquisitionRule> = z
+  .discriminatedUnion("kind", [
+    z.object({ kind: z.literal("maximum") }),
+    z.object({
+      kind: z.literal("fixed"),
+      amount: z.number().finite().nonnegative(),
+    }),
+    z.object({
+      kind: z.literal("rolled"),
+      minimum: z.number().finite().nonnegative().optional(),
+      maximum: z.number().finite().nonnegative().optional(),
+    }),
+    z.object({ kind: z.literal("manual") }),
+    z.object({
+      kind: z.literal("custom"),
+      id: z.string().min(1),
+      label: z.string().min(1),
+    }),
+  ])
+  .superRefine((rule, context) => {
+    if (
+      rule.kind === "rolled" &&
+      rule.minimum !== undefined &&
+      rule.maximum !== undefined &&
+      rule.minimum > rule.maximum
+    )
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["minimum"],
+        message: "Rolled HP minimum cannot exceed maximum",
+      });
+  }) as z.ZodType<HpAcquisitionRule>;
+export const hpAcquisitionPolicySchema: z.ZodType<HpAcquisitionPolicy> = z.object({
+  firstLevel: hpAcquisitionRuleSchema,
+  laterLevels: hpAcquisitionRuleSchema,
+});
+export const skillRankCapSchema: z.ZodType<SkillRankCap> = z.discriminatedUnion(
+  "kind",
+  [
+    z.object({
+      kind: z.literal("characterLevel"),
+      multiplier: z.number().finite().positive().optional(),
+      offset: z.number().finite().optional(),
+    }),
+    z.object({
+      kind: z.literal("fixed"),
+      value: z.number().finite().nonnegative(),
+    }),
+  ],
+) as z.ZodType<SkillRankCap>;
+export const skillAllocationPolicySchema: z.ZodType<SkillAllocationPolicy> =
+  z.discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("calculated"),
+      includeIntelligenceModifier: z.boolean(),
+      minimumPerLevel: z.number().finite().int().nonnegative().optional(),
+      firstLevelMultiplier: z.number().finite().int().positive().optional(),
+      rankCap: skillRankCapSchema.optional(),
+    }),
+    z.object({
+      kind: z.literal("manual"),
+      rankCap: skillRankCapSchema.optional(),
+    }),
+    z.object({
+      kind: z.literal("custom"),
+      id: z.string().min(1),
+      label: z.string().min(1),
+      rankCap: skillRankCapSchema.optional(),
+    }),
+  ]) as z.ZodType<SkillAllocationPolicy>;
+export const campaignAdvancementTrackSchema: z.ZodType<CampaignAdvancementTrack> =
+  z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string().min(1).optional(),
+  });
+export const campaignCharacterProfileSchema: z.ZodType<CampaignCharacterProfile> =
+  z
+    .object({
+      id: z.string().min(1),
+      name: z.string().min(1).optional(),
+      startingLevel: z.number().finite().int().positive(),
+      tracks: z.array(campaignAdvancementTrackSchema).min(1),
+      availableProgressionIds: z.array(progressionIdSchema).optional(),
+      catalogSourceIds: z.array(z.string().min(1)).optional(),
+      allowCustomProgressions: z.boolean().optional(),
+      hpPolicy: hpAcquisitionPolicySchema,
+      skillAllocationPolicy: skillAllocationPolicySchema,
+      allowManualOverrides: z.boolean().optional(),
+    })
+    .superRefine((profile, context) => {
+      const checkDuplicates = (
+        values: readonly string[] | undefined,
+        field: "availableProgressionIds" | "catalogSourceIds",
+      ) => {
+        const seen = new Set<string>();
+        for (const [index, value] of (values ?? []).entries()) {
+          if (seen.has(value))
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: [field, index],
+              message: `Duplicate ${field} value ${value}`,
+            });
+          seen.add(value);
+        }
+      };
+      const trackIds = new Set<string>();
+      for (const [index, track] of profile.tracks.entries()) {
+        if (trackIds.has(track.id))
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["tracks", index, "id"],
+            message: `Duplicate campaign advancement track id ${track.id}`,
+          });
+        trackIds.add(track.id);
+      }
+      checkDuplicates(profile.availableProgressionIds, "availableProgressionIds");
+      checkDuplicates(profile.catalogSourceIds, "catalogSourceIds");
+    }) as z.ZodType<CampaignCharacterProfile>;
+
+export function parseCharacterLifecycleState(
+  value: unknown,
+): CharacterLifecycleState {
+  return characterLifecycleStateSchema.parse(value);
+}
+
+export function parseCampaignCharacterProfile(
+  value: unknown,
+): CampaignCharacterProfile {
+  return campaignCharacterProfileSchema.parse(value);
+}
+
 export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
   id: z.string().min(1),
   definitionId: z.string().optional(),
@@ -1295,6 +1972,79 @@ export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
   enabled: z.boolean(),
   effects: z.array(effectSchema),
   contextFlags: z.array(flagSchema).min(1).optional(),
+});
+export const resourceCostSchema: z.ZodType<ResourceCost> = z.object({
+  resourceId: z.string().min(1),
+  amount: z.number().finite().int().positive(),
+  minimumRemaining: z.number().finite().int().nonnegative().optional(),
+});
+export const abilityDefinitionSchema: z.ZodType<AbilityDefinition> = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  activation: z.enum(abilityActivationTypes),
+  effects: z.array(effectSchema),
+  costs: z.array(resourceCostSchema).optional(),
+  contextFlags: z.array(flagSchema).min(1).optional(),
+  source: z.lazy(() => progressionSourceMetadataSchema).optional(),
+});
+export const abilityCatalogSchema: z.ZodType<AbilityCatalog> = z.record(
+  abilityDefinitionSchema,
+);
+export function parseAbilityCatalog(value: unknown): AbilityCatalog {
+  return abilityCatalogSchema.parse(value);
+}
+export const abilityInstanceSchema: z.ZodType<AbilityInstance> = z.object({
+  id: z.string().min(1),
+  definitionId: z.string().min(1).optional(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  activation: z.enum(abilityActivationTypes),
+  active: z.boolean().optional(),
+  effects: z.array(effectSchema),
+  costs: z.array(resourceCostSchema).optional(),
+  contextFlags: z.array(flagSchema).min(1).optional(),
+});
+export const resourceMaximumSchema: z.ZodType<ResourceMaximum> = z.discriminatedUnion(
+  "kind",
+  [
+    z.object({ kind: z.literal("fixed"), value: z.number().finite().int().nonnegative() }),
+    z.object({ kind: z.literal("manual"), value: z.number().finite().int().nonnegative() }),
+    z.object({
+      kind: z.literal("derived"),
+      base: z.number().finite().optional(),
+      terms: z.array(z.discriminatedUnion("kind", [
+        z.object({ kind: z.literal("abilityModifier"), ability: abilityIdSchema, multiplier: z.number().finite().optional() }),
+        z.object({ kind: z.literal("progressionLevel"), progressionId: z.string().min(1), multiplier: z.number().finite().optional() }),
+        z.object({ kind: z.literal("constant"), value: z.number().finite(), label: z.string().min(1).optional() }),
+      ])),
+    }),
+  ],
+);
+export const resourceRefreshRuleSchema: z.ZodType<ResourceRefreshRule> = z.discriminatedUnion(
+  "kind",
+  [
+    z.object({ kind: z.literal("manual") }),
+    z.object({ kind: z.literal("round") }),
+    z.object({ kind: z.literal("encounter") }),
+    z.object({ kind: z.literal("rest") }),
+    z.object({ kind: z.literal("daily") }),
+    z.object({ kind: z.literal("interval"), rounds: z.number().int().positive() }),
+    z.object({ kind: z.literal("rechargeRoll"), dice: diceExpressionSchema }),
+    z.object({ kind: z.literal("unlimited") }),
+  ],
+);
+export const resourceDefinitionSchema: z.ZodType<ResourceDefinition> = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  maximum: resourceMaximumSchema,
+  refresh: resourceRefreshRuleSchema,
+});
+export const resourceStateSchema: z.ZodType<ResourceState> = z.object({
+  resourceId: z.string().min(1),
+  spent: z.number().finite().int().nonnegative(),
+  roundsUntilRefresh: z.number().finite().int().nonnegative().optional(),
 });
 export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   id: z.string().min(1),
@@ -1316,13 +2066,27 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 export const progressionFeatureDefinitionSchema: z.ZodType<ProgressionFeatureDefinition> =
-  z.object({
-    id: z.string().min(1),
-    name: z.string().min(1),
-    level: z.number().finite().int().positive(),
-    description: z.string().min(1).optional(),
-    effects: z.array(effectSchema).optional(),
-  });
+  z
+    .object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      level: z.number().finite().int().positive(),
+      description: z.string().min(1).optional(),
+      effects: z.array(effectSchema).optional(),
+      choices: z.array(choiceRequirementSchema).optional(),
+    })
+    .superRefine((feature, context) => {
+      const ids = new Set<string>();
+      for (const [index, choice] of (feature.choices ?? []).entries()) {
+        if (ids.has(choice.id))
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["choices", index, "id"],
+            message: `Duplicate progression feature choice id ${choice.id}`,
+          });
+        ids.add(choice.id);
+      }
+    }) as z.ZodType<ProgressionFeatureDefinition>;
 export const progressionSourceMetadataSchema: z.ZodType<ProgressionSourceMetadata> =
   z.object({
     document: z.string().min(1),
@@ -1730,6 +2494,7 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
     campaignId: z.string().optional(),
     name: z.string().min(1),
     customProgressions: progressionCatalogSchema.optional(),
+    lifecycle: characterLifecycleStateSchema.optional(),
     experience: z
       .object({
         points: z.number().int().nonnegative().safe(),
@@ -1770,6 +2535,9 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
       .optional(),
     attacks: z.array(attackDefinitionSchema),
     features: z.array(featureInstanceSchema),
+    abilities: z.array(abilityInstanceSchema).optional(),
+    resources: z.array(resourceDefinitionSchema).optional(),
+    resourceStates: z.array(resourceStateSchema).optional(),
     damageTaken: z.number().finite().int().nonnegative(),
     temporaryHp: z.number().finite().int().nonnegative(),
     baseLandSpeed: z.number().finite().optional(),
@@ -1795,7 +2563,7 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
         path: ["baseSpeeds", "land"],
         message: "baseLandSpeed and baseSpeeds.land disagree",
       });
-    for (const key of ["features", "attacks", "equipment"] as const) {
+    for (const key of ["features", "abilities", "resources", "attacks", "equipment"] as const) {
       const ids = new Set<string>();
       for (const item of character[key] ?? []) {
         if (ids.has(item.id))
@@ -1806,6 +2574,38 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
           });
         ids.add(item.id);
       }
+    }
+    const resourceIds = new Set((character.resources ?? []).map((item) => item.id));
+    const stateIds = new Set<string>();
+    for (const state of character.resourceStates ?? []) {
+      if (!resourceIds.has(state.resourceId))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["resourceStates"],
+          message: `Resource state references missing resource ${state.resourceId}`,
+        });
+      if (stateIds.has(state.resourceId))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["resourceStates"],
+          message: `Duplicate resource state ${state.resourceId}`,
+        });
+      stateIds.add(state.resourceId);
+    }
+    for (const ability of character.abilities ?? []) {
+      if (ability.activation !== "toggleable" && ability.active !== undefined)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["abilities"],
+          message: `Only toggleable ability ${ability.id} may persist active state`,
+        });
+      for (const cost of ability.costs ?? [])
+        if (!resourceIds.has(cost.resourceId))
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["abilities"],
+            message: `Ability ${ability.id} references missing resource ${cost.resourceId}`,
+          });
     }
     const advancementMode = Boolean(character.advancementSlots?.length);
     if (!advancementMode && character.baseBab === undefined)
@@ -1855,6 +2655,22 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
           context.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["features"],
+            message: `Ambiguous active baseline replacements for ${effect.target}`,
+          });
+      }
+    }
+    for (const ability of character.abilities ?? []) {
+      const enabled = ability.activation === "passive" ||
+        (ability.activation === "toggleable" && ability.active === true);
+      if (!enabled) continue;
+      for (const effect of ability.effects) {
+        if (effect.kind !== "replaceBase") continue;
+        const count = replacements.get(effect.target) ?? 0;
+        replacements.set(effect.target, count + 1);
+        if (count > 0)
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["abilities"],
             message: `Ambiguous active baseline replacements for ${effect.target}`,
           });
       }
@@ -1925,8 +2741,33 @@ export interface DamageEvaluation {
   /** The weapon's or profile's critical multiplier; 2 when nothing authors one. */
   criticalMultiplier: number;
   contributions: Contribution[];
+  /** Base and additional dice retain source and critical semantics. */
+  terms: DamageDiceTerm[];
   /** Contextual filtering provenance for damage effects. */
   excluded?: ExcludedContribution[];
+}
+
+export interface DamageDiceTerm {
+  kind: "dice";
+  dice: DiceExpression;
+  label: string;
+  source: SourceReference;
+  damageType?: string;
+  criticalBehavior: DamageCriticalBehavior;
+  /** Copies used by this particular ordinary/critical roll plan. */
+  multiplier: number;
+}
+
+export interface DerivedResource {
+  id: string;
+  name: string;
+  description?: string;
+  maximum: number | null;
+  spent: number;
+  remaining: number | null;
+  refresh: ResourceRefreshRule;
+  roundsUntilRefresh?: number;
+  provenance: Contribution[];
 }
 
 export interface DerivedSkill {
@@ -1967,6 +2808,8 @@ export interface DerivedProgressionFeature {
   slotId: string;
   trackId: string;
   description?: string;
+  /** Choice metadata survives advancement evaluation for lifecycle consumers. */
+  choices?: ChoiceRequirement[];
   provenance: Contribution;
 }
 
@@ -2072,6 +2915,7 @@ export interface DerivedCharacter {
   /** Compatibility view of speeds.land. */
   movement: EvaluationResult;
   attacks: DerivedAttack[];
+  resources: DerivedResource[];
 }
 
 export interface GrantedCapability {
