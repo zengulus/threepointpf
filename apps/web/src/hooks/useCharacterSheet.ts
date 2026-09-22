@@ -82,6 +82,40 @@ interface PendingSampleDraft {
   notice: string;
 }
 
+type WeaponActionKind = "standardAttack" | "fullAttack";
+
+type PendingTargetRollIntent =
+  | {
+      kind: "save";
+      targetKind: "dc";
+      save: "fortitude" | "reflex" | "will";
+      label: string;
+    }
+  | {
+      kind: "skill";
+      targetKind: "dc";
+      skillId: string;
+      label: string;
+    }
+  | {
+      kind: "weapon";
+      targetKind: "ac";
+      attackId: string;
+      action: WeaponActionKind;
+      stepIndex: number;
+      label: string;
+    }
+  | {
+      kind: "maneuver";
+      targetKind: "cmd";
+      maneuver: string;
+      label: string;
+    };
+
+function targetLabel(kind: RollDefense["kind"]): string {
+  return kind === "ac" ? "Target AC" : kind === "cmd" ? "Target CMD" : "DC";
+}
+
 function usableCharacterId(value: string | undefined): string | undefined {
   const id = value?.trim();
   return id || undefined;
@@ -157,6 +191,13 @@ export function useCharacterSheetController({
   /** Target defenses are transient table context, not character data. */
   const [attackAc, setAttackAc] = useState("");
   const [maneuverCmd, setManeuverCmd] = useState("");
+  const [pendingTargetRoll, setPendingTargetRoll] =
+    useState<PendingTargetRollIntent | null>(null);
+  const [pendingTargetValue, setPendingTargetValue] = useState("");
+  const [pendingTargetError, setPendingTargetError] = useState<string | null>(
+    null,
+  );
+  const pendingTargetTrigger = useRef<HTMLElement | null>(null);
   const [lastRoll, setLastRoll] = useState<{
     plan: RollPlan;
     resolved: ResolvedRoll;
@@ -198,6 +239,10 @@ export function useCharacterSheetController({
     editRevision.current = 0;
     setLastRoll(null);
     setIntegrationNotice(null);
+    setPendingTargetRoll(null);
+    setPendingTargetValue("");
+    setPendingTargetError(null);
+    pendingTargetTrigger.current = null;
     const pending = pendingSampleDraft.current;
     if (pending?.character.id === characterId) {
       pendingSampleDraft.current = null;
@@ -284,6 +329,10 @@ export function useCharacterSheetController({
       editRevision.current += 1;
       setCharacter(next);
       setLastRoll(null);
+      setPendingTargetRoll(null);
+      setPendingTargetValue("");
+      setPendingTargetError(null);
+      pendingTargetTrigger.current = null;
       setSelected(null);
       setError(null);
       if (success) setNotice(success);
@@ -625,9 +674,8 @@ export function useCharacterSheetController({
       },
       "Added " + definition.name,
     );
-  // The entered DC is a roll defense, exactly like a caller-supplied AC: it
-  // travels through the same plan context and leaves the outcome unresolved
-  // when it is blank.
+  // Entered defenses are transient table context. A blank value opens a small
+  // pre-roll prompt rather than silently producing an unresolved check.
   const dcDefense = useMemo(
     () => defenseFromInput(rollDc, "dc"),
     [rollDc],
@@ -676,12 +724,13 @@ export function useCharacterSheetController({
   /** Build one exact weapon action for both display and button execution. */
   const createWeaponActionPlan = (
     attackId: string,
-    action: "standardAttack" | "fullAttack",
+    action: WeaponActionKind,
+    defense: RollDefense | null | undefined = attackDefense,
   ) =>
     engine.createActionPlan({
       action,
       attackIds: [attackId],
-      ...(attackDefense ? { defense: attackDefense } : {}),
+      ...(defense ? { defense } : {}),
     });
   const createCriticalDamagePlan = (damage: RollPlan) => {
     const { context } = damage;
@@ -707,24 +756,159 @@ export function useCharacterSheetController({
   };
   const canRollCriticalDamage = (attack: RollPlan) =>
     lastRoll?.plan.id === attack.id && lastRoll.resolved.outcome.critical === true;
-  const rollInitiative = () => rollPlan(engine.createInitiativeRollPlan());
-  const rollSave = (save: "fortitude" | "reflex" | "will") =>
-    rollPlan(
-      engine.createSaveRollPlan(save, dcDefense ? { defense: dcDefense } : {}),
-    );
-  const rollSkill = (skillId: string) =>
-    rollPlan(
-      engine.createSkillRollPlan(
-        skillId,
-        dcDefense ? { defense: dcDefense } : {},
-      ),
-    );
-  const createManeuverPlan = (maneuver: string) =>
+  const createManeuverPlan = (
+    maneuver: string,
+    defense: RollDefense | null | undefined = maneuverDefense,
+  ) =>
     engine.createManeuverRollPlan(
       maneuver,
-      maneuverDefense ? { defense: maneuverDefense } : {},
+      defense ? { defense } : {},
     );
-  const rollManeuver = (maneuver: string) => rollPlan(createManeuverPlan(maneuver));
+  const currentDefenseFor = (kind: RollDefense["kind"]) =>
+    kind === "dc" ? dcDefense : kind === "ac" ? attackDefense : maneuverDefense;
+  const currentTargetValueFor = (kind: RollDefense["kind"]) =>
+    kind === "dc" ? rollDc : kind === "ac" ? attackAc : maneuverCmd;
+  const setCurrentTargetValue = (kind: RollDefense["kind"], value: string) => {
+    if (kind === "dc") setRollDc(value);
+    else if (kind === "ac") setAttackAc(value);
+    else setManeuverCmd(value);
+  };
+  const planForTargetIntent = (
+    intent: PendingTargetRollIntent,
+    defense: RollDefense | undefined,
+  ): RollPlan | null => {
+    switch (intent.kind) {
+      case "save":
+        return engine.createSaveRollPlan(
+          intent.save,
+          defense ? { defense } : {},
+        );
+      case "skill":
+        return engine.createSkillRollPlan(
+          intent.skillId,
+          defense ? { defense } : {},
+        );
+      case "maneuver":
+        return createManeuverPlan(intent.maneuver, defense ?? null);
+      case "weapon": {
+        const actionPlan = createWeaponActionPlan(
+          intent.attackId,
+          intent.action,
+          defense ?? null,
+        );
+        return (
+          actionPlan.attacks[0]?.steps.find(
+            (step) => step.index === intent.stepIndex,
+          )?.roll ?? null
+        );
+      }
+    }
+  };
+  const executeTargetIntent = (
+    intent: PendingTargetRollIntent,
+    defense: RollDefense | undefined,
+  ) => {
+    const plan = planForTargetIntent(intent, defense);
+    if (!plan) {
+      setNotice("That roll is no longer available. Please try again.");
+      return;
+    }
+    void rollPlan(plan);
+  };
+  const dismissTargetPrompt = () => {
+    const trigger = pendingTargetTrigger.current;
+    pendingTargetTrigger.current = null;
+    setPendingTargetRoll(null);
+    setPendingTargetValue("");
+    setPendingTargetError(null);
+    if (trigger?.isConnected)
+      globalThis.setTimeout(() => trigger.focus(), 0);
+  };
+  const requestTargetedRoll = (intent: PendingTargetRollIntent) => {
+    const defense = currentDefenseFor(intent.targetKind);
+    if (defense) {
+      executeTargetIntent(intent, defense);
+      return;
+    }
+    const active =
+      typeof document === "undefined" ? null : document.activeElement;
+    pendingTargetTrigger.current =
+      active instanceof HTMLElement ? active : null;
+    setPendingTargetRoll(intent);
+    setPendingTargetValue(currentTargetValueFor(intent.targetKind));
+    setPendingTargetError(null);
+  };
+  const confirmTargetPrompt = () => {
+    const intent = pendingTargetRoll;
+    if (!intent) return;
+    const defense = defenseFromInput(pendingTargetValue, intent.targetKind);
+    if (!defense) {
+      setPendingTargetError(`Enter a numeric ${targetLabel(intent.targetKind)}.`);
+      return;
+    }
+    pendingTargetTrigger.current = null;
+    setCurrentTargetValue(intent.targetKind, String(defense.value));
+    setPendingTargetRoll(null);
+    setPendingTargetValue("");
+    setPendingTargetError(null);
+    executeTargetIntent(intent, defense);
+  };
+  const rollWithoutTarget = () => {
+    const intent = pendingTargetRoll;
+    if (!intent) return;
+    pendingTargetTrigger.current = null;
+    setPendingTargetRoll(null);
+    setPendingTargetValue("");
+    setPendingTargetError(null);
+    executeTargetIntent(intent, undefined);
+  };
+  const setTargetPromptValue = (value: string) => {
+    setPendingTargetValue(value);
+    // Once a player changes an invalid submission, let the current value speak
+    // for itself; a later submit will validate it again if it is still blank.
+    setPendingTargetError(null);
+  };
+  const rollInitiative = () => rollPlan(engine.createInitiativeRollPlan());
+  const rollSave = (save: "fortitude" | "reflex" | "will") =>
+    requestTargetedRoll({
+      kind: "save",
+      targetKind: "dc",
+      save,
+      label: `${save.charAt(0).toUpperCase()}${save.slice(1)} save`,
+    });
+  const rollSkill = (skillId: string) =>
+    requestTargetedRoll({
+      kind: "skill",
+      targetKind: "dc",
+      skillId,
+      label: derived.skills[skillId]?.label
+        ? `${derived.skills[skillId]!.label} check`
+        : "Skill check",
+    });
+  const rollWeaponAttack = (
+    attackId: string,
+    action: WeaponActionKind,
+    stepIndex: number,
+    attackName: string,
+  ) =>
+    requestTargetedRoll({
+      kind: "weapon",
+      targetKind: "ac",
+      attackId,
+      action,
+      stepIndex,
+      label:
+        action === "standardAttack"
+          ? `${attackName} standard attack`
+          : `${attackName} attack${stepIndex ? ` ${stepIndex + 1}` : ""}`,
+    });
+  const rollManeuver = (maneuver: string) =>
+    requestTargetedRoll({
+      kind: "maneuver",
+      targetKind: "cmd",
+      maneuver,
+      label: `CMB ${maneuver}`,
+    });
   const save = async () => {
     try {
       await repo.save(character);
@@ -754,6 +938,10 @@ export function useCharacterSheetController({
       editRevision.current += 1;
       setCharacter(loaded);
       setLastRoll(null);
+      setPendingTargetRoll(null);
+      setPendingTargetValue("");
+      setPendingTargetError(null);
+      pendingTargetTrigger.current = null;
       setError(null);
       setNotice("Reloaded authored state");
     } catch (failure) {
@@ -789,6 +977,19 @@ export function useCharacterSheetController({
     maneuverCmd,
     setManeuverCmd,
     maneuverDefense,
+    targetPrompt: pendingTargetRoll
+      ? {
+          label: pendingTargetRoll.label,
+          targetKind: pendingTargetRoll.targetKind,
+          targetLabel: targetLabel(pendingTargetRoll.targetKind),
+          value: pendingTargetValue,
+          error: pendingTargetError,
+        }
+      : null,
+    setTargetPromptValue,
+    confirmTargetPrompt,
+    rollWithoutTarget,
+    dismissTargetPrompt,
     update,
     fail,
     updateAbility,
@@ -806,6 +1007,7 @@ export function useCharacterSheetController({
     rollInitiative,
     rollSave,
     rollSkill,
+    rollWeaponAttack,
     rollManeuver,
     createManeuverPlan,
     createWeaponActionPlan,

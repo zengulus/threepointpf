@@ -376,7 +376,10 @@ export const defaultDicePresentationSettings: DicePresentationSettings = {
     surface: defaultDiceSkinPreset.surface,
   },
   flourishes: {
-    ordinary: "none",
+    // Ordinary rolls are the most common table interaction. Give them a small
+    // visible cue by default; players who prefer a quieter table can still
+    // select None in Settings.
+    ordinary: "pulse",
     criticalSuccess: "sparks",
     criticalFailure: "impact",
     natural20: "pulse",
@@ -504,7 +507,8 @@ export interface DicePresentationReport {
  * Asks a renderer to show the rolled values *on the dice themselves* now that
  * they have landed: a textured object parented into the renderer's own scene at
  * the die that produced each value, rising off its face and turning to face the
- * camera, with the flourish emitted from the die the natural face landed on.
+ * camera, with the flourish emitted from the natural-face die when a check has
+ * one, or from the first landed die for plain rolls such as weapon damage.
  *
  * The request carries only authoritative `ResolvedRoll` facts and display
  * settings. The renderer contributes transforms only; it never reports a value

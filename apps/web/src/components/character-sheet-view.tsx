@@ -4,6 +4,7 @@ import { AdvancementEditor, AdvancementSummary } from "./advancement";
 import { CustomClassEditor } from "./custom-class-editor";
 import { DiceSettingsPanel } from "./dice-settings";
 import { DiscordSettingsPanel } from "./discord-settings";
+import { ThemeSettingsPanel } from "./theme-settings";
 import { SamplePanel } from "./sample-panel";
 import { SummarySheet } from "./summary-sheet";
 import { Breakdown } from "./primitives";
@@ -17,6 +18,7 @@ import {
   SkillsPanel,
 } from "./panels";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
+import type { ThemePreferenceController } from "../hooks/useThemePreference";
 
 const sheetTabs = [
   { id: "summary", label: "Summary" },
@@ -76,11 +78,13 @@ function ActiveCapabilities({ sheet }: { sheet: CharacterSheet }) {
  */
 export function CharacterSheetView({
   sheet,
+  theme,
   activeTab,
   onActiveTabChange,
   onOpenWorkspace,
 }: {
   sheet: CharacterSheet;
+  theme: ThemePreferenceController;
   activeTab: SheetTab;
   onActiveTabChange: (tab: SheetTab) => void;
   onOpenWorkspace?: () => void;
@@ -400,6 +404,7 @@ export function CharacterSheetView({
               Switching characters leaves them intact.
             </p>
           </section>
+          <ThemeSettingsPanel theme={theme} />
           <DiceSettingsPanel dice={sheet.dice} />
           <DiscordSettingsPanel discord={sheet.discord} />
         </section>

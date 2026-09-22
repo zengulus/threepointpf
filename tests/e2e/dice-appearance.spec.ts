@@ -49,6 +49,7 @@ async function noFlourishes(page: Page) {
 
 async function rollStandardGreatsword(page: Page) {
   await selectTab(page, "Combat");
+  await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-standard-greatsword").click();
 }
 

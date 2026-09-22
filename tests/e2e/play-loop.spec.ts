@@ -64,12 +64,26 @@ test("Summary and Combat use paired action plans for ordinary weapon play", asyn
   const summaryDamageText = await summaryDamage.innerText();
 
   await summaryAttack.click();
+  await expect(page.getByTestId("roll-target-prompt")).toBeVisible();
+  await expect(page.getByTestId("dice-overlay")).toHaveCount(0);
+  const targetInput = page.getByTestId("roll-target-prompt-input");
+  const resolveTarget = page.getByRole("button", { name: "Roll vs Target AC" });
+  await expect(targetInput).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(resolveTarget).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Roll without a target" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(targetInput).toBeFocused();
+  await targetInput.fill("10");
+  await resolveTarget.click();
   await expect(page.getByTestId("dice-overlay-label")).toContainText(
     "Greatsword standard attack",
   );
-  await expect(page.getByTestId("dice-overlay-target")).toContainText(
-    "unresolved",
-  );
+  await expect(page.getByTestId("dice-overlay-target")).toContainText("vs AC 10");
+  await expect(page.getByTestId("dice-overlay-close")).toBeFocused();
   await dismissDice(page);
 
   await summaryDamage.click();
@@ -131,6 +145,7 @@ test("initiative, saves, skills, target defenses and every modeled maneuver stay
     "Nathan's Character",
   );
   await dismissDice(page);
+  await page.getByTestId("roll-dc-summary").fill("10");
   for (const save of ["fortitude", "reflex", "will"]) {
     await page.getByLabel(`Roll ${save} save`).click();
     await expect(page.getByTestId("dice-overlay-label")).toContainText(
@@ -191,6 +206,7 @@ test("a completed critical attack offers its engine-authored critical damage pla
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await loadShowcase(page);
+  await page.getByTestId("roll-ac-summary").fill("10");
   await page.getByTestId("roll-summary-greatsword-standardAttack-attack-0").click();
   await expect(page.getByTestId("dice-overlay")).toHaveAttribute(
     "data-outcome",
@@ -207,4 +223,25 @@ test("a completed critical attack offers its engine-authored critical damage pla
     "critical ×2",
   );
   await expect(page.locator('[data-testid^="dice-face-"]')).toHaveCount(4);
+});
+
+test("Settings persist the browser-local dark theme without changing a sheet", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await selectTab(page, "Settings");
+  await page.getByTestId("theme-preference").selectOption("dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByRole("heading", { name: "Dice & flourishes" })).toBeVisible();
+  const characterBlobs = await page.evaluate(() =>
+    Object.entries(localStorage)
+      .filter(([key]) => key.startsWith("threepointpf.character."))
+      .map(([, value]) => value)
+      .join(" "),
+  );
+  expect(characterBlobs).not.toContain("\"dark\"");
+  await page.reload();
+  await selectTab(page, "Settings");
+  await expect(page.getByTestId("theme-preference")).toHaveValue("dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });

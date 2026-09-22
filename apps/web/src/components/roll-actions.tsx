@@ -26,7 +26,7 @@ export function RollTargetField({
       <input
         type="number"
         inputMode="numeric"
-        placeholder="blank = unresolved"
+        placeholder="Prompt on roll"
         data-testid={testId}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -42,6 +42,7 @@ export function RollTargetField({
 export function WeaponActionControls({
   sheet,
   actionPlan,
+  attackId,
   attackName,
   action,
   testIdPrefix,
@@ -50,6 +51,7 @@ export function WeaponActionControls({
 }: {
   sheet: CharacterSheet;
   actionPlan: ActionPlan;
+  attackId: string;
   attackName: string;
   action: WeaponActionKind;
   testIdPrefix: string;
@@ -77,7 +79,14 @@ export function WeaponActionControls({
               data-testid={testIdFor?.("attack", step.index) ?? `${testIdPrefix}-${action}-attack-${step.index}`}
               aria-label={`Roll ${attackName} ${actionLabel.toLowerCase()} ${role}${sequence}`}
               title={`Roll ${attackName} ${actionLabel.toLowerCase()} ${role}${sequence}`}
-              onClick={() => void sheet.rollPlan(step.roll)}
+              onClick={() =>
+                void sheet.rollWeaponAttack(
+                  attackId,
+                  action,
+                  step.index,
+                  attackName,
+                )
+              }
             >
               {compact
                 ? `${role}${sequence} ${formatModifier(step.roll.modifier)}`

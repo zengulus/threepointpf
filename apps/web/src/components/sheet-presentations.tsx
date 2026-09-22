@@ -1,6 +1,7 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { CharacterSheetView, type SheetTab } from "./character-sheet-view";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
+import type { ThemePreferenceController } from "../hooks/useThemePreference";
 
 export interface SheetWindowBounds {
   x: number;
@@ -30,6 +31,7 @@ function workspaceCanvasSize(target: HTMLElement) {
 
 interface SharedSheetPresentationProps {
   sheet: CharacterSheet;
+  theme: ThemePreferenceController;
   activeTab: SheetTab;
   onActiveTabChange: (tab: SheetTab) => void;
 }
@@ -37,6 +39,7 @@ interface SharedSheetPresentationProps {
 /** The ordinary published-sheet presentation. */
 export function FullPageSheet({
   sheet,
+  theme,
   activeTab,
   onActiveTabChange,
   onOpenWorkspace,
@@ -45,6 +48,7 @@ export function FullPageSheet({
     <main className="full-page-sheet" data-testid="full-page-sheet">
       <CharacterSheetView
         sheet={sheet}
+        theme={theme}
         activeTab={activeTab}
         onActiveTabChange={onActiveTabChange}
         onOpenWorkspace={onOpenWorkspace}
@@ -59,6 +63,7 @@ export function FullPageSheet({
  */
 export function CharacterSheetWindow({
   sheet,
+  theme,
   activeTab,
   onActiveTabChange,
   bounds,
@@ -222,6 +227,7 @@ export function CharacterSheetWindow({
         <div className="character-sheet-window-body">
           <CharacterSheetView
             sheet={sheet}
+            theme={theme}
             activeTab={activeTab}
             onActiveTabChange={onActiveTabChange}
           />

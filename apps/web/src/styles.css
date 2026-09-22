@@ -3294,3 +3294,529 @@ summary:focus-visible {
     display: none;
   }
 }
+
+/* Target gate ------------------------------------------------------------- */
+.roll-target-prompt-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(13, 10, 6, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.roll-target-prompt {
+  width: min(100%, 470px);
+  border: 1px solid #8d7a43;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(255, 250, 217, 0.66), transparent 18rem),
+    var(--paper-light);
+  box-shadow: 0 24px 70px rgba(35, 23, 9, 0.45);
+  color: var(--ink);
+  padding: 22px;
+}
+
+.roll-target-prompt h2 {
+  color: #513114;
+  font-family: Georgia, serif;
+  font-size: 25px;
+  font-weight: 400;
+  margin: 5px 0 8px;
+}
+
+.roll-target-prompt p {
+  color: #705d37;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 16px;
+}
+
+.roll-target-prompt .field {
+  max-width: 210px;
+}
+
+.roll-target-prompt .field input {
+  border-color: #ac9c68;
+  background: rgba(255, 249, 218, 0.84);
+  color: #49331b;
+}
+
+.roll-target-prompt-error {
+  color: #8c382d !important;
+  margin: 8px 0 0 !important;
+}
+
+.roll-target-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.theme-choice {
+  max-width: 280px;
+}
+
+/* Dark sheet -------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  --paper: #151a21;
+  --paper-light: #202832;
+  --paper-deep: #0b1016;
+  --paper-muted: #2a3440;
+  --ink: #e8e3d7;
+  --ink-soft: #b7b2a7;
+  --umber: #475666;
+  --umber-deep: #111820;
+  --gold: #e5c873;
+  --teal: #76bfd2;
+  --wine: #dc806b;
+  --line: #4c5d6c;
+  background: var(--paper-deep);
+  color: var(--ink);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 17% 11%, rgba(69, 100, 130, 0.18), transparent 26rem),
+    radial-gradient(circle at 94% 78%, rgba(184, 133, 78, 0.09), transparent 30rem),
+    var(--paper-deep);
+}
+
+:root[data-theme="dark"] .application-shell,
+:root[data-theme="dark"] .full-page-sheet {
+  background:
+    linear-gradient(90deg, rgba(109, 141, 170, 0.08), transparent 4%, transparent 96%, rgba(109, 141, 170, 0.08)),
+    var(--paper);
+  box-shadow: inset 0 0 0 1px #06090d;
+}
+
+:root[data-theme="dark"] .character-sheet-view {
+  background:
+    linear-gradient(90deg, rgba(120, 160, 190, 0.05), transparent 20%, rgba(255, 255, 255, 0.025) 64%, rgba(120, 160, 190, 0.04)),
+    var(--paper);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .topbar {
+  border-color: #05080b;
+  border-bottom-color: #3d4a57;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 20%),
+    #10161d;
+  color: #e8e3d7;
+}
+
+:root[data-theme="dark"] .brand-subtitle,
+:root[data-theme="dark"] .chrome-nav button,
+:root[data-theme="dark"] .top-actions,
+:root[data-theme="dark"] .topbar .button {
+  color: #d7d2c5;
+}
+
+:root[data-theme="dark"] .topbar .button {
+  border-left-color: #44515f;
+}
+
+:root[data-theme="dark"] .topbar .button:hover,
+:root[data-theme="dark"] .chrome-nav button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--gold);
+}
+
+:root[data-theme="dark"] .hero.sheet-identity {
+  border-bottom-color: #435261;
+  background:
+    linear-gradient(90deg, rgba(118, 152, 181, 0.11), transparent 18%, rgba(255, 255, 255, 0.025) 64%, rgba(118, 152, 181, 0.08)),
+    var(--paper);
+}
+
+:root[data-theme="dark"] .character-portrait {
+  border-color: #586879;
+  background:
+    radial-gradient(circle at 68% 25%, rgba(243, 210, 124, 0.48) 0 4%, transparent 23%),
+    radial-gradient(circle at 25% 80%, rgba(48, 89, 126, 0.7), transparent 45%),
+    linear-gradient(133deg, #17273a 0%, #53667a 47%, #293545 100%);
+  box-shadow: inset 0 0 28px rgba(2, 6, 10, 0.55);
+}
+
+:root[data-theme="dark"] .portrait-rune,
+:root[data-theme="dark"] .portrait-caption {
+  color: #e7c96d;
+  text-shadow: 1px 1px 0 #10161d, -1px -1px 0 rgba(255, 241, 181, 0.24);
+}
+
+:root[data-theme="dark"] .portrait-token {
+  border-color: #5f4032;
+  background: linear-gradient(135deg, #542f2c, #ae8b36 54%, #242638);
+  color: #fff0a8;
+}
+
+:root[data-theme="dark"] .character-name {
+  border-color: #596b7e;
+  background: rgba(18, 27, 37, 0.8);
+  color: #a5d8e4;
+}
+
+:root[data-theme="dark"] .identity-fields > div {
+  border-color: #4e5e6e;
+  background: rgba(30, 39, 50, 0.72);
+}
+
+:root[data-theme="dark"] .identity-fields span,
+:root[data-theme="dark"] .identity-tags span,
+:root[data-theme="dark"] .level-summary > small {
+  color: #b7b5a8;
+}
+
+:root[data-theme="dark"] .identity-fields b,
+:root[data-theme="dark"] .level-summary > span,
+:root[data-theme="dark"] .level-summary > b {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .identity-tags span {
+  background: #3b4755;
+  box-shadow: inset 0 0 0 1px rgba(198, 213, 225, 0.13);
+}
+
+:root[data-theme="dark"] .level-rule {
+  border-color: #10161d;
+  background: #2f3a45;
+}
+
+:root[data-theme="dark"] .level-rule span {
+  border-right-color: #2d5262;
+  background: #7fc8d6;
+}
+
+:root[data-theme="dark"] .sheet-tabs {
+  border-bottom-color: var(--wine);
+  background: linear-gradient(#26313d, #1b232d);
+}
+
+:root[data-theme="dark"] .sheet-tabs button {
+  color: #d9d4c8;
+}
+
+:root[data-theme="dark"] .sheet-tabs button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--gold);
+}
+
+:root[data-theme="dark"] .sheet-tabs button.active {
+  border-color: #536476;
+  background: linear-gradient(#303d4b, #222c37);
+  color: #f1e8cf;
+}
+
+:root[data-theme="dark"] .summary-sheet {
+  border-color: #506071;
+  background: radial-gradient(circle at 71% 33%, rgba(88, 120, 150, 0.17), transparent 31rem), var(--paper-light);
+}
+
+:root[data-theme="dark"] .summary-abilities {
+  border-color: rgba(126, 151, 172, 0.28);
+  background: linear-gradient(100deg, #252f3a, #202833);
+}
+
+:root[data-theme="dark"] .summary-combat {
+  border-color: rgba(126, 151, 172, 0.28);
+  background: linear-gradient(94deg, #202934, #27323e 56%, #1d2630);
+}
+
+:root[data-theme="dark"] .summary-skills {
+  background: linear-gradient(90deg, rgba(99, 128, 155, 0.11), rgba(46, 58, 72, 0.1)), var(--paper-light);
+}
+
+:root[data-theme="dark"] .summary-section-heading,
+:root[data-theme="dark"] .summary-health > span,
+:root[data-theme="dark"] .panel-heading {
+  border-color: #4f6070;
+  background: linear-gradient(#263744, #18242e);
+  color: var(--gold);
+  text-shadow: 0 1px 0 #090d12;
+}
+
+:root[data-theme="dark"] .summary-ability,
+:root[data-theme="dark"] .summary-skill,
+:root[data-theme="dark"] .summary-attack,
+:root[data-theme="dark"] .summary-attack-target,
+:root[data-theme="dark"] .summary-active-features {
+  border-color: rgba(126, 151, 172, 0.3);
+}
+
+:root[data-theme="dark"] .summary-ability > span,
+:root[data-theme="dark"] .summary-attack-name,
+:root[data-theme="dark"] .summary-all-skills {
+  color: #82c9da;
+}
+
+:root[data-theme="dark"] .summary-ability input,
+:root[data-theme="dark"] .summary-ability button,
+:root[data-theme="dark"] .summary-value,
+:root[data-theme="dark"] .summary-value span,
+:root[data-theme="dark"] .summary-value b,
+:root[data-theme="dark"] .summary-health,
+:root[data-theme="dark"] .summary-health strong {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .summary-ability input:focus,
+:root[data-theme="dark"] .summary-ability button:hover {
+  background: rgba(104, 152, 169, 0.18);
+  box-shadow: 0 0 0 1px var(--wine);
+}
+
+:root[data-theme="dark"] .summary-rest-row {
+  border-color: #694b42;
+  background: linear-gradient(100deg, #6d413b, #542f32);
+  color: #ffe59a;
+}
+
+:root[data-theme="dark"] .summary-rest-row small {
+  color: #f0d58d;
+}
+
+:root[data-theme="dark"] .summary-health,
+:root[data-theme="dark"] .summary-value {
+  border-color: #586a7a;
+  background: linear-gradient(145deg, #344353, #283440);
+}
+
+:root[data-theme="dark"] .summary-health-track {
+  border-color: #506071;
+  background: rgba(11, 17, 23, 0.75);
+}
+
+:root[data-theme="dark"] .summary-health-track > span {
+  background: linear-gradient(90deg, #4293ad, #79c8b6);
+}
+
+:root[data-theme="dark"] .summary-quick-actions {
+  border-color: #4f6070;
+  background: rgba(15, 23, 31, 0.38);
+}
+
+:root[data-theme="dark"] .summary-attack {
+  background: linear-gradient(90deg, rgba(59, 76, 91, 0.9), rgba(40, 52, 64, 0.78));
+}
+
+:root[data-theme="dark"] .summary-attack-name small,
+:root[data-theme="dark"] .summary-empty,
+:root[data-theme="dark"] .summary-target-row .roll-dc span,
+:root[data-theme="dark"] .weapon-action-label {
+  color: #c3bc9c;
+}
+
+:root[data-theme="dark"] .summary-roll {
+  border-color: #56697a;
+  background: rgba(11, 18, 25, 0.42);
+  color: #e3d9bd;
+}
+
+:root[data-theme="dark"] .summary-roll:hover,
+:root[data-theme="dark"] .summary-attack-name:hover,
+:root[data-theme="dark"] .summary-skill:hover {
+  background: rgba(107, 158, 176, 0.18);
+  color: var(--gold);
+}
+
+:root[data-theme="dark"] .summary-skill,
+:root[data-theme="dark"] .summary-skill:nth-child(even) {
+  background: rgba(48, 61, 74, 0.62);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .summary-skill i,
+:root[data-theme="dark"] .summary-skill b,
+:root[data-theme="dark"] .summary-skill-die,
+:root[data-theme="dark"] .summary-feature-chip {
+  color: #d0c9af;
+}
+
+:root[data-theme="dark"] .summary-feature-chip {
+  border-color: #617284;
+  background: rgba(87, 108, 126, 0.32);
+}
+
+:root[data-theme="dark"] .sheet-tab-panel:not([hidden]),
+:root[data-theme="dark"] .summary-utilities,
+:root[data-theme="dark"] .detail-divider {
+  border-color: #4d5d6c;
+  background: radial-gradient(circle at 74% 4%, rgba(83, 116, 144, 0.13), transparent 27rem), var(--paper);
+}
+
+:root[data-theme="dark"] .detail-divider span,
+:root[data-theme="dark"] .settings-intro h2,
+:root[data-theme="dark"] .roll-target-prompt h2 {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .detail-divider p,
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .side-note p,
+:root[data-theme="dark"] .advancement-copy,
+:root[data-theme="dark"] .roll-target-prompt p {
+  color: var(--ink-soft);
+}
+
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .breakdown,
+:root[data-theme="dark"] .roll-target-prompt {
+  border-color: #506171;
+  background: radial-gradient(circle at 88% 0%, rgba(105, 138, 164, 0.13), transparent 18rem), var(--paper-light);
+  box-shadow: inset 0 0 0 1px rgba(203, 222, 236, 0.04);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .panel-heading .eyebrow,
+:root[data-theme="dark"] .helper,
+:root[data-theme="dark"] .pill {
+  color: #e7d990;
+}
+
+:root[data-theme="dark"] .pill {
+  border-color: #5e7181;
+  background: rgba(115, 143, 166, 0.13);
+}
+
+:root[data-theme="dark"] .button,
+:root[data-theme="dark"] .roll-button {
+  border-color: #596b7c;
+  background: linear-gradient(#334252, #26323e);
+  color: #e7e0cf;
+}
+
+:root[data-theme="dark"] .button.primary {
+  border-color: #a65c4d;
+  background: linear-gradient(#a95a49, #773a35);
+  color: #fff0c5;
+}
+
+:root[data-theme="dark"] .button.quiet:hover,
+:root[data-theme="dark"] .roll-button:hover {
+  border-color: var(--gold);
+  background: #3d4d5d;
+  color: #fff0b2;
+}
+
+:root[data-theme="dark"] .field span,
+:root[data-theme="dark"] .field-label,
+:root[data-theme="dark"] .ability-input > span,
+:root[data-theme="dark"] .stat-card span {
+  color: #bcc6cc;
+}
+
+:root[data-theme="dark"] .field input,
+:root[data-theme="dark"] .add-row input,
+:root[data-theme="dark"] .add-row select,
+:root[data-theme="dark"] .feature-form input,
+:root[data-theme="dark"] .feature-form select,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] .compact-form input,
+:root[data-theme="dark"] .custom-equipment-form input,
+:root[data-theme="dark"] .full-input,
+:root[data-theme="dark"] .chart-row input,
+:root[data-theme="dark"] .rank-input input,
+:root[data-theme="dark"] .advancement-grid select,
+:root[data-theme="dark"] .sample-panel select,
+:root[data-theme="dark"] .dice-settings-panel select,
+:root[data-theme="dark"] .roll-target-prompt .field input {
+  border-color: #596b7c;
+  background: rgba(13, 20, 28, 0.86);
+  color: #edf0eb;
+}
+
+:root[data-theme="dark"] .value-link,
+:root[data-theme="dark"] .skill-inspect,
+:root[data-theme="dark"] .contribution b,
+:root[data-theme="dark"] .feature-row b,
+:root[data-theme="dark"] .advancement-grid tbody th {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .value-link span,
+:root[data-theme="dark"] .roll-row .value-link span,
+:root[data-theme="dark"] .skill-inspect:hover span {
+  color: #8dcbd8;
+}
+
+:root[data-theme="dark"] .ability-input,
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .progression-level,
+:root[data-theme="dark"] .breakdown {
+  border-color: #526476;
+  background: linear-gradient(145deg, #2c3947, #222c37);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .discord-webhook-row code {
+  border-color: #596b7c;
+  background: rgba(13, 20, 28, 0.86);
+  color: #e7dfc5;
+}
+
+:root[data-theme="dark"] .settings-feedback,
+:root[data-theme="dark"] .roll-target-prompt-error {
+  border-left-color: var(--wine);
+  color: #ffc1ae !important;
+}
+
+:root[data-theme="dark"] .dice-field {
+  border-color: #415263;
+  background: radial-gradient(circle at 50% 20%, #223444, #090d12 72%);
+}
+
+:root[data-theme="dark"] .dice-drawer {
+  border-color: #4c6071;
+  background: rgba(15, 23, 32, 0.97);
+}
+
+:root[data-theme="dark"] .dice-result {
+  border-color: #3e5060;
+  background: rgba(6, 10, 15, 0.62);
+}
+
+:root[data-theme="dark"] .dice-value {
+  border-color: #516678;
+  background: rgba(23, 34, 46, 0.95);
+  color: #edf0eb;
+}
+
+:root[data-theme="dark"] .workspace-mode {
+  background: #121820;
+}
+
+:root[data-theme="dark"] .workspace-toolbar,
+:root[data-theme="dark"] .character-sheet-window {
+  background: #151e27;
+  border-color: #435362;
+}
+
+:root[data-theme="dark"] .workspace-canvas {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 50% 42%, rgba(83, 133, 153, 0.18), transparent 33rem),
+    #19232d;
+}
+
+:root[data-theme="dark"] .character-sheet-window-titlebar {
+  border-color: #4d5f6d;
+  background: #1b2731;
+}
+
+@media (max-width: 560px) {
+  .roll-target-prompt {
+    padding: 17px;
+  }
+
+  .roll-target-prompt-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

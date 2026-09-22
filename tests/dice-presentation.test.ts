@@ -13,6 +13,7 @@ import {
   diceMaterialOptions,
   diceNotationFor,
   dicePreferencesKey,
+  dicePreferencesVersion,
   diceSkinPresets,
   diceSurfaceOptions,
   diceTextureOptions,
@@ -235,7 +236,7 @@ describe("flourish registry and selection", () => {
     expect(flourishFor(settings, "natural-20").id).toBe("pulse");
     expect(flourishFor(settings, "natural-1").id).toBe("shards");
     expect(flourishFor(settings, "none").id).toBe("flare");
-    expect(flourishFor(defaultDicePresentationSettings, "none").id).toBe("none");
+    expect(flourishFor(defaultDicePresentationSettings, "none").id).toBe("pulse");
   });
 });
 
@@ -362,10 +363,41 @@ describe("settings validation and persistence", () => {
     expect(saveDicePreferences(changed, storage)).toBe(true);
     expect(hasStoredDicePreferences(storage)).toBe(true);
     expect(storage.entries.get(dicePreferencesKey)).toContain(diceSkinPresets[1]!.id);
+    expect(JSON.parse(storage.entries.get(dicePreferencesKey)!).version).toBe(
+      dicePreferencesVersion,
+    );
     expect(loadDicePreferences(storage)).toEqual(changed);
     clearDicePreferences(storage);
     expect(hasStoredDicePreferences(storage)).toBe(false);
     expect(loadDicePreferences(storage)).toEqual(defaultDicePresentationSettings);
+  });
+
+  it("restores ordinary flourishes from legacy defaults but honors a current None choice", () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      dicePreferencesKey,
+      JSON.stringify({
+        ...defaultDicePresentationSettings,
+        flourishes: {
+          ...defaultDicePresentationSettings.flourishes,
+          ordinary: "none",
+        },
+      }),
+    );
+    expect(loadDicePreferences(storage).flourishes.ordinary).toBe("pulse");
+
+    storage.setItem(
+      dicePreferencesKey,
+      JSON.stringify({
+        version: dicePreferencesVersion,
+        ...defaultDicePresentationSettings,
+        flourishes: {
+          ...defaultDicePresentationSettings.flourishes,
+          ordinary: "none",
+        },
+      }),
+    );
+    expect(loadDicePreferences(storage).flourishes.ordinary).toBe("none");
   });
 
   it("recovers from unparsable storage and from storage that is absent", () => {

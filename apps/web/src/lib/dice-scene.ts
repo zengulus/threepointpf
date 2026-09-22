@@ -1032,8 +1032,15 @@ export function presentSceneValues(
     diceEntries: readonly DieEntry[],
     vocabularyForRings: SceneVocabulary,
   ): void {
+    // A check's primary die is the meaningful home for its flourish. Damage
+    // and other plain rolls have no natural-face die, so use their first landed
+    // die instead; selecting an ordinary flourish must work for those rolls too.
+    const flourishFaceIndex =
+      request.naturalFaceIndex >= 0
+        ? request.naturalFaceIndex
+        : diceEntries[0]?.faceIndex;
     const naturalDie = diceEntries.find(
-      (entry) => entry.faceIndex === request.naturalFaceIndex,
+      (entry) => entry.faceIndex === flourishFaceIndex,
     )?.die;
     if (!naturalDie) return;
     const profile = flourishProfileOf(request.flourish);

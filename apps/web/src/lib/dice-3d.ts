@@ -325,10 +325,28 @@ export function disposeRendererInstance(instance: RendererInstance): void {
   }
 }
 
-/** Loads the renderer only when a throw is actually requested. */
+/**
+ * The renderer stays in a separate chunk, but the application can ask the
+ * browser to fetch and parse that chunk while a player is reading the sheet.
+ * The real WebGL box is still created only for a visible throw.
+ */
+let diceBoxModulePromise:
+  | Promise<new (selector: string, options: DiceBoxOptions) => unknown>
+  | undefined;
+
+export async function preloadDiceBoxModule(): Promise<
+  new (selector: string, options: DiceBoxOptions) => unknown
+> {
+  diceBoxModulePromise ??= (async () => {
+    const { default: DiceBox } = await import("@3d-dice/dice-box-threejs");
+    return DiceBox as new (selector: string, options: DiceBoxOptions) => unknown;
+  })();
+  return diceBoxModulePromise;
+}
+
+/** Loads the renderer on demand, reusing an idle-time preload when available. */
 async function loadDiceBoxModule() {
-  const { default: DiceBox } = await import("@3d-dice/dice-box-threejs");
-  return DiceBox as new (selector: string, options: DiceBoxOptions) => unknown;
+  return preloadDiceBoxModule();
 }
 
 export type DiceBoxModuleLoader = typeof loadDiceBoxModule;

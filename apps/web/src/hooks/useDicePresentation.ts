@@ -17,7 +17,7 @@ import {
   type RollPresentation,
 } from "@threepointpf/dice";
 import type { RollPlan } from "@threepointpf/rules-schema";
-import { createDiceBoxPresenter } from "../lib/dice-3d";
+import { createDiceBoxPresenter, preloadDiceBoxModule } from "../lib/dice-3d";
 
 /** One resolved roll, frozen for presentation. Physics can no longer affect it. */
 export interface DiceStage {
@@ -68,6 +68,33 @@ export function useDicePresentation() {
   }, [presenter, settings]);
 
   useEffect(() => () => presenter.dispose(), [presenter]);
+
+  // Keep the expensive renderer bundle off the initial path, while fetching it
+  // once the sheet is already interactive. This removes the cold module load
+  // from a player's first roll without allocating a hidden WebGL context.
+  useEffect(() => {
+    if (settings.reducedMotion) return;
+    let cancelled = false;
+    const warm = () => {
+      if (!cancelled) void preloadDiceBoxModule().catch(() => undefined);
+    };
+    const host = globalThis as typeof globalThis & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof host.requestIdleCallback === "function") {
+      const handle = host.requestIdleCallback(warm, { timeout: 2_500 });
+      return () => {
+        cancelled = true;
+        host.cancelIdleCallback?.(handle);
+      };
+    }
+    const handle = globalThis.setTimeout(warm, 700);
+    return () => {
+      cancelled = true;
+      globalThis.clearTimeout(handle);
+    };
+  }, [settings.reducedMotion]);
 
   const updateSettings = useCallback(
     (patch: DicePresentationSettingsPatch) => {

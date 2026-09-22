@@ -372,7 +372,9 @@ function fixture(options: FixtureOptions = {}) {
       faces,
       naturalFaceIndex: options.naturalFaceIndex ?? -1,
       event: options.event ?? "none",
-      flourish: findDiceFlourish(options.flourish ?? "pulse"),
+      // Most scene tests exercise the value choreography, not the separate
+      // flourish. Individual flourish cases opt in explicitly below.
+      flourish: findDiceFlourish(options.flourish ?? "none"),
       settings,
     },
     dice: asDice(dice),
@@ -639,10 +641,11 @@ describe("the flourish is emitted by the die", () => {
     expect(dieMaterials(world.dice[0]!)[0]!.emissive.r).toBe(0);
   });
 
-  it("has no die to flourish on when the plan declares no check die", () => {
+  it("uses the first landed die for a plain roll's flourish", () => {
     const world = fixture({ faces: [4, 3], naturalFaceIndex: -1, flourish: "flare" });
     world.advance(valueStableFrames);
-    for (const die of world.dice) expect(die.children).toHaveLength(1);
+    expect(world.dice[0]!.children).toHaveLength(2);
+    expect(world.dice[1]!.children).toHaveLength(1);
   });
 
   it("scales its reach with the chosen motion", () => {

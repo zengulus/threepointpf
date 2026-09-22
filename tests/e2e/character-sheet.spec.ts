@@ -40,6 +40,7 @@ test("sheet tabs swap panels and compact roll controls invoke dice", async ({ pa
   await expect(page.getByTestId("dice-overlay")).toBeVisible();
   await dismissDice(page);
 
+  await page.getByTestId("roll-dc-summary").fill("10");
   await page.getByLabel("Roll Climb").click();
   await expect(page.getByTestId("dice-overlay")).toBeVisible();
   await dismissDice(page);
@@ -324,6 +325,8 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
     "excluded for tags weapon.two-handed, weapon.off-hand",
   );
   await expect(page.getByTestId("roll-standard-greatsword")).toContainText("STANDARD");
+  await page.getByTestId("roll-cmd-maneuvers").fill("10");
+  await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-maneuver-trip").click();
   await expect(page.locator(".sheet-notice")).toContainText("CMB trip");
   await dismissDice(page);
@@ -400,13 +403,24 @@ test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
   );
 });
 
-test("an optional entered DC resolves a check or leaves it unresolved", async ({ page }) => {
+test("a missing DC prompts before an intentional raw check or resolved roll", async ({ page }) => {
   // This one deliberately runs on the demo build's landing sample.
   await page.goto("/");
   await selectTab(page, "Skills");
-  // A skill check has no automatic face rule and no known DC, so nothing is
-  // resolved: the face facts are reported and no verdict is invented.
+  // A blank target no longer silently produces an unresolved result. The
+  // player can still explicitly choose an unopposed check when that is useful.
   await page.getByTestId("roll-skill-perception").click();
+  await expect(page.getByTestId("roll-target-prompt")).toBeVisible();
+  await expect(page.getByTestId("dice-overlay")).toHaveCount(0);
+  const promptInput = page.getByTestId("roll-target-prompt-input");
+  const promptError = page.locator("#roll-target-prompt-error");
+  await page.getByRole("button", { name: "Roll vs DC" }).click();
+  await expect(promptInput).toHaveAttribute("aria-invalid", "true");
+  await expect(promptError).toContainText("Enter a numeric DC");
+  await promptInput.fill("1");
+  await expect(promptInput).not.toHaveAttribute("aria-invalid", "true");
+  await expect(promptError).toHaveCount(0);
+  await page.getByRole("button", { name: "Roll without a target" }).click();
   await expect(page.locator(".sheet-notice")).toContainText(
     /Perception check: natural \d+ · modifier [+-]\d+ · total \d+/,
   );
@@ -451,6 +465,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   await page.goto("/");
   await loadSample(page, "showcase");
   await selectTab(page, "Combat");
+  await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-standard-greatsword").click();
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toBeVisible();
@@ -509,6 +524,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   // Reduced motion still shows the authoritative result, just without a throw.
   await page.getByTestId("dice-reduced-motion").check();
   await selectTab(page, "Combat");
+  await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-standard-greatsword").click();
   await expect(page.getByTestId("dice-stage-mode")).toContainText("reduced motion");
   await expect(overlay).toHaveAttribute("data-mode", "skipped");
@@ -527,6 +543,7 @@ test("the landed values leave the dice inside the renderer's own scene", async (
   await page.goto("/");
   await loadSample(page, "showcase");
   await selectTab(page, "Combat");
+  await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-standard-greatsword").click();
   const overlay = page.getByTestId("dice-overlay");
   await expect(overlay).toHaveAttribute("data-phase", "pending");

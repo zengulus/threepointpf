@@ -21,6 +21,13 @@ import {
 
 export const dicePreferencesKey = "threepointpf.dice.presentation";
 
+/**
+ * Stored presentation preferences predate ordinary-roll flourishes. Versioned
+ * saves let us repair that former silent default once without overriding a
+ * player's later, explicit choice of None.
+ */
+export const dicePreferencesVersion = 2;
+
 /** The structural slice of `Storage` this module needs; tests inject their own. */
 export interface DicePreferencesStorage {
   getItem(key: string): string | null;
@@ -189,7 +196,26 @@ export function loadDicePreferences(
   }
   if (!raw) return structuredCloneSettings(defaultDicePresentationSettings);
   try {
-    return validateDicePresentationSettings(JSON.parse(raw));
+    const parsed: unknown = JSON.parse(raw);
+    const settings = validateDicePresentationSettings(parsed);
+    // Before version 2, ordinary rolls silently used None. Treat that legacy
+    // value as the old default so existing tables regain the visible cue. A
+    // version-2 save is an intentional current preference and is left alone.
+    if (
+      isRecord(parsed) &&
+      parsed.version !== dicePreferencesVersion &&
+      isRecord(parsed.flourishes) &&
+      parsed.flourishes.ordinary === "none"
+    ) {
+      return {
+        ...settings,
+        flourishes: {
+          ...settings.flourishes,
+          ordinary: defaultDicePresentationSettings.flourishes.ordinary,
+        },
+      };
+    }
+    return settings;
   } catch {
     return structuredCloneSettings(defaultDicePresentationSettings);
   }
@@ -219,7 +245,10 @@ export function saveDicePreferences(
   try {
     storage.setItem(
       dicePreferencesKey,
-      JSON.stringify(validateDicePresentationSettings(settings)),
+      JSON.stringify({
+        version: dicePreferencesVersion,
+        ...validateDicePresentationSettings(settings),
+      }),
     );
     return true;
   } catch {

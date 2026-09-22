@@ -1230,7 +1230,9 @@ describe("the values live in the renderer's scene, on the dice", () => {
     await presenter.present(requestFor(plan, [17]));
     const presentation = presenter.presentDieValues?.(dieValueRequest([17]));
     scene.advance(valueStableFrames);
-    expect(scene.dice[0]!.children).toHaveLength(1);
+    // A plain roll now gets an ordinary flourish from its first landed die:
+    // the value and its effect must both clear with the next throw.
+    expect(scene.dice[0]!.children).toHaveLength(2);
 
     await presenter.present(requestFor(plan, [17]));
     // The old dice are gone from the table, so nothing may ride on them.

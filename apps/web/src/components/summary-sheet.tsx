@@ -143,8 +143,8 @@ export function SummarySheet({
         </div>
 
         <div className="summary-target-row">
-          <RollTargetField
-            label="Check DC"
+            <RollTargetField
+              label="DC for saves & skills"
             value={sheet.rollDc}
             testId="roll-dc-summary"
             onChange={sheet.setRollDc}
@@ -155,7 +155,7 @@ export function SummarySheet({
           <div className="summary-section-heading">Quick actions</div>
           <div className="summary-target-row summary-attack-target">
             <RollTargetField
-              label="Target AC"
+              label="Target AC for weapon attacks"
               value={sheet.attackAc}
               testId="roll-ac-summary"
               onChange={sheet.setAttackAc}
@@ -199,6 +199,7 @@ export function SummarySheet({
                     <WeaponActionControls
                       sheet={sheet}
                       actionPlan={standard}
+                      attackId={attack.definition.id}
                       attackName={attack.definition.name}
                       action="standardAttack"
                       testIdPrefix={"roll-summary-" + attack.definition.id}
@@ -207,6 +208,7 @@ export function SummarySheet({
                     <WeaponActionControls
                       sheet={sheet}
                       actionPlan={full}
+                      attackId={attack.definition.id}
                       attackName={attack.definition.name}
                       action="fullAttack"
                       testIdPrefix={"roll-summary-" + attack.definition.id}

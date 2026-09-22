@@ -79,6 +79,7 @@ function DiceSequence({
 }) {
   const { presenter, stageRef, settings, dismiss } = dice;
   const timers = useRef<number[]>([]);
+  const closeButton = useRef<HTMLButtonElement | null>(null);
   const scheduled = useRef(false);
   const [report, setReport] = useState<DicePresentationReport | null>(null);
   const [phase, setPhase] = useState<SequencePhase>("pending");
@@ -174,11 +175,27 @@ function DiceSequence({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") dismiss();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        dismiss();
+        return;
+      }
+      // The drawer has one interactive control today. Retaining focus on it
+      // makes this a real keyboard modal and leaves room for future controls.
+      if (event.key === "Tab") {
+        event.preventDefault();
+        closeButton.current?.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [dismiss]);
+
+  // A target prompt can open this drawer as it unmounts. Move focus directly
+  // to the drawer's close control so keyboard users remain in the active modal.
+  useEffect(() => {
+    closeButton.current?.focus();
+  }, []);
 
   /**
    * The result stays up for its own lifetime *after it starts being shown*. A
@@ -250,6 +267,7 @@ function DiceSequence({
             <h3 data-testid="dice-overlay-label">{plan.label}</h3>
           </div>
           <button
+            ref={closeButton}
             className="button quiet"
             data-testid="dice-overlay-close"
             onClick={dismiss}

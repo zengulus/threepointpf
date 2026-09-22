@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DiceOverlay } from "./dice-overlay";
+import { RollTargetPrompt } from "./roll-target-prompt";
 import {
   CharacterSheetWindow,
   FullPageSheet,
@@ -7,6 +8,7 @@ import {
 } from "./sheet-presentations";
 import { useCharacterSheetController } from "../hooks/useCharacterSheet";
 import { useDicePresentation } from "../hooks/useDicePresentation";
+import { useThemePreference } from "../hooks/useThemePreference";
 import type { SheetTab } from "./character-sheet-view";
 
 type PresentationMode = "full-page" | "workspace";
@@ -38,6 +40,7 @@ export function AppShell({
   onCharacterIdChange,
 }: AppShellProps) {
   const dice = useDicePresentation();
+  const theme = useThemePreference();
   const sheet = useCharacterSheetController({
     characterId,
     onCharacterIdChange,
@@ -65,6 +68,7 @@ export function AppShell({
       {mode === "full-page" ? (
         <FullPageSheet
           sheet={sheet}
+          theme={theme}
           activeTab={activeTab}
           onActiveTabChange={setActiveTab}
           onOpenWorkspace={openWorkspace}
@@ -111,6 +115,7 @@ export function AppShell({
             {windowOpen && (
               <CharacterSheetWindow
                 sheet={sheet}
+                theme={theme}
                 activeTab={activeTab}
                 onActiveTabChange={setActiveTab}
                 bounds={windowBounds}
@@ -124,6 +129,7 @@ export function AppShell({
           </section>
         </main>
       )}
+      <RollTargetPrompt sheet={sheet} />
       <DiceOverlay dice={dice} />
     </div>
   );

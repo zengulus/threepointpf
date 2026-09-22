@@ -353,7 +353,7 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
         </div>
         <div className="saves-row">
           <RollTargetField
-            label="Check DC (shared with skills)"
+            label="DC for saves & skills"
             value={sheet.rollDc}
             testId="roll-dc-saves"
             onChange={sheet.setRollDc}
@@ -414,13 +414,13 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
         </div>
         <div className="combat-targets">
           <RollTargetField
-            label="Target AC"
+            label="Target AC for weapon attacks"
             value={sheet.attackAc}
             testId="roll-ac-attacks"
             onChange={sheet.setAttackAc}
           />
           <RollTargetField
-            label="Target CMD"
+            label="Target CMD for maneuvers"
             value={sheet.maneuverCmd}
             testId="roll-cmd-maneuvers"
             onChange={sheet.setManeuverCmd}
@@ -464,6 +464,7 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
                   attack.definition.id,
                   "standardAttack",
                 )}
+                attackId={attack.definition.id}
                 attackName={attack.definition.name}
                 action="standardAttack"
                 testIdPrefix={"roll-standard-" + attack.definition.id}
@@ -481,6 +482,7 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
                   attack.definition.id,
                   "fullAttack",
                 )}
+                attackId={attack.definition.id}
                 attackName={attack.definition.name}
                 action="fullAttack"
                 testIdPrefix={"roll-full-" + attack.definition.id}
@@ -563,7 +565,7 @@ export function SkillsPanel({ sheet }: { sheet: CharacterSheet }) {
           </span>
         </div>
         <RollTargetField
-          label="Check DC (shared with saves)"
+          label="DC for saves & skills"
           value={sheet.rollDc}
           testId="roll-dc-skills"
           onChange={sheet.setRollDc}
