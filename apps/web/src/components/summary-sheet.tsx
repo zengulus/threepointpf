@@ -1,6 +1,7 @@
 import { formatModifier } from "@threepointpf/dice";
 import { abilities, abilityLabels } from "../lib/options";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
+import { RollTargetField, WeaponActionControls } from "./roll-actions";
 
 /**
  * The first thing a player should see is the character's playable state, not
@@ -40,6 +41,9 @@ export function SummarySheet({
     )
     .slice(0, 4);
   const attacks = derived.attacks.slice(0, 3);
+  const activeFeatures = character.features
+    .filter((feature) => feature.enabled)
+    .slice(0, 6);
 
   return (
     <section className="summary-sheet" id="summary" aria-label="Character summary">
@@ -99,9 +103,7 @@ export function SummarySheet({
             label="Initiative"
             value={formatModifier(derived.initiative.value)}
             ariaLabel="Roll initiative"
-            onClick={() =>
-              sheet.roll("initiative", () => sheet.engine.createInitiativeRollPlan())
-            }
+            onClick={sheet.rollInitiative}
           />
           <SummaryValue
             label="BAB"
@@ -135,49 +137,85 @@ export function SummarySheet({
               label={save}
               value={formatModifier(derived.saves[save].value)}
               ariaLabel={"Roll " + save + " save"}
-              onClick={() =>
-                sheet.roll(save + " save", () =>
-                  sheet.engine.createSaveRollPlan(
-                    save,
-                    sheet.dcDefense ? { defense: sheet.dcDefense } : {},
-                  ),
-                )
-              }
+              onClick={() => sheet.rollSave(save)}
             />
           ))}
         </div>
 
+        <div className="summary-target-row">
+          <RollTargetField
+            label="Check DC"
+            value={sheet.rollDc}
+            testId="roll-dc-summary"
+            onChange={sheet.setRollDc}
+          />
+        </div>
+
         <div className="summary-quick-actions">
           <div className="summary-section-heading">Quick actions</div>
+          <div className="summary-target-row summary-attack-target">
+            <RollTargetField
+              label="Target AC"
+              value={sheet.attackAc}
+              testId="roll-ac-summary"
+              onChange={sheet.setAttackAc}
+            />
+          </div>
           {attacks.length ? (
-            attacks.map((attack) => (
-              <div className="summary-attack" key={attack.definition.id}>
-                <button
-                  type="button"
-                  className="summary-attack-name"
-                  onClick={() =>
-                    sheet.roll(attack.definition.name + " attack", () =>
-                      sheet.engine.createAttackRollPlan(attack.definition.id, 0),
-                    )
-                  }
-                  title={"Roll " + attack.definition.name}
-                >
-                  <span>{attack.definition.name}</span>
-                  <small>{attack.damage.formula}</small>
-                </button>
-                <button
-                  type="button"
-                  className="summary-roll"
-                  onClick={() =>
-                    sheet.roll(attack.definition.name + " attack", () =>
-                      sheet.engine.createAttackRollPlan(attack.definition.id, 0),
-                    )
-                  }
-                >
-                  Roll {formatModifier(attack.attack.value)}
-                </button>
-              </div>
-            ))
+            attacks.map((attack) => {
+              const standard = sheet.createWeaponActionPlan(
+                attack.definition.id,
+                "standardAttack",
+              );
+              const full = sheet.createWeaponActionPlan(
+                attack.definition.id,
+                "fullAttack",
+              );
+              const standardDamage = standard.attacks[0]?.steps[0]?.damage;
+              return (
+                <div className="summary-attack" key={attack.definition.id}>
+                  <button
+                    type="button"
+                    className="summary-attack-name"
+                    aria-label={"Inspect " + attack.definition.name + " attack"}
+                    onClick={() =>
+                      sheet.inspect(
+                        attack.definition.name + " standard attack",
+                        attack.attack,
+                      )
+                    }
+                    title={"Inspect " + attack.definition.name + " attack"}
+                  >
+                    <span>{attack.definition.name}</span>
+                    <small>
+                      Standard damage {standardDamage
+                        ? standardDamage.dice
+                            .map((die) => die.count + "d" + die.sides)
+                            .join("+") + formatModifier(standardDamage.modifier)
+                        : attack.damage.formula}
+                    </small>
+                  </button>
+                  <div className="summary-attack-actions">
+                    <WeaponActionControls
+                      sheet={sheet}
+                      actionPlan={standard}
+                      attackName={attack.definition.name}
+                      action="standardAttack"
+                      testIdPrefix={"roll-summary-" + attack.definition.id}
+                      compact
+                    />
+                    <WeaponActionControls
+                      sheet={sheet}
+                      actionPlan={full}
+                      attackName={attack.definition.name}
+                      action="fullAttack"
+                      testIdPrefix={"roll-summary-" + attack.definition.id}
+                      compact
+                    />
+                  </div>
+                </div>
+              );
+            })
           ) : (
             <p className="summary-empty">Add a weapon in the attacks section.</p>
           )}
@@ -193,14 +231,7 @@ export function SummarySheet({
               type="button"
               key={skill.id}
               aria-label={"Roll " + skill.label}
-              onClick={() =>
-                sheet.roll(skill.label + " check", () =>
-                  sheet.engine.createSkillRollPlan(
-                    skill.id,
-                    sheet.dcDefense ? { defense: sheet.dcDefense } : {},
-                  ),
-                )
-              }
+              onClick={() => sheet.rollSkill(skill.id)}
               title={"Roll " + skill.label}
             >
               <span className="summary-skill-die" aria-hidden="true">◆</span>
@@ -219,6 +250,18 @@ export function SummarySheet({
         >
           View and edit all skills →
         </button>
+        {activeFeatures.length > 0 && (
+          <div className="summary-active-features" aria-label="Active features and conditions">
+            <span className="summary-section-heading">Active</span>
+            <div>
+              {activeFeatures.map((feature) => (
+                <span className="summary-feature-chip" key={feature.id}>
+                  {feature.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </section>
   );
@@ -240,8 +283,8 @@ function SummaryValue({
       className="summary-value"
       type="button"
       onClick={onClick}
-      aria-label={ariaLabel}
-      title={ariaLabel}
+      aria-label={ariaLabel ?? "Inspect " + label}
+      title={ariaLabel ?? "Inspect " + label}
     >
       <span>{label}</span>
       <b>{value}</b>

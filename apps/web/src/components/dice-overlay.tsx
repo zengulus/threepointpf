@@ -22,6 +22,7 @@ import {
   rollSequenceTimeline,
   type SequencePhase,
 } from "../lib/dice-sequence";
+import { formatResolvedOutcome, formatRollDefense } from "../lib/roll-result";
 
 /** One resolved roll, frozen for presentation. */
 type DiceStage = NonNullable<DicePresentation["stage"]>;
@@ -203,12 +204,28 @@ function DiceSequence({
           : "physics landed on the resolved faces"
         : report.mode === "skipped"
           ? (report.reason ?? "animation skipped")
-          : `no 3D dice — ${report.reason ?? "renderer unavailable"}`;
+        : `no 3D dice — ${report.reason ?? "renderer unavailable"}`;
+  const defense = resolved.outcome.defense;
+  const semanticOutcome = formatResolvedOutcome(plan, resolved);
+  const outcomeDetail = formatRollOutcome(resolved.outcome);
+  const outcomeText =
+    outcomeDetail && outcomeDetail.toLowerCase() !== semanticOutcome.toLowerCase()
+      ? `${semanticOutcome} · ${outcomeDetail}`
+      : semanticOutcome;
+  const outcomeChipLabel =
+    plan.outcomePolicy.kind === "plain"
+      ? plan.context.kind === "damage"
+        ? "Damage"
+        : "Rolled"
+      : outcomeLabel(outcomeKind);
 
   return (
     <div
       className="dice-overlay"
       data-testid="dice-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${stage.characterName ? stage.characterName + " " : ""}${plan.label} result`}
       data-event={presentation.event}
       data-motion={flourish.motion}
       data-phase={phase}
@@ -227,6 +244,7 @@ function DiceSequence({
         <div className="dice-topbar">
           <div>
             <span className="eyebrow">
+              {stage.characterName ? stage.characterName + " · " : ""}
               {plan.context.kind} · {plan.context.action.kind}
             </span>
             <h3 data-testid="dice-overlay-label">{plan.label}</h3>
@@ -309,11 +327,16 @@ function DiceSequence({
             className="dice-outcome dice-reveal"
             data-testid="dice-overlay-outcome"
             data-revealed={revealedAt(phase, "outcome")}
+            role="status"
+            aria-live="polite"
           >
             <span className="dice-outcome-chip" data-kind={outcomeKind}>
-              {outcomeLabel(outcomeKind)}
+              {outcomeChipLabel}
             </span>
-            <small>{formatRollOutcome(resolved.outcome)}</small>
+            <small data-testid="dice-overlay-target">
+              {defense ? `vs ${formatRollDefense(defense)} · ` : ""}
+              {outcomeText}
+            </small>
           </div>
         </div>
         <footer className="dice-footer">

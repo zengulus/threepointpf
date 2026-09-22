@@ -325,27 +325,29 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   );
   await expect(page.getByTestId("roll-standard-greatsword")).toContainText("STANDARD");
   await page.getByTestId("roll-maneuver-trip").click();
-  await expect(page.locator(".top-actions")).toContainText("trip maneuver");
+  await expect(page.locator(".sheet-notice")).toContainText("CMB trip");
   await dismissDice(page);
   // A roll reports the natural face and the semantic outcome separately, so a
   // threat that could still miss is never shown as a hit.
-  await expect(page.locator(".top-actions")).toContainText(/trip maneuver: \d+ [+-]\d+ = \d+ · /);
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /CMB trip: natural \d+ · modifier [+-]\d+ · total \d+/,
+  );
   await page.getByTestId("roll-standard-greatsword").click();
-  await expect(page.locator(".top-actions")).toContainText(
-    /standard attack: \d+ [+-]\d+ = \d+ · (unresolved|natural 20|natural 1|criticalSuccess)/,
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /Greatsword standard attack: natural \d+ · modifier [+-]\d+ · total \d+/,
   );
   await dismissDice(page);
   // A step's own damage roll is part of the action's roll list, and a plain
   // roll reports its total without inventing an outcome.
   await page.getByTestId("roll-damage-greatsword").click();
-  await expect(page.locator(".top-actions")).toContainText(
-    /damage: \d+(, \d+)* [+-]\d+ = \d+/,
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /Greatsword damage: dice \d+(, \d+)* · modifier [+-]\d+ · total \d+/,
   );
-  await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  await expect(page.locator(".sheet-notice")).not.toContainText(/unresolved/i);
   await dismissDice(page);
   await page.getByTestId("roll-initiative").click();
-  await expect(page.locator(".top-actions")).toContainText(
-    /initiative: \d+ [+-]\d+ = \d+/,
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /Initiative: natural \d+ · modifier [+-]\d+ · total \d+/,
   );
   await dismissDice(page);
 });
@@ -405,11 +407,10 @@ test("an optional entered DC resolves a check or leaves it unresolved", async ({
   // A skill check has no automatic face rule and no known DC, so nothing is
   // resolved: the face facts are reported and no verdict is invented.
   await page.getByTestId("roll-skill-perception").click();
-  await expect(page.locator(".top-actions")).toContainText(
-    /Perception check: \d+ [+-]\d+ = \d+ · /,
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /Perception check: natural \d+ · modifier [+-]\d+ · total \d+/,
   );
-  await expect(page.locator(".top-actions")).not.toContainText("success");
-  await expect(page.locator(".top-actions")).not.toContainText("failure");
+  await expect(page.locator(".sheet-notice")).not.toContainText(/Success|Failure/);
   // A skill check has no automatic face rule, so its presentation is the
   // natural-face one rather than a combat critical.
   await expect(page.getByTestId("dice-overlay")).toHaveAttribute(
@@ -422,19 +423,19 @@ test("an optional entered DC resolves a check or leaves it unresolved", async ({
   // The natural face is reported alongside the outcome, and a natural face is
   // not an automatic verdict on a skill check: a natural 1 against a low DC is
   // still a success, and the notice says both.
-  await expect(page.locator(".top-actions")).toContainText(
-    /Perception check: \d+ [+-]\d+ = \d+ · (natural \d+ · )?(success|failure)/,
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /Perception check: natural \d+ · modifier [+-]\d+ · total \d+ vs DC 1 · (Success|Failure)/,
   );
-  await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  await expect(page.locator(".sheet-notice")).not.toContainText(/unresolved/i);
   await dismissDice(page);
   // Saves use the defense field in the defenses panel the same way.
   await selectTab(page, "Combat");
   await page.getByTestId("roll-dc-saves").fill("1");
   await page.getByTestId("roll-fortitude").click();
-  await expect(page.locator(".top-actions")).toContainText(
-    /fortitude save: \d+ [+-]\d+ = \d+ · /,
+  await expect(page.locator(".sheet-notice")).toContainText(
+    /Fortitude save: natural \d+ · modifier [+-]\d+ · total \d+ vs DC 1 · (Success|Failure)/,
   );
-  await expect(page.locator(".top-actions")).not.toContainText("unresolved");
+  await expect(page.locator(".sheet-notice")).not.toContainText(/unresolved/i);
   // Saves are combat rolls, so a natural face takes the combat presentation,
   // while anything else takes the ordinary one.
   await expect(page.getByTestId("dice-overlay")).toHaveAttribute(
@@ -482,7 +483,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   await dismissDice(page);
 
   // Dice preferences persist under their own key and stay out of character state.
-  await selectTab(page, "Summary");
+  await selectTab(page, "Settings");
   await page.getByTestId("dice-skin").selectOption("arcane");
   await page.getByTestId("dice-flourish-natural-1").selectOption("shards");
   await page.getByTestId("dice-sound").uncheck();
@@ -499,6 +500,7 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
   expect(characterBlobs).not.toContain("shards");
 
   await page.reload();
+  await selectTab(page, "Settings");
   await expect(page.getByTestId("dice-skin")).toHaveValue("arcane");
   await expect(page.getByTestId("dice-flourish-natural-1")).toHaveValue("shards");
   await expect(page.getByTestId("dice-sound")).not.toBeChecked();

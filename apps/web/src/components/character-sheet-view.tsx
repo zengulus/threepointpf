@@ -3,6 +3,7 @@ import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { AdvancementEditor, AdvancementSummary } from "./advancement";
 import { CustomClassEditor } from "./custom-class-editor";
 import { DiceSettingsPanel } from "./dice-settings";
+import { DiscordSettingsPanel } from "./discord-settings";
 import { SamplePanel } from "./sample-panel";
 import { SummarySheet } from "./summary-sheet";
 import { Breakdown } from "./primitives";
@@ -26,6 +27,7 @@ const sheetTabs = [
   { id: "skills", label: "Skills" },
   { id: "advancement", label: "Advancement" },
   { id: "notes", label: "Notes" },
+  { id: "settings", label: "Settings" },
 ] as const;
 
 export type SheetTab = (typeof sheetTabs)[number]["id"];
@@ -133,10 +135,24 @@ export function CharacterSheetView({
           <button type="button" onClick={() => selectTab("notes")}>
             ☰ Notes
           </button>
+          <button type="button" onClick={() => selectTab("settings")}>
+            ⚙ Settings
+          </button>
         </nav>
         <div className="top-actions">
           <span className="status-dot" />
-          <span className="sheet-notice">{sheet.notice}</span>
+          <span className="sheet-notice" role="status" aria-live="polite" title={sheet.notice}>
+            {sheet.notice}
+          </span>
+          {sheet.integrationNotice && (
+            <span
+              className="sheet-integration-notice"
+              role="status"
+              aria-live="polite"
+            >
+              {sheet.integrationNotice}
+            </span>
+          )}
           {onOpenWorkspace && (
             <button
               className="button quiet"
@@ -260,7 +276,6 @@ export function CharacterSheetView({
           <SummarySheet sheet={sheet} onSelectTab={selectTab} />
           <div className="summary-utilities">
             <SamplePanel sheet={sheet} />
-            <DiceSettingsPanel dice={sheet.dice} />
           </div>
         </section>
         <section
@@ -368,6 +383,25 @@ export function CharacterSheetView({
               </p>
             </div>
           </section>
+        </section>
+        <section
+          className="sheet-tab-panel settings-tab-panel"
+          role="tabpanel"
+          id={viewId + "-sheet-panel-settings"}
+          aria-labelledby={viewId + "-sheet-tab-settings"}
+          tabIndex={0}
+          hidden={activeTab !== "settings"}
+        >
+          <section className="settings-intro panel">
+            <span className="eyebrow">APPLICATION SETTINGS</span>
+            <h2>Dice and table integrations</h2>
+            <p className="muted">
+              These settings belong to this browser, not to the active character.
+              Switching characters leaves them intact.
+            </p>
+          </section>
+          <DiceSettingsPanel dice={sheet.dice} />
+          <DiscordSettingsPanel discord={sheet.discord} />
         </section>
       </TabWorkspace>
     </section>

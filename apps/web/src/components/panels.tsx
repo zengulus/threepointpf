@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { formatModifier } from "@threepointpf/dice";
 import {
   attackProfileCatalog,
@@ -9,6 +8,7 @@ import {
 } from "@threepointpf/rules-data";
 import {
   movementModes,
+  maneuverIds,
   sizeCategories,
   type AbilityId,
   type BonusType,
@@ -18,6 +18,7 @@ import {
 } from "@threepointpf/rules-schema";
 import { CustomEquipmentEditor } from "./custom-equipment-editor";
 import { Field, StatCard } from "./primitives";
+import { RollTargetField, WeaponActionControls } from "./roll-actions";
 import {
   catalogValues,
   describeEffect,
@@ -275,35 +276,6 @@ export function ExperiencePanel({ sheet }: { sheet: CharacterSheet }) {
   );
 }
 
-/**
- * An optional caller-entered DC for rolls checked against one. It is the same
- * defense context a caller-supplied AC uses, so a blank field leaves the
- * outcome unresolved instead of assuming a number.
- */
-function RollDcField({
-  sheet,
-  label,
-  testId,
-}: {
-  sheet: CharacterSheet;
-  label: string;
-  testId: string;
-}) {
-  return (
-    <label className="field roll-dc">
-      <span>{label}</span>
-      <input
-        type="number"
-        inputMode="numeric"
-        placeholder="blank = unresolved"
-        data-testid={testId}
-        value={sheet.rollDc}
-        onChange={(event) => sheet.setRollDc(event.target.value)}
-      />
-    </label>
-  );
-}
-
 export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
   return (
       <section className="panel">
@@ -380,7 +352,12 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
           />
         </div>
         <div className="saves-row">
-          <RollDcField sheet={sheet} label="Target DC" testId="roll-dc-saves" />
+          <RollTargetField
+            label="Check DC (shared with skills)"
+            value={sheet.rollDc}
+            testId="roll-dc-saves"
+            onChange={sheet.setRollDc}
+          />
           <div className="roll-row" key="initiative">
             <button
               className="value-link"
@@ -394,11 +371,7 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
             <button
               className="roll-button"
               data-testid="roll-initiative"
-              onClick={() =>
-                sheet.roll("initiative", () =>
-                  sheet.engine.createInitiativeRollPlan(),
-                )
-              }
+              onClick={() => void sheet.rollInitiative()}
             >
               ROLL d20
             </button>
@@ -415,14 +388,7 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
               <button
                 className="roll-button"
                 data-testid={"roll-" + save}
-                onClick={() =>
-                  sheet.roll(save + " save", () =>
-                    sheet.engine.createSaveRollPlan(
-                      save,
-                      sheet.dcDefense ? { defense: sheet.dcDefense } : {},
-                    ),
-                  )
-                }
+                onClick={() => void sheet.rollSave(save)}
               >
                 ROLL d20
               </button>
@@ -445,6 +411,20 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
             Standard attacks and explicit full-attack actions · extras once per
             action
           </span>
+        </div>
+        <div className="combat-targets">
+          <RollTargetField
+            label="Target AC"
+            value={sheet.attackAc}
+            testId="roll-ac-attacks"
+            onChange={sheet.setAttackAc}
+          />
+          <RollTargetField
+            label="Target CMD"
+            value={sheet.maneuverCmd}
+            testId="roll-cmd-maneuvers"
+            onChange={sheet.setManeuverCmd}
+          />
         </div>
         {sheet.derived.attacks.map((attack) => (
           <div
@@ -478,103 +458,58 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
               >
                 Damage · inspect
               </button>
-              <button
-                className="roll-button"
-                data-testid={"roll-standard-" + attack.definition.id}
-                onClick={() =>
-                  sheet.roll(
-                    attack.definition.name + " standard attack",
-                    () =>
-                      sheet.engine.createAttackRollPlan(
-                        attack.definition.id,
-                        0,
-                        { action: "standardAttack" },
-                      ),
-                  )
+              <WeaponActionControls
+                sheet={sheet}
+                actionPlan={sheet.createWeaponActionPlan(
+                  attack.definition.id,
+                  "standardAttack",
+                )}
+                attackName={attack.definition.name}
+                action="standardAttack"
+                testIdPrefix={"roll-standard-" + attack.definition.id}
+                testIdFor={(kind) =>
+                  kind === "attack"
+                    ? "roll-standard-" + attack.definition.id
+                    : kind === "damage"
+                      ? "roll-standard-damage-" + attack.definition.id
+                      : "roll-standard-critical-damage-" + attack.definition.id
                 }
-              >
-                STANDARD {formatModifier(attack.attack.value)}
-              </button>
-              {attack.fullAttack.map((result, index) => {
-                // The step carries the damage roll it deals, so the row resolves
-                // the same action-ordered roll list the engine reports.
-                const step = attack.action.attacks[0]?.steps[index];
-                return (
-                  <Fragment key={index}>
-                    <button
-                      className="roll-button"
-                      data-testid={
-                        "roll-attack-" +
-                        attack.definition.id +
-                        (index ? "-" + index : "")
-                      }
-                      title={step?.role ?? "primary"}
-                      onClick={() =>
-                        sheet.roll(
-                          attack.definition.name + " attack " + (index + 1),
-                          () =>
-                            sheet.engine.createAttackRollPlan(
-                              attack.definition.id,
-                              index,
-                            ),
-                        )
-                      }
-                    >
-                      {(step?.role ?? "primary").toUpperCase()}{" "}
-                      {formatModifier(result.value)}
-                    </button>
-                    {step?.damage && (
-                      <button
-                        className="roll-button"
-                        data-testid={
-                          "roll-damage-" +
-                          attack.definition.id +
-                          (index ? "-" + index : "")
-                        }
-                        title={
-                          "Resolve " +
-                          step.damage.label +
-                          " (" +
-                          step.damage.dice
-                            .map((die) => die.count + "d" + die.sides)
-                            .join(" + ") +
-                          ")"
-                        }
-                        onClick={() =>
-                          sheet.roll(step.damage!.label, () => step.damage!)
-                        }
-                      >
-                        DMG{" "}
-                        {step.damage.dice
-                          .map((die) => die.count + "d" + die.sides)
-                          .join("+")}
-                        {formatModifier(step.damage.modifier)}
-                      </button>
-                    )}
-                  </Fragment>
-                );
-              })}
+              />
+              <WeaponActionControls
+                sheet={sheet}
+                actionPlan={sheet.createWeaponActionPlan(
+                  attack.definition.id,
+                  "fullAttack",
+                )}
+                attackName={attack.definition.name}
+                action="fullAttack"
+                testIdPrefix={"roll-full-" + attack.definition.id}
+                testIdFor={(kind, index) => {
+                  const suffix = index ? "-" + index : "";
+                  if (kind === "attack")
+                    return "roll-attack-" + attack.definition.id + suffix;
+                  if (kind === "damage")
+                    return "roll-damage-" + attack.definition.id + suffix;
+                  return "roll-critical-damage-" + attack.definition.id + suffix;
+                }}
+              />
             </div>
           </div>
         ))}
         <div className="maneuver-row">
           <span className="eyebrow">MANEUVERS</span>
-          {["trip", "disarm", "bull-rush", "grapple", "sunder"].map(
+          {maneuverIds.map(
             (maneuver) => (
               <button
                 key={maneuver}
                 className="roll-button"
                 data-testid={"roll-maneuver-" + maneuver}
-                onClick={() =>
-                  sheet.roll(
-                    maneuver + " maneuver",
-                    () => sheet.engine.createManeuverRollPlan(maneuver),
-                  )
-                }
+                aria-label={"Roll " + maneuver.replaceAll("-", " ") + " maneuver"}
+                onClick={() => void sheet.rollManeuver(maneuver)}
               >
                 {maneuver.toUpperCase()}{" "}
                 {formatModifier(
-                  sheet.engine.createManeuverRollPlan(maneuver).modifier,
+                  sheet.createManeuverPlan(maneuver).modifier,
                 )}
               </button>
             ),
@@ -627,7 +562,12 @@ export function SkillsPanel({ sheet }: { sheet: CharacterSheet }) {
             below
           </span>
         </div>
-        <RollDcField sheet={sheet} label="Target DC" testId="roll-dc-skills" />
+        <RollTargetField
+          label="Check DC (shared with saves)"
+          value={sheet.rollDc}
+          testId="roll-dc-skills"
+          onChange={sheet.setRollDc}
+        />
         <div className="skills-grid">
           {Object.values(sheet.derived.skills).map((skill) => {
             const override =
@@ -655,14 +595,7 @@ export function SkillsPanel({ sheet }: { sheet: CharacterSheet }) {
                 <button
                   className="roll-button"
                   data-testid={"roll-skill-" + skill.id}
-                  onClick={() =>
-                    sheet.roll(skill.label + " check", () =>
-                      sheet.engine.createSkillRollPlan(
-                        skill.id,
-                        sheet.dcDefense ? { defense: sheet.dcDefense } : {},
-                      ),
-                    )
-                  }
+                  onClick={() => void sheet.rollSkill(skill.id)}
                 >
                   ROLL d20
                 </button>

@@ -75,7 +75,7 @@ function ColorField({
  * enter authored character state.
  */
 export function DiceSettingsPanel({ dice }: { dice: DicePresentation }) {
-  const { settings, updateSettings, resetSettings } = dice;
+  const { settings, updateSettings, resetSettings, persistenceNotice } = dice;
   const skin = activeDiceSkin(settings);
   const custom = settings.skinId === customDiceSkinId;
 
@@ -261,6 +261,11 @@ export function DiceSettingsPanel({ dice }: { dice: DicePresentation }) {
           <code>{settings.intensity}</code>
         </label>
       </div>
+      {persistenceNotice && (
+        <p className="settings-feedback" role="status" aria-live="polite">
+          {persistenceNotice}
+        </p>
+      )}
     </section>
   );
 }

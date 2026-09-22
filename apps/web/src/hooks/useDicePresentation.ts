@@ -24,6 +24,8 @@ export interface DiceStage {
   id: number;
   plan: RollPlan;
   resolved: ResolvedRoll;
+  /** Presentation-only actor context for a readable result drawer. */
+  characterName?: string;
   presentation: RollPresentation;
   flourish: DiceFlourish;
 }
@@ -45,6 +47,9 @@ function initialSettings(): DicePresentationSettings {
 export function useDicePresentation() {
   const [settings, setSettings] = useState<DicePresentationSettings>(initialSettings);
   const [stage, setStage] = useState<DiceStage | null>(null);
+  const [persistenceNotice, setPersistenceNotice] = useState<string | null>(
+    null,
+  );
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stageCount = useRef(0);
   const settingsRef = useRef(settings);
@@ -68,7 +73,11 @@ export function useDicePresentation() {
     (patch: DicePresentationSettingsPatch) => {
       setSettings((current) => {
         const next = updateDicePresentationSettings(current, patch);
-        saveDicePreferences(next);
+        if (saveDicePreferences(next)) setPersistenceNotice(null);
+        else
+          setPersistenceNotice(
+            "Dice settings could not be saved; they will last only for this session.",
+          );
         return next;
       });
     },
@@ -82,7 +91,11 @@ export function useDicePresentation() {
       flourishes: { ...defaultDicePresentationSettings.flourishes },
       reducedMotion: systemPrefersReducedMotion(),
     };
-    saveDicePreferences(next);
+    if (saveDicePreferences(next)) setPersistenceNotice(null);
+    else
+      setPersistenceNotice(
+        "Dice settings could not be saved; they will last only for this session.",
+      );
     setSettings(next);
   }, []);
 
@@ -92,13 +105,18 @@ export function useDicePresentation() {
    * game rule is repeated here.
    */
   const present = useCallback(
-    (plan: RollPlan, resolved: ResolvedRoll) => {
+    (
+      plan: RollPlan,
+      resolved: ResolvedRoll,
+      options: { characterName?: string } = {},
+    ) => {
       const presentation = classifyRollPresentation(plan, resolved.outcome);
       stageCount.current += 1;
       setStage({
         id: stageCount.current,
         plan,
         resolved,
+        ...(options.characterName ? { characterName: options.characterName } : {}),
         presentation,
         flourish: flourishFor(settingsRef.current, presentation.event),
       });
@@ -116,6 +134,7 @@ export function useDicePresentation() {
 
   return {
     settings,
+    persistenceNotice,
     skin: activeDiceSkin(settings),
     stage,
     presenter,

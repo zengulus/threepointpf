@@ -25,10 +25,9 @@ async function dismissDice(page: Page) {
     await page.getByTestId("dice-overlay-close").click();
     await expect(overlay).toHaveCount(0);
   }
-  // Dice settings are part of the compact Summary tab. Each roll helper
-  // returns there, so appearance assertions keep exercising the real tab UI
-  // instead of reaching through a hidden Combat panel.
-  await selectTab(page, "Summary");
+  // Dice settings have their own first-class page. Each roll helper returns
+  // there, so appearance assertions keep exercising the real visible UI.
+  await selectTab(page, "Settings");
 }
 
 /**
@@ -37,7 +36,7 @@ async function dismissDice(page: Page) {
  * these tests are measuring.
  */
 async function noFlourishes(page: Page) {
-  await selectTab(page, "Summary");
+  await selectTab(page, "Settings");
   for (const slot of [
     "dice-flourish-critical-success",
     "dice-flourish-critical-failure",
@@ -292,6 +291,7 @@ test("appearance choices survive a reload and paint the next throw", async ({
 }) => {
   await page.goto("/");
   await loadSample(page, "showcase");
+  await selectTab(page, "Settings");
   // Editing any colour, texture, material or surface switches the skin to
   // Custom, seeded with what was on screen, and a preset would keep its own look.
   await page.getByTestId("dice-surface").selectOption("green-felt");
@@ -299,6 +299,7 @@ test("appearance choices survive a reload and paint the next throw", async ({
   await page.waitForTimeout(400);
 
   await page.reload();
+  await selectTab(page, "Settings");
   await expect(page.getByTestId("dice-skin")).toHaveValue("custom");
   await expect(page.getByTestId("dice-surface")).toHaveValue("green-felt");
   await expect(page.getByTestId("dice-color-background")).toHaveValue(

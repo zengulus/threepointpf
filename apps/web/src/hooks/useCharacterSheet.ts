@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserDiceProvider,
-  formatModifier,
-  formatRollOutcome,
   resolveRollPlan,
+  type ResolvedRoll,
+  type RollPlan,
 } from "@threepointpf/dice";
 import { RulesEngine } from "@threepointpf/rules-core";
 import {
@@ -53,6 +53,9 @@ import {
   useDicePresentation,
   type DicePresentation,
 } from "./useDicePresentation";
+import { useDiscordRollSettings } from "./useDiscordRollSettings";
+import { publishCompletedRoll } from "../lib/discord-roll-publishing";
+import { formatRollResultNotice } from "../lib/roll-result";
 
 /**
  * A caller-selected authored character. Omit `characterId` for the standalone
@@ -84,6 +87,16 @@ function usableCharacterId(value: string | undefined): string | undefined {
   return id || undefined;
 }
 
+function defenseFromInput(
+  value: string,
+  kind: RollDefense["kind"],
+): RollDefense | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const number = Number(trimmed);
+  return Number.isFinite(number) ? { kind, value: number } : undefined;
+}
+
 /**
  * A known sample is the natural seed for its authored id. An unknown id still
  * gets a valid, isolated draft with that id so a caller never briefly sees the
@@ -105,6 +118,7 @@ export function useCharacterSheetController({
   characterId: requestedCharacterId,
   onCharacterIdChange,
 }: CharacterSheetControllerOptions) {
+  const discord = useDiscordRollSettings();
   // Demo mode is the default and needs no server: it is the published demo and
   // the fallback whenever no Supabase credentials are configured.
   const environment = useMemo(() => activeSheetEnvironment(), []);
@@ -134,9 +148,19 @@ export function useCharacterSheetController({
         : "Demo mode · new character draft ready"
       : "Local draft ready",
   );
+  const [integrationNotice, setIntegrationNotice] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   /** An optional caller-entered DC; blank means "no known DC". */
   const [rollDc, setRollDc] = useState("");
+  /** Target defenses are transient table context, not character data. */
+  const [attackAc, setAttackAc] = useState("");
+  const [maneuverCmd, setManeuverCmd] = useState("");
+  const [lastRoll, setLastRoll] = useState<{
+    plan: RollPlan;
+    resolved: ResolvedRoll;
+  } | null>(null);
   const [selected, setSelected] = useState<{
     label: string;
     evaluation: EvaluationResult;
@@ -172,6 +196,8 @@ export function useCharacterSheetController({
     // A new target is a distinct authored-state session. Edits to the old
     // character must not suppress a persisted load for this one.
     editRevision.current = 0;
+    setLastRoll(null);
+    setIntegrationNotice(null);
     const pending = pendingSampleDraft.current;
     if (pending?.character.id === characterId) {
       pendingSampleDraft.current = null;
@@ -257,6 +283,7 @@ export function useCharacterSheetController({
       new RulesEngine(next, rulesCatalogs).derive();
       editRevision.current += 1;
       setCharacter(next);
+      setLastRoll(null);
       setSelected(null);
       setError(null);
       if (success) setNotice(success);
@@ -601,45 +628,103 @@ export function useCharacterSheetController({
   // The entered DC is a roll defense, exactly like a caller-supplied AC: it
   // travels through the same plan context and leaves the outcome unresolved
   // when it is blank.
-  const dcDefense = useMemo<RollDefense | undefined>(() => {
-    const trimmed = rollDc.trim();
-    if (!trimmed) return undefined;
-    const value = Number(trimmed);
-    return Number.isFinite(value) ? { kind: "dc", value } : undefined;
-  }, [rollDc]);
-  const roll = async (
-    label: string,
-    plan: () => ReturnType<RulesEngine["createSaveRollPlan"]>,
-  ) => {
+  const dcDefense = useMemo(
+    () => defenseFromInput(rollDc, "dc"),
+    [rollDc],
+  );
+  const attackDefense = useMemo(
+    () => defenseFromInput(attackAc, "ac"),
+    [attackAc],
+  );
+  const maneuverDefense = useMemo(
+    () => defenseFromInput(maneuverCmd, "cmd"),
+    [maneuverCmd],
+  );
+
+  /**
+   * The sole UI execution gateway: an engine-authored plan resolves locally,
+   * then presentation and optional publishing consume that completed result.
+   */
+  const rollPlan = async (plan: RollPlan) => {
     try {
-      const value = plan();
       const raw = await new BrowserDiceProvider().roll({
-        planId: value.id,
-        dice: value.dice,
+        planId: plan.id,
+        dice: plan.dice,
       });
-      const result = resolveRollPlan(value, raw.faces);
+      const result = resolveRollPlan(plan, raw.faces);
       // The authoritative faces already decided the result; the overlay is only
       // asked to land the dice on them.
-      dice.present(value, result);
-      // The natural face and the semantic outcome are reported separately, so a
-      // threat outside the automatic rule is never shown as a hit. A plan with
-      // no comparison of its own (damage, initiative) reports its total only.
-      setNotice(
-        label +
-          ": " +
-          raw.faces.join(", ") +
-          " " +
-          formatModifier(result.modifier) +
-          " = " +
-          result.total +
-          (value.outcomePolicy.kind === "plain"
-            ? ""
-            : " · " + formatRollOutcome(result.outcome)),
-      );
+      dice.present(plan, result, { characterName: character.name });
+      setLastRoll({ plan, resolved: result });
+      setNotice(formatRollResultNotice(character.name, plan, result));
+      setIntegrationNotice(null);
+      // Publishing is deliberately outside the local completion path. A
+      // rejected/deleted webhook never replaces the result the player just got.
+      void publishCompletedRoll(discord.settings, character.name, plan, result)
+        .then((published) => {
+          if (published) setIntegrationNotice("Roll published to Discord.");
+        })
+        .catch(() => {
+          setIntegrationNotice(
+            "Discord publishing failed. Your local roll is still available.",
+          );
+        });
     } catch (failure) {
-      setNotice(errorText(failure));
+      setNotice("Roll could not be completed: " + errorText(failure));
     }
   };
+  /** Build one exact weapon action for both display and button execution. */
+  const createWeaponActionPlan = (
+    attackId: string,
+    action: "standardAttack" | "fullAttack",
+  ) =>
+    engine.createActionPlan({
+      action,
+      attackIds: [attackId],
+      ...(attackDefense ? { defense: attackDefense } : {}),
+    });
+  const createCriticalDamagePlan = (damage: RollPlan) => {
+    const { context } = damage;
+    const action = context.action.kind;
+    if (
+      context.kind !== "damage" ||
+      !context.attackId ||
+      (action !== "standardAttack" && action !== "fullAttack")
+    )
+      throw new Error("Critical damage is available only for a weapon damage plan.");
+    return engine.createDamageRollPlan(context.attackId, {
+      action,
+      attackIndex: context.action.sequenceIndex ?? 0,
+      ...(context.action.attackIds ? { attackIds: context.action.attackIds } : {}),
+      criticalDamage: true,
+    });
+  };
+  const criticalMultiplierFor = (damage: RollPlan) => {
+    const critical = createCriticalDamagePlan(damage);
+    const ordinaryCount = damage.dice.reduce((count, die) => count + die.count, 0);
+    const criticalCount = critical.dice.reduce((count, die) => count + die.count, 0);
+    return ordinaryCount ? Math.max(2, Math.round(criticalCount / ordinaryCount)) : 2;
+  };
+  const canRollCriticalDamage = (attack: RollPlan) =>
+    lastRoll?.plan.id === attack.id && lastRoll.resolved.outcome.critical === true;
+  const rollInitiative = () => rollPlan(engine.createInitiativeRollPlan());
+  const rollSave = (save: "fortitude" | "reflex" | "will") =>
+    rollPlan(
+      engine.createSaveRollPlan(save, dcDefense ? { defense: dcDefense } : {}),
+    );
+  const rollSkill = (skillId: string) =>
+    rollPlan(
+      engine.createSkillRollPlan(
+        skillId,
+        dcDefense ? { defense: dcDefense } : {},
+      ),
+    );
+  const createManeuverPlan = (maneuver: string) =>
+    engine.createManeuverRollPlan(
+      maneuver,
+      maneuverDefense ? { defense: maneuverDefense } : {},
+    );
+  const rollManeuver = (maneuver: string) => rollPlan(createManeuverPlan(maneuver));
   const save = async () => {
     try {
       await repo.save(character);
@@ -668,6 +753,7 @@ export function useCharacterSheetController({
       new RulesEngine(loaded, rulesCatalogs).derive();
       editRevision.current += 1;
       setCharacter(loaded);
+      setLastRoll(null);
       setError(null);
       setNotice("Reloaded authored state");
     } catch (failure) {
@@ -689,6 +775,7 @@ export function useCharacterSheetController({
     engine,
     evaluated,
     notice,
+    integrationNotice,
     error,
     validationError: error ?? evaluated.error,
     selected,
@@ -696,6 +783,12 @@ export function useCharacterSheetController({
     rollDc,
     setRollDc,
     dcDefense,
+    attackAc,
+    setAttackAc,
+    attackDefense,
+    maneuverCmd,
+    setManeuverCmd,
+    maneuverDefense,
     update,
     fail,
     updateAbility,
@@ -707,7 +800,18 @@ export function useCharacterSheetController({
     addEquipment,
     addCustomWeapon,
     addCustomClass,
-    roll,
+    discord,
+    lastRoll,
+    rollPlan,
+    rollInitiative,
+    rollSave,
+    rollSkill,
+    rollManeuver,
+    createManeuverPlan,
+    createWeaponActionPlan,
+    createCriticalDamagePlan,
+    criticalMultiplierFor,
+    canRollCriticalDamage,
     save,
     reload,
     featureOptions,
