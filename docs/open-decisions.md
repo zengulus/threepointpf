@@ -9,24 +9,17 @@ are now explicit campaign-profile concerns and are summarized here.
 ## Deferred (do this later)
 
 1. **Tabletop Simulator client.** `tts/src/global.lua` is frozen at its MVP scope
-   — saves, one authoritative attack member with a standard/full toggle,
-   maneuvers, and a single physical d20 submitted to `/resolve-roll` — and is
-   *gated off* from current rules work. New roll families (initiative, damage),
-   multi-dice plans, server-contract extensions and any panel redesign are **not**
-   required to be wired into it, so the browser/Edge contract may move ahead of
-   the Lua client without waiting for it. Its two files of tests
-   (`tests/tts-contract.test.ts`, `tests/tts-runtime.test.ts`) exist only to keep
-   the frozen surface from silently rotting: the trust boundary below still has
-   to hold for what TTS already sends. Un-gate when a real TTS surface is worth
-   the work, which needs (a) multi-die physical-dice support in the client and
-   (b) a decision on the panel flow in product decision 11. Until then
-   `/roll-plan` and `/resolve-roll` keep accepting exactly what TTS sends; they
-   are simply not extended for it.
+   — saves, one attack member with a standard/full toggle, maneuvers, and one
+   physical d20 — and is *gated off* from current rules and hosting work. Its
+   tests (`tests/tts-contract.test.ts`, `tests/tts-runtime.test.ts`) protect the
+   frozen prototype with mocked transport. The historical `/roll-plan` and
+   `/resolve-roll` endpoints are no longer deployed here. Revisit only when a
+   real TTS surface is in scope, including multi-die physical rolls and an
+   explicit server authority and authentication design.
 
-Settled by the demo/presentation pass, and no longer open: demo mode is the
-**default** backing mode (cloud only when both public credentials are present and
-no demo flag was set), the published Pages build is explicitly demo and
-unauthenticated, samples are ordinary authored state with a pinned level 1
+Settled by the runtime-mode pass, and no longer open: browser mode is the
+**default** backing mode, hosted mode is explicit, the published Pages build is
+explicitly browser-only and unauthenticated, samples are ordinary authored state with a pinned level 1
 fighter as the landing sheet, and user-facing presentation choices (dice skins,
 flourishes, sound, reduced motion, selected sample) live under their own storage
 keys and never enter character state.
@@ -40,7 +33,9 @@ window visibility/minimized state, and window bounds are transient UI state,
 not authored or persisted character data. The workspace is deliberately a
 neutral placeholder, not a VTT: this pass adds no maps, tokens, campaign state,
 multiplayer behavior, or new backend requirement, and preserves the static
-GitHub Pages deployment at `/threepointpf/`.
+GitHub Pages deployment at `/threepointpf/`. The reusable `ThreePointPfApp` can
+be mounted by a host shell and receives its repository and auth-required callback
+through props; the hosted repository uses same-origin cookie-authenticated HTTP.
 
 Settled by the roll-contract pass, and no longer open: the roll/action contract
 itself, per-action roll plans, deterministic outcome classification with
@@ -78,17 +73,13 @@ feature instances remain compatible.
    curated samples remain useful fixtures.
 2. **Selection scope.** The selected sample preference remains browser-scoped
    (`threepointpf.sheet.sample`). The active saved character ID has a separate
-   browser key, and local/cloud repositories expose saved characters to the
+   browser key, and browser/hosted repositories expose saved characters to the
    sheet picker. A second browser starts with its own selection.
-3. **Demo portability.** Demo mode saves to browser storage and exports or
-   imports a versioned JSON character snapshot entirely client-side. It offers
-   no accounts, sharing, or cloud sync; cloud authentication and policy remain
-   open below.
-4. **Cloud authentication.** Cloud mode still relies on deployment-side
-   credentials and policies (short-lived tokens, row-level policy review,
-   rate limiting, deployment secrets) as recorded in
-   `docs/architecture-review.md`. Demo mode is not a substitute for that work and
-   is not meant to become an unauthenticated cloud client.
+3. **Demo portability.** Browser mode saves to browser storage and imports/exports versioned JSON locally. Hosted mode uses the same-origin Character API; authentication and durable storage belong to the host Site.
+4. **Hosted access policy.** The Site shell owns login and session cookies. The
+   Site backend must authorize every character list/read/write independently;
+   the frontend only distinguishes unauthenticated, forbidden, missing, invalid,
+   conflict, server, and network failures.
 
 ## Lifecycle policy decisions
 

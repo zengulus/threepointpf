@@ -10,10 +10,11 @@ import { useCharacterSheetController } from "../hooks/useCharacterSheet";
 import { useDicePresentation } from "../hooks/useDicePresentation";
 import { useThemePreference } from "../hooks/useThemePreference";
 import type { SheetTab } from "./character-sheet-view";
+import type { ThreePointPfHost } from "../App";
 
 type PresentationMode = "full-page" | "workspace";
 
-export interface AppShellProps {
+export interface AppShellProps extends ThreePointPfHost {
   /**
    * The authored identity selected by a hosting application. Omit it for the
    * standalone demo's sample-picker flow.
@@ -38,12 +39,18 @@ const initialWindowBounds: SheetWindowBounds = {
 export function AppShell({
   characterId,
   onCharacterIdChange,
+  characterRepository,
+  mode: appMode,
+  onAuthenticationRequired,
 }: AppShellProps) {
   const dice = useDicePresentation();
   const theme = useThemePreference();
   const sheet = useCharacterSheetController({
     characterId,
     onCharacterIdChange,
+    repository: characterRepository,
+    mode: appMode,
+    onAuthenticationRequired,
     dice,
   });
   const [mode, setMode] = useState<PresentationMode>("full-page");

@@ -8,7 +8,7 @@ A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-t
 
 ## Try the demo
 
-The sheet is published as a static demo on GitHub Pages at **[zengulus.github.io/threepointpf](https://zengulus.github.io/threepointpf/)** (`.github/workflows/pages.yml`), and **demo mode is the default presentation**: it needs no server, no sign-in and no configuration. The published build sets `VITE_DEMO_MODE=true` explicitly, so a credential that happens to exist in the build environment can never turn it into a database client.
+The sheet is published as a static demo on GitHub Pages at **[zengulus.github.io/threepointpf](https://zengulus.github.io/threepointpf/)** (`.github/workflows/pages.yml`), and **demo mode is the default presentation**: it needs no server, no sign-in and no configuration. The Pages build explicitly selects browser mode; unrelated environment variables cannot turn it into a server client.
 
 Opening it lands on a **level 1 fighter sample** — elite array, Power Attack and Weapon Focus with a greatsword, Toughness, a chain shirt, one level of the fighter progression — and a second sample holds the multi-level showcase sheet. Everything is authored state: the engine recomputes every number, saves stay in that browser's storage, and switching samples is a fresh start.
 
@@ -19,7 +19,7 @@ corepack pnpm build:demo   # static demo build, relative base path for Pages
 corepack pnpm dev          # local development, also in demo mode
 ```
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to leave demo mode; anything else stays in it.
+Hosted builds select `VITE_APP_MODE=hosted` and call the same-origin Character API. Authentication belongs to the host shell and is carried by its secure session cookie. No database URL, auth SDK, or backend secret is included in the frontend.
 
 ### Publishing the demo
 
@@ -36,9 +36,9 @@ corepack pnpm install
 corepack pnpm test
 corepack pnpm build
 corepack pnpm build:demo
+corepack pnpm --filter @threepointpf/web build:hosted # static hosted-mode frontend
 corepack pnpm check:demo      # serves the demo from /threepointpf/ and fetches its assets
 corepack pnpm rules:check-autosheet
-corepack pnpm check:edge
 corepack pnpm exec playwright install chromium
 corepack pnpm test:e2e
 corepack pnpm dev
@@ -71,7 +71,7 @@ This pass deliberately defers nonlethal damage, campaign profile storage, point-
 - Start from a sample character (the panel at the top of the sheet). Samples are ordinary authored state, so every derived number is recomputed; **Reset sample** reloads the pristine version, and the browser remembers which sample you were on. Invalid edits retain the last valid character and show an error.
 - Open **Workspace** to put that same sheet in a draggable/resizable window, or return to the full-page sheet at any time. The active tab, workspace mode, window visibility/minimized state, and window geometry are temporary UI state; they do not change or save the character.
 - Optionally select an XP track. XP reports eligibility; advancing classes remains an explicit edit. Age-category adjustments are optional catalog features, not inferred from a character's race.
-- **Save character** persists the sheet across reloads: to Supabase in cloud mode, and to this browser's storage in demo mode. Invalid edits retain the last valid character and show an error.
+- **Save character** persists the sheet across reloads: to the authenticated same-origin Character API in hosted mode, and to this browser's storage in browser mode. Invalid edits retain the last valid character and show an error.
 
 ## Abilities, resources, and damage terms
 
@@ -117,12 +117,12 @@ Catalog IDs distinguish sources (`pf1e.paizo.fighter`, third-party namespaces, `
 
 Numeric order: replace the intrinsic baseline → typed additive stacking → multipliers → strongest minimum → strongest maximum. Operations contribute deltas with source evidence. Conflicting replacements/bounds and non-finite results fail explicitly. Catalog effects and custom effects use the same pipeline.
 
-Only authored `CharacterInput` is persisted. A lifecycle commit produces that same snapshot; transient proposals, validation displays, and wizard page state are never saved. Optional lifecycle facts retain durable decisions and their provenance. Damage, temporary HP, and resource spent state are runtime facts carried in the same snapshot. Local storage uses `threepointpf.character.<id>`. The character picker lists saved snapshots, and the standalone demo resumes the last selected character after reload. A host can supply a concrete character ID to the app. Dice appearance, selected sample, and selected character use separate browser-scoped keys and never enter character state. Workspace mode, active tab, and floating-window state are deliberately not persisted at all. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Supabase saves the complete canonical snapshot in one `characters.authored_state` upsert, alongside legacy scalar projections; old child tables are read-only fallback for pre-snapshot saves. Derived facts/catalog caches are never saved.
+Only authored `CharacterInput` is persisted. A lifecycle commit produces that same snapshot; transient proposals, validation displays, and wizard page state are never saved. Optional lifecycle facts retain durable decisions and their provenance. Damage, temporary HP, and resource spent state are runtime facts carried in the same snapshot. Local storage uses `threepointpf.character.<id>`. The character picker lists saved snapshots, and the standalone demo resumes the last selected character after reload. A host can supply a concrete character ID to the app. Dice appearance, selected sample, and selected character use separate browser-scoped keys and never enter character state. Workspace mode, active tab, and floating-window state are deliberately not persisted at all. In demo mode a browser that refuses storage (private browsing, hardened settings) falls back to an in-memory repository so the sheet still works, just without surviving a reload. Hosted persistence sends the complete canonical snapshot through the shared Character API contract; database rows and revision tokens stay outside `CharacterInput`. Derived facts/catalog caches are never saved.
 
-For Supabase, supply `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` with an authenticated client session, apply migrations, and deploy `character-state`, `roll-plan`, and `resolve-roll`. The snapshot migration is included, not applied to any hosted database by this change. Never place a service-role key in the browser.
+For local integration, run `VITE_APP_MODE=hosted corepack pnpm --filter @threepointpf/web dev` behind a same-origin API proxy. The Site project implements `/api/characters` and owns authentication and durable storage. The HTTP contract and status behavior are documented in [docs/character-api.md](docs/character-api.md). GitHub Pages remains browser-only. Supabase and Render infrastructure has been removed; TTS remote play remains deferred.
 
 ## Tabletop Simulator (deferred)
 
 **Do this later.** The TTS client is gated off: it is frozen at its MVP scope (saves, one attack member with a standard/full choice, maneuvers, a single physical d20) and new roll families are not wired into it. Its script and tests are kept only so that surface cannot silently rot; see the TTS gate in `docs/open-decisions.md`.
 
-Copy `tts/src/global.lua` and its embedded UI into a TTS global script; configure the function URL, a non-privileged bearer token and character ID. Select an authoritative attack ID and zero-based sequence index. TTS sends physical die faces to `/resolve-roll`; the server reloads authored state and recomputes the plan, ignoring client-supplied modifiers. Browser and Edge use the same injected catalogs and roll-plan code.
+The Lua client remains a frozen prototype with mocked transport tests. Its former remote roll endpoints are not deployed by this repository, and TTS is not usable against the new Character API yet. Shared roll-plan request and validation contracts remain provider-neutral for a future authoritative endpoint.

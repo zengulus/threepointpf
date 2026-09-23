@@ -38,6 +38,7 @@ import {
   slug,
 } from "../lib/format";
 import { activeCatalog, repositoryFor } from "../lib/repository";
+import { CharacterApiError, type CharacterRepository } from "@threepointpf/shared";
 import {
   defaultSample,
   sampleCharacter,
@@ -78,6 +79,9 @@ export interface CharacterSheetOptions {
 /** A controller receives the single application-level dice presenter. */
 export interface CharacterSheetControllerOptions extends CharacterSheetOptions {
   dice: DicePresentation;
+  repository?: CharacterRepository;
+  mode?: "browser" | "hosted";
+  onAuthenticationRequired?: () => void;
 }
 
 interface PendingSampleDraft {
@@ -154,12 +158,14 @@ export function useCharacterSheetController({
   dice,
   characterId: requestedCharacterId,
   onCharacterIdChange,
+  repository: injectedRepository,
+  mode: requestedMode,
+  onAuthenticationRequired,
 }: CharacterSheetControllerOptions) {
   const discord = useDiscordRollSettings();
-  // Demo mode is the default and needs no server: it is the published demo and
-  // the fallback whenever no Supabase credentials are configured.
+  // Browser mode is the default and needs no server; hosted mode is explicit.
   const environment = useMemo(() => activeSheetEnvironment(), []);
-  const mode = sheetModeFor(environment);
+  const mode = requestedMode ?? sheetModeFor(environment);
   // The sample this browser last looked at, so a reload comes back to it. A
   // saved snapshot may replace it once, at mount; later sample switches are
   // explicit choices and are never overwritten by a load.
@@ -180,7 +186,7 @@ export function useCharacterSheetController({
   );
   const startingSample = sampleForCharacterId(startingCharacterId);
   const [notice, setNotice] = useState(
-    mode === "demo"
+    mode === "browser"
       ? startingSample
         ? "Demo mode · " + startingSample.label + " loaded"
         : "Demo mode · new character draft ready"
@@ -231,10 +237,10 @@ export function useCharacterSheetController({
   const [weaponAttackAdjustment, setWeaponAttackAdjustment] = useState("0");
   const [weaponStrengthRating, setWeaponStrengthRating] = useState("");
   const [profileId, setProfileId] = useState("");
-  const [repo] = useState(() => repositoryFor(mode, environment));
+  const [repo] = useState(() => injectedRepository ?? repositoryFor(mode, environment));
   const [savedCharacters, setSavedCharacters] = useState<Array<{ id: string; name: string }>>([]);
   const refreshSavedCharacters = async () => {
-    try { setSavedCharacters(await repo.list?.() ?? []); } catch { setSavedCharacters([]); }
+    try { setSavedCharacters(await repo.list()); } catch { setSavedCharacters([]); }
   };
   useEffect(() => { void refreshSavedCharacters(); }, [repo]);
   const editRevision = useRef(0);
@@ -270,7 +276,7 @@ export function useCharacterSheetController({
     setError(null);
     if (!sample)
       setNotice(
-        mode === "demo"
+        mode === "browser"
           ? "Demo mode · loading character"
           : "Loading character",
       );
@@ -294,19 +300,20 @@ export function useCharacterSheetController({
         new RulesEngine(saved, rulesCatalogs).derive();
         setCharacter(saved);
         setNotice(
-          mode === "demo"
+          mode === "browser"
             ? "Demo mode · reloaded your saved sheet"
             : "Saved character loaded",
         );
       })
       .catch((failure) => {
+        notifyAuthenticationRequired(failure);
         if (active && revision === loadRevision.current)
           setError(errorText(failure));
       });
     return () => {
       active = false;
     };
-  }, [characterId, mode, repo]);
+  }, [characterId, mode, repo, onAuthenticationRequired]);
   const catalog = useMemo(
     () => activeCatalog(character),
     [character.customProgressions],
@@ -368,6 +375,9 @@ export function useCharacterSheetController({
   const fail = (message: string) => {
     setError(message);
     setNotice("Change not applied");
+  };
+  const notifyAuthenticationRequired = (failure: unknown) => {
+    if (failure instanceof CharacterApiError && failure.code === "unauthenticated") onAuthenticationRequired?.();
   };
   const inspect = (label: string, evaluation: EvaluationResult) =>
     setSelected({ label, evaluation });
@@ -944,12 +954,9 @@ export function useCharacterSheetController({
       await repo.save(character);
       await refreshSavedCharacters();
       setError(null);
-      setNotice(
-        mode === "cloud"
-          ? "Saved to Supabase"
-          : "Saved in this browser (demo mode)",
-      );
+      setNotice(mode === "hosted" ? "Saved to your account" : "Saved in this browser (demo mode)");
     } catch (failure) {
+      notifyAuthenticationRequired(failure);
       fail("Save failed: " + errorText(failure));
     }
   };
@@ -976,6 +983,7 @@ export function useCharacterSheetController({
       setError(null);
       setNotice("Reloaded authored state");
     } catch (failure) {
+      notifyAuthenticationRequired(failure);
       fail("Reload failed: " + errorText(failure));
     }
   };
@@ -993,6 +1001,7 @@ export function useCharacterSheetController({
       setError(null);
       return "imported" as const;
     } catch (failure) {
+      notifyAuthenticationRequired(failure);
       setError(errorText(failure));
       setNotice("Import failed");
       return false as const;
@@ -1012,6 +1021,7 @@ export function useCharacterSheetController({
       }
       return apply(next, success);
     } catch (failure) {
+      notifyAuthenticationRequired(failure);
       fail(errorText(failure));
       return false;
     }

@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "node ../../scripts/copy-dice-assets.mjs && vite",
     "build": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && vite build",
-    "build:pages": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && vite build --base=./",
+    "build:pages": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && VITE_APP_MODE=browser vite build --base=./",
+    "build:hosted": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && VITE_APP_MODE=hosted vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@3d-dice/dice-box-threejs": "^0.0.12",
-    "@supabase/supabase-js": "^2.49.1",
     "@threepointpf/dice": "workspace:*",
     "@threepointpf/rules-core": "workspace:*",
     "@threepointpf/rules-data": "workspace:*",

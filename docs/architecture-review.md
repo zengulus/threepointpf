@@ -22,7 +22,7 @@ The architecture is sound for a first slice. The most important boundary is alre
 
 `authored inputs → enabled features → typed contributions → reducers → derived values → roll plans`
 
-`packages/rules-core` is pure TypeScript. React, Supabase, browser dice and Tabletop Simulator consume it rather than reimplementing formulas. Stable target IDs make the dependency graph explicit, and Zod validation is used at persistence and Edge Function boundaries. This gives the project a good path from the workbook's fixed columns and rows to declarative feature data.
+`packages/rules-core` is pure TypeScript. React, browser dice and the deferred Tabletop Simulator prototype consume it rather than reimplementing formulas. Stable target IDs make the dependency graph explicit, and Zod validation is used at persistence and shared API boundaries.
 
 ## Corrections made in this pass
 
@@ -133,7 +133,7 @@ Multiple weapons are never concatenated into a fake combined full attack, and ac
 
 Contextual filtering preserves provenance in both directions: `EvaluationResult.excluded` and `DamageEvaluation.excluded` report each authored-but-filtered effect with a reason (`does not apply to touch attacks`, `requires flags combat-expertise`, `excluded for tags weapon.two-handed, weapon.off-hand`), and `actionExclusions` flattens an action's exclusions for display. Every exclusion is structured data (target, source, value, reason), so the machine-readable record does not depend on prose. The sheet shows what contributed *and* why other authored effects did not.
 
-Server authority is unchanged by the extra context: `roll-plan` accepts either an action request or a single-sequence-member request, and `resolve-roll` rebuilds the request from the plan's own metadata, so a client never supplies a modifier and every contextual plan is recomputed from authored state plus context before raw die faces are resolved. The TTS panel requests the same contextual plans, carries an explicit standard/full attack choice, and exposes maneuver buttons; it still derives no modifiers itself. That client is deferred and frozen at this scope (see the TTS gate in `docs/open-decisions.md`), so new plan families do not wait on it.
+Provider-neutral roll request, validation, and plan-building contracts remain in `packages/shared`. The browser builds and resolves ordinary rolls locally. An authoritative remote roll service can reuse those contracts if TTS or multiplayer resumes; the frozen TTS client is not a current deployment target (see `docs/open-decisions.md`).
 
 ### Abilities, resources, and composed damage
 
@@ -206,11 +206,11 @@ An expansion declares how it works: `widenBy` adds faces, while `operation: "dou
 
 ### Request contracts and server authority
 
-Clients request rolls by context, never by modifier: a request names the roll kind, the action and its selected weapons, the sequence member, situational flags, and the defense it is compared against. `roll-plan` recomputes the plan from authored state plus that context, and `resolve-roll` rebuilds the plan from the submitted plan's own `context` before interpreting the raw faces, so a submitted `modifier`, `provenance` or outcome is ignored. Contradictory contexts fail validation instead of being reinterpreted: a save cannot be compared against an AC, a maneuver against an AC rather than CMD, a touch attack against a non-touch AC, a standard attack against several weapons, or a maneuver action against selected weapons. The one thing the server does not yet own is the target's own sheet: a supplied defense is caller-provided context, recorded and echoed in the outcome, and `docs/open-decisions.md` keeps that open.
+Shared roll requests describe action context and defense, never client-supplied modifiers. `packages/shared` validates those requests and can rebuild plans from canonical authored state. The browser uses the same local rules engine for its standard roll flow. A future remote roll service must validate the context and derive modifiers independently; its authorization and target-state policy remain future work.
 
-### Demo mode, samples and presentation boundaries
+### Browser and hosted modes, samples and presentation boundaries
 
-The sheet has two backing modes, and the choice is configuration rather than a request or a login. `sheetModeFor` returns `cloud` only when both public Supabase credentials are present **and** no explicit demo flag was set, so demo mode is the default everywhere else — including the published GitHub Pages build, which sets `VITE_DEMO_MODE=true` so a credential in the build environment cannot quietly turn the public demo into a database client. The demo repository is browser storage, with an in-memory repository as the fallback when a browser refuses to persist, so there is no failure path in which the demo cannot save at all. Cloud and demo share one validation/canonicalization boundary, so a sample and a saved character are the same shape.
+`sheetModeFor` selects only the explicit `VITE_APP_MODE=hosted` value; otherwise the app stays in browser mode. GitHub Pages builds explicitly select browser mode and never call the hosted API. Browser persistence uses localStorage with an in-memory fallback. Hosted persistence uses same-origin `/api/characters` requests and relies on the Site shell's secure cookie session. The host can inject a repository, mode, character identity, and an authentication-required callback without exposing its auth implementation to the rules engine.
 
 Samples are ordinary authored `CharacterInput` values in `lib/sample-characters.ts`, and the landing sample is a level 1 human fighter on the elite array: Power Attack from the curated catalog, Weapon Focus and Toughness as homebrew effects, the curated greatsword (two-handed profile: 1.5×STR) and chain shirt, and one level of the fighter progression so BAB, saves, save DCs, hit dice, class skills and skill points are derived rather than typed in. The sample therefore exercises both content paths — curated and authored — and a test pins its derived sheet (AC 15, 15 HP, +4 to hit, 2d6+7) so an engine regression shows up as a wrong sample.
 
@@ -222,7 +222,7 @@ Two user-facing choices are deliberately *not* character state and have their ow
 
 `FullPageSheet` and `CharacterSheetWindow` are presentation frames around that same view; neither owns a second character, controller, rules evaluation, or dice surface. `AppShell` also renders the single application-level `DiceOverlay`, outside either frame, so moving between full-page and windowed presentation cannot create a duplicate overlay or split roll state. The active tab belongs to the shell so it follows the same controller across both frames.
 
-Workspace mode, whether the window is open or minimized, and its bounds are transient shell state: they are not fields of `CharacterInput`, are not saved in browser storage or Supabase, and are not part of a roll request. The workspace is intentionally a neutral future tabletop placeholder, not an implemented VTT: there is no map, token, campaign, multiplayer, or tabletop persistence model hidden behind the window chrome.
+Workspace mode, whether the window is open or minimized, and its bounds are transient shell state: they are not fields of `CharacterInput`, are not persisted, and are not part of a roll request. The workspace is intentionally a neutral future tabletop placeholder, not an implemented VTT: there is no map, token, campaign, multiplayer, or tabletop persistence model hidden behind the window chrome.
 
 The Pages workflow builds with a relative base (`vite build --base=./`) so the same artifact works from a project subpath, and the presentation layer follows `import.meta.env.BASE_URL` when it resolves the renderer's texture and sound directory, so the demo's 3D dice work at `/threepointpf/` exactly as they do at the root.
 
@@ -255,7 +255,7 @@ The draw loop, canvas factory and clock are injectable through the renderer fact
 
 ### Module boundaries
 
-`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement`, `lifecycle` (campaign profiles, proposals, validation, previews and commits), and `character` (orchestration). The lifecycle depends on the evaluator; the evaluator does not depend on a lifecycle UI. Each module carries a source-only `.js` bridge so the Edge Functions' Deno typecheck can follow literal `.js` specifiers into the TypeScript source, matching the existing `advancement.js`/`content.js` convention. On the web side, `apps/web/src/App.tsx` is the small public composition entry point; `AppShell` owns application presentation, `CharacterSheetView` owns the reusable sheet DOM, presentation frames live in `components/sheet-presentations.tsx`, and authored-state/rules wiring remains in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
+`packages/rules-core/src/index.ts` is now a re-export surface. The evaluator is split along domain boundaries: `contributions` (typed reduction and the contribution vocabulary), `labels`, `effects` (collection, contextual applicability, operations), `abilities`, `defenses`, `skills`, `size`, `equipment`, `attacks`, `outcomes` (policies and effective critical ranges), `experience`, `advancement`, `lifecycle` (campaign profiles, proposals, validation, previews and commits), and `character` (orchestration). The lifecycle depends on the evaluator; the evaluator does not depend on a lifecycle UI. Domain modules remain provider-neutral TypeScript and are consumed by the browser and shared contracts. On the web side, `apps/web/src/App.tsx` is the small public composition entry point; `AppShell` owns application presentation, `CharacterSheetView` owns the reusable sheet DOM, presentation frames live in `components/sheet-presentations.tsx`, and authored-state/rules wiring remains in `hooks/useCharacterSheet.ts` and `lib/`. Both splits were made mechanically and the existing unit, pipeline and browser suites were the guardrail.
 
 ## Workbook parity scenarios
 
@@ -278,11 +278,11 @@ These omissions are preferable to spreadsheet-shaped special cases because they 
 
 ## Trust, persistence and integration audit
 
-The browser and TTS script are untrusted clients. They may request a plan and submit raw physical die faces, but they do not hold rules authority. `roll-plan` reloads the authored character and creates the plan server-side. `resolve-roll` reloads the character, rebuilds the plan from the submitted plan's own context (never from its modifier or provenance), validates the submitted faces against that rebuild, resolves the roll, and records the result in `roll_history`. The TTS script contains UI, die spawning, settle detection and transport only; it does not contain PF formulas or a service-role key.
+The browser owns ordinary play calculations locally. The TTS script is a frozen prototype and its historical remote transport is not deployed by this repository. Provider-neutral request validation and authoritative plan-building functions remain available for a future server adapter; the Site backend can add these if remote rolls resume.
 
-Supabase stores authored character inputs, feature state, attack definitions and roll history. Derived totals and transient lifecycle proposals are not persisted as authoritative state: a lifecycle commit yields the same ordinary `CharacterInput` snapshot used by the current repository abstraction, including only durable optional lifecycle facts where present. Edge Function request bodies and character rows are validated before use, and the public browser/TTS credentials are bearer tokens rather than service-role credentials. The remaining production work is operational—short-lived token issuance, row-level policy review, rate limiting, replay/idempotency policy and deployment secrets—not a reason to move rules into clients.
+Character persistence stores the complete canonical authored `CharacterInput`; derived totals and transient lifecycle proposals are never authoritative. The shared HTTP API contracts carry character snapshots and optional revisions, while storage schema and authentication remain host-owned. The browser sends same-origin cookie-authenticated requests and does not hold backend secrets. The Site backend must validate and authorize every request independently.
 
-The HP migration preserves pre-`cacd050` rows by reconstructing `damage_taken` from the old derived maximum (`base_hp_before_con` plus the old effective base Constitution modifier) before dropping absolute `current_hp`; it also converts legacy baseline-effect names and makes manual baseline columns nullable for advancement mode.
+
 
 ## Maintainability decisions
 
@@ -295,5 +295,5 @@ The core remains small and auditable, with advancement and lifecycle isolated fr
 3. Derive off-hand and two-weapon sequence limits so a selected off-hand weapon stops being authored as a full independent sequence.
 4. Let an action offer its critical damage plan automatically: the authored `criticalMultiplier` exists (`criticalDamage`), but a caller must still ask for it after resolving a `criticalSuccess`, and precision damage is currently multiplied with everything else.
 5. Expand validated progression content and choice metadata without changing the global-level/track aggregation contract; spellcasting, feat prerequisites and other large class systems still need their own schemas.
-6. Add authenticated campaign/player binding and persistence policies around the existing TTS trust boundary; the demo mode above is deliberately unauthenticated, and cloud mode still relies on deployment-side policy.
+6. If TTS or multiplayer resumes, add authenticated campaign/player binding and persistence policy in the Site backend. Browser demo mode remains intentionally unauthenticated.
 7. Decide whether to build a guided creation/level-up presentation on top of the lifecycle APIs. Point-buy/rolled ability generation, race selection, feat selection and full prerequisite automation remain future product/rules work; the current sheet's direct editor stays an expert surface.

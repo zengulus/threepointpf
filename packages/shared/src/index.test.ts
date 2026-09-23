@@ -8,7 +8,6 @@ import {
   LocalStorageCharacterRepository,
   normalizeAuthoredCharacter,
   rollPlanRequestSchema,
-  SupabaseCharacterRepository,
   type StorageLike,
 } from "./index.js";
 
@@ -152,56 +151,6 @@ it("reloads a local browser draft through a fresh LocalStorage repository", asyn
   expect(loaded?.advancementSlots).toEqual(canonicalSlots(advancedCharacter("local-reload")));
 });
 
-class FakeSupabase {
-  readonly rows: { characters: any } = { characters: null };
-  childTableTouched = false;
-  nextCharacterError?: Error;
-
-  from(table: string): any {
-    if (table === "campaigns") return { upsert: async () => ({ error: null }) };
-    if (table === "characters") return {
-      upsert: async (row: any) => {
-        if (this.nextCharacterError) { const error = this.nextCharacterError; this.nextCharacterError = undefined; return { error }; }
-        this.rows.characters = structuredClone(row); return { error: null };
-      },
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: this.rows.characters, error: null }) }) }),
-    };
-    if (table === "character_features" || table === "character_attacks") {
-      this.childTableTouched = true;
-      return {
-        delete: () => ({ eq: async () => ({ error: null }) }),
-        insert: async () => ({ error: null }),
-        select: () => ({ eq: async () => ({ data: [], error: null }) }),
-      };
-    }
-    throw new Error(`Unexpected table ${table}`);
-  }
-}
-
-it("writes one canonical authored_state snapshot through Supabase and reloads it", async () => {
-  const advanced = advancedCharacter("supabase-advanced");
-  const client = new FakeSupabase();
-  const repository = new SupabaseCharacterRepository(client, rules);
-  await repository.save(advanced);
-  expect(client.rows.characters).toMatchObject({
-    id: advanced.id,
-    base_bab: null,
-    base_saves: null,
-    hit_dice_count: null,
-    advancement_slots: canonicalSlots(advanced),
-    authored_state: { id: advanced.id, equipment: advanced.equipment },
-  });
-  expect(client.rows.characters).not.toHaveProperty("bab");
-  expect(client.rows.characters.authored_state).not.toHaveProperty("bab");
-  expect(client.childTableTouched).toBe(false);
-  expect(await repository.load(advanced.id)).toMatchObject({
-    id: advanced.id,
-    advancementSlots: canonicalSlots(advanced),
-    baseSize: "medium",
-    baseSpeeds: { land: 30, swim: 15 },
-  });
-});
-
 it("rebuilds a custom advancement attack plan with full rules options for TTS parity", () => {
   const advanced: CharacterInput = {
     ...advancedCharacter("tts-advanced"),
@@ -212,28 +161,6 @@ it("rebuilds a custom advancement attack plan with full rules options for TTS pa
   const canonical = normalizeAuthoredCharacter(advanced, rules);
   expect(plan.modifier).toBe(new RulesEngine(canonical, rules).derive().attacks[0]?.attack.value);
   expect(resolveRollPlan(plan, [17])).toMatchObject({ modifier: plan.modifier, total: 20 });
-});
-
-it("keeps the last complete Supabase snapshot when a replacement write fails", async () => {
-  const client = new FakeSupabase();
-  const repository = new SupabaseCharacterRepository(client, rules);
-  const original = advancedCharacter("atomic-failure");
-  await repository.save(original);
-  client.nextCharacterError = new Error("simulated write failure");
-  await expect(repository.save({ ...original, name: "Uncommitted name", equipment: [] })).rejects.toThrow("simulated write failure");
-  const loaded = await repository.load(original.id);
-  expect(loaded?.name).toBe(original.name);
-  expect(loaded?.equipment).toEqual(original.equipment);
-  expect(client.childTableTouched).toBe(false);
-});
-
-it("refuses corrupt modern snapshots rather than resurrecting stale legacy child rows", async () => {
-  const client = new FakeSupabase();
-  const repository = new SupabaseCharacterRepository(client, rules);
-  await repository.save(advancedCharacter("corrupt-snapshot"));
-  client.rows.characters.authored_state = [];
-  await expect(repository.load("corrupt-snapshot")).rejects.toThrow(/refusing stale legacy fallback/);
-  expect(client.childTableTouched).toBe(false);
 });
 
 it("validates and preserves a non-first full-attack index through the shared TTS plan boundary", () => {

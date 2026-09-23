@@ -244,7 +244,7 @@ export function CharacterSheetView({
             </div>
             <div>
               <span>Mode</span>
-              <b>{sheet.mode === "demo" ? "Local demo" : "Cloud save"}</b>
+              <b>{sheet.mode === "browser" ? "Browser storage" : "Hosted account"}</b>
             </div>
           </div>
           <div className="identity-tags">

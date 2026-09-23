@@ -7,7 +7,7 @@ import type { CharacterSheet } from "../hooks/useCharacterSheet";
  * to configure before trying it.
  */
 export function SamplePanel({ sheet }: { sheet: CharacterSheet }) {
-  const demo = sheet.mode === "demo";
+  const demo = sheet.mode === "browser";
   const current =
     sheet.samples.find((sample) => sample.id === sheet.sampleId) ??
     sheet.samples[0];
@@ -21,7 +21,7 @@ export function SamplePanel({ sheet }: { sheet: CharacterSheet }) {
           <h2>{demo ? "Open a sample and try anything" : "Start from a sample"}</h2>
         </div>
         <span className="pill" data-testid="sheet-mode">
-          {demo ? "DEMO" : "SUPABASE"}
+          {demo ? "DEMO" : "HOSTED"}
         </span>
       </div>
       <p className="muted">

@@ -28,7 +28,22 @@ import { z } from "zod";
 export interface CharacterRepository {
   save(character: CharacterInput): Promise<void>;
   load(id: string): Promise<CharacterInput | null>;
-  list?(): Promise<Array<Pick<CharacterInput, "id" | "name">>>;
+  list(): Promise<CharacterSummary[]>;
+}
+
+export type CharacterRevision = string | number;
+export const characterSummarySchema = z.object({ id: z.string().min(1), name: z.string().min(1), campaignId: z.string().optional(), updatedAt: z.string().optional() }).strict();
+export const characterReadResponseSchema = z.object({ character: z.unknown(), revision: z.union([z.string(), z.number()]).optional() }).strict();
+export const characterWriteRequestSchema = z.object({ character: z.unknown(), revision: z.union([z.string(), z.number()]).optional() }).strict();
+export const characterWriteResponseSchema = characterReadResponseSchema;
+export const apiErrorSchema = z.object({ error: z.object({ code: z.string(), message: z.string() }).strict() }).strict();
+export type CharacterSummary = z.infer<typeof characterSummarySchema>;
+
+export type CharacterApiErrorCode = "unauthenticated" | "forbidden" | "not-found" | "validation" | "conflict" | "server" | "network" | "protocol";
+export class CharacterApiError extends Error {
+  constructor(readonly code: CharacterApiErrorCode, message: string, readonly status?: number) {
+    super(message); this.name = "CharacterApiError";
+  }
 }
 
 /** A small structural subset keeps browser persistence testable without DOM globals. */
@@ -259,138 +274,79 @@ export class LocalStorageCharacterRepository implements CharacterRepository {
   }
 }
 
-export interface SupabaseClientLike {
-  from(table: string): any;
+export interface HttpCharacterRepositoryOptions {
+  fetch?: typeof fetch;
+  apiBase?: string;
+  rules?: CharacterRulesInput;
 }
 
-function isSnapshot(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-/**
- * Stores a canonical CharacterInput snapshot on `characters`. Legacy columns
- * remain projected for old database rows/readers, but feature/attack child
- * writes are intentionally not part of modern saves: the single snapshot is
- * the atomic authority for all authored fields.
- */
-export class SupabaseCharacterRepository implements CharacterRepository {
+/** Same-origin character API adapter. Revisions stay outside CharacterInput. */
+export class HttpCharacterRepository implements CharacterRepository {
+  private readonly request: typeof fetch;
   private readonly rules: RulesEngineOptions;
+  private readonly revisions = new Map<string, CharacterRevision>();
+  private readonly apiBase: string;
 
-  constructor(
-    private readonly client: SupabaseClientLike,
-    input?: CharacterRulesInput,
-  ) {
-    this.rules = baseRulesOptions(input);
+  constructor(options: HttpCharacterRepositoryOptions = {}) {
+    this.request = options.fetch ?? globalThis.fetch.bind(globalThis);
+    this.rules = baseRulesOptions(options.rules);
+    this.apiBase = (options.apiBase ?? "/api").replace(/\/$/, "");
   }
 
-  async save(character: CharacterInput): Promise<void> {
-    const authored = normalizeAuthoredCharacter(character, this.rules);
-    const campaignId = authored.campaignId ?? "default";
-    const { error: campaignError } = await this.client
-      .from("campaigns")
-      .upsert({
-        id: campaignId,
-        name: campaignId === "default" ? "Default campaign" : campaignId,
-      });
-    if (campaignError) throw campaignError;
-
-    const { error: characterError } = await this.client
-      .from("characters")
-      .upsert({
-        id: authored.id,
-        campaign_id: campaignId,
-        name: authored.name,
-        base_abilities: authored.baseAbilities,
-        base_bab: authored.baseBab ?? null,
-        base_saves: authored.baseSaves ?? null,
-        base_hp_before_con: authored.baseHpBeforeConstitution,
-        hit_dice_count: authored.hitDiceCount ?? null,
-        advancement_slots: authored.advancementSlots ?? [],
-        skill_ranks: authored.skillRanks,
-        skill_configuration: authored.skills ?? {},
-        damage_taken: authored.damageTaken,
-        temporary_hp: authored.temporaryHp,
-        base_land_speed:
-          authored.baseSpeeds?.land ?? authored.baseLandSpeed ?? 30,
-        authored_state: clone(authored),
-      });
-    if (characterError) throw characterError;
-  }
-
-  async load(id: string): Promise<CharacterInput | null> {
-    const { data: row, error } = await this.client
-      .from("characters")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) throw error;
-    if (!row) return null;
-
-    if (row.authored_state != null) {
-      if (!isSnapshot(row.authored_state))
-        throw new Error(
-          "Invalid authored_state snapshot; refusing stale legacy fallback",
-        );
-      return normalizeAuthoredCharacter(
-        {
-          ...row.authored_state,
-          // Database identity wins over mutable JSON fields.
-          id: row.id,
-          campaignId: row.campaign_id ?? undefined,
-        } as CharacterInput,
-        this.rules,
-      );
+  private url(path: string) { return `${this.apiBase}${path}`; }
+  private async send(path: string, init: RequestInit = {}): Promise<Response> {
+    try {
+      return await this.request(this.url(path), { ...init, credentials: "same-origin", headers: { Accept: "application/json", ...init.headers } });
+    } catch {
+      throw new CharacterApiError("network", "Could not reach the character service");
     }
-
-    // Pre-snapshot rows retain the normalized v0 layout. Keep this fallback
-    // until all existing deployments have performed a save through this code.
-    const [
-      { data: featureRows, error: featureError },
-      { data: attackRows, error: attackError },
-    ] = await Promise.all([
-      this.client.from("character_features").select("*").eq("character_id", id),
-      this.client.from("character_attacks").select("*").eq("character_id", id),
-    ]);
-    if (featureError) throw featureError;
-    if (attackError) throw attackError;
-    return normalizeAuthoredCharacter(
-      {
-        id: row.id,
-        campaignId: row.campaign_id ?? undefined,
-        name: row.name,
-        baseAbilities: row.base_abilities,
-        baseBab: row.base_bab ?? undefined,
-        baseSaves: row.base_saves ?? undefined,
-        baseHpBeforeConstitution: row.base_hp_before_con,
-        hitDiceCount: row.hit_dice_count ?? undefined,
-        advancementSlots:
-          Array.isArray(row.advancement_slots) &&
-          row.advancement_slots.length > 0
-            ? row.advancement_slots
-            : undefined,
-        skillRanks: row.skill_ranks,
-        skills: row.skill_configuration,
-        damageTaken: row.damage_taken,
-        temporaryHp: row.temporary_hp,
-        baseLandSpeed: row.base_land_speed,
-        features: (featureRows ?? []).map((item: any) => ({
-          id: item.id,
-          definitionId: item.definition_id ?? undefined,
-          name: item.name,
-          description: item.description ?? undefined,
-          enabled: item.enabled,
-          effects: item.effects,
-        })),
-        attacks: (attackRows ?? []).map((item: any) => item.definition),
-      } as CharacterInput,
-      this.rules,
-    );
   }
-
-  async list(): Promise<Array<Pick<CharacterInput, "id" | "name">>> {
-    const { data, error } = await this.client.from("characters").select("id,name").order("name");
-    if (error) throw error;
-    return (data ?? []).filter((row: unknown): row is { id: string; name: string } => isSnapshot(row) && typeof row.id === "string" && typeof row.name === "string").map(({ id, name }: { id: string; name: string }) => ({ id, name }));
+  private async fail(response: Response): Promise<never> {
+    const status = response.status;
+    const code: CharacterApiErrorCode = status === 401 ? "unauthenticated" : status === 403 ? "forbidden" : status === 404 ? "not-found" : status === 409 ? "conflict" : status === 400 || status === 422 ? "validation" : status >= 500 ? "server" : "protocol";
+    let message = code === "unauthenticated" ? "Sign in to continue" : code === "forbidden" ? "You do not have access to this character" : code === "not-found" ? "Character not found" : code === "conflict" ? "This character changed elsewhere. Reload before saving again." : code === "validation" ? "The character data was rejected" : code === "server" ? "The character service failed" : "Unexpected character service response";
+    try { apiErrorSchema.parse(await response.json()); } catch { /* use the local status-specific message */ }
+    throw new CharacterApiError(code, message, status);
+  }
+  async load(id: string): Promise<CharacterInput | null> {
+    const response = await this.send(`/characters/${encodeURIComponent(id)}`);
+    if (response.status === 404) return null;
+    if (!response.ok) return this.fail(response);
+    try {
+      const body = characterReadResponseSchema.parse(await response.json());
+      const character = normalizeAuthoredCharacter(parseCharacterInput(body.character), this.rules);
+      if (character.id !== id) throw new Error("Character identity mismatch");
+      const revision = body.revision ?? response.headers.get("ETag") ?? undefined;
+      if (revision !== undefined) this.revisions.set(id, revision);
+      return character;
+    } catch (cause) {
+      if (cause instanceof CharacterApiError) throw cause;
+      throw new CharacterApiError("protocol", "Character service returned invalid character data");
+    }
+  }
+  async save(input: CharacterInput): Promise<void> {
+    const character = normalizeAuthoredCharacter(input, this.rules);
+    const revision = this.revisions.get(character.id);
+    const response = await this.send(`/characters/${encodeURIComponent(character.id)}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(characterWriteRequestSchema.parse({ character, ...(revision !== undefined ? { revision } : {}) })),
+    });
+    if (!response.ok) return this.fail(response);
+    try {
+      const body = characterWriteResponseSchema.parse(await response.json());
+      const saved = normalizeAuthoredCharacter(parseCharacterInput(body.character), this.rules);
+      if (saved.id !== character.id) throw new Error("Character identity mismatch");
+      const nextRevision = body.revision ?? response.headers.get("ETag");
+      if (nextRevision !== null && nextRevision !== undefined) this.revisions.set(character.id, nextRevision);
+    } catch {
+      throw new CharacterApiError("protocol", "Character service returned an invalid save response");
+    }
+  }
+  async list(): Promise<CharacterSummary[]> {
+    const response = await this.send("/characters");
+    if (!response.ok) return this.fail(response);
+    try { return z.array(characterSummarySchema).parse(await response.json()); }
+    catch { throw new CharacterApiError("protocol", "Character service returned an invalid character list"); }
   }
 }
 

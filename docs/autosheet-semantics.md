@@ -66,7 +66,7 @@ A threat range is authored on the weapon or profile (`19`, `18`, or the default 
 
 Damage is planned the same way. The dice are the weapon's own, and a critical hit uses the weapon's or profile's authored `criticalMultiplier` (default ×2) rather than a hardcoded doubling.
 
-Clients request rolls by context and submit only raw faces. The Edge Functions reload authored state, rebuild the plan from the submitted context, and ignore any submitted modifier, provenance or outcome; contradictory contexts (a save compared against an AC, a touch attack against a non-touch AC, a standard attack with several weapons) are rejected rather than reinterpreted.
+Clients request rolls by context and submit only raw faces. A future authoritative remote-roll endpoint can reload authored state, rebuild the plan from submitted context, and ignore submitted modifiers, provenance or outcomes; contradictory contexts (a save compared against an AC, a touch attack against a non-touch AC, a standard attack with several weapons) are rejected rather than reinterpreted.
 
 ## Deliberate discrepancies
 

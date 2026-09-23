@@ -25,13 +25,13 @@ jobs:
       # checked against that path rather than only against the site root.
       - name: Demo build resolves from the project path
         env:
-          VITE_DEMO_MODE: "true"
+          VITE_APP_MODE: browser
         run: corepack pnpm build:demo && corepack pnpm check:demo
       - name: Generated rules are fresh
         run: corepack pnpm rules:check-autosheet
-      - name: Edge typecheck
-        run: corepack pnpm check:edge
       - name: Install Chromium
         run: corepack pnpm exec playwright install --with-deps chromium
       - name: Browser smoke test
         run: corepack pnpm test:e2e
+      - name: Hosted same-origin API smoke test
+        run: corepack pnpm --filter @threepointpf/web build:hosted && corepack pnpm test:e2e:hosted

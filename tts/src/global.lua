@@ -6,8 +6,8 @@
 -- roll families (initiative, damage) and multi-die plans are deliberately not
 -- wired in here. See the TTS gate in docs/open-decisions.md before extending it.
 
-API_BASE = "https://YOUR-PROJECT.supabase.co/functions/v1"
-API_TOKEN = "" -- A short-lived user/campaign token; never put a Supabase service-role key here.
+API_BASE = "https://YOUR-SITE.example/api"
+API_TOKEN = "" -- Deferred prototype credential; keep secrets out of source control.
 CHARACTER_ID = "human-martial"
 PANEL_ID = "threepf-panel"
 PLAYER_CHARACTERS = {} -- steam_id -> character id; populate through bindPlayer below.

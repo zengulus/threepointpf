@@ -42,7 +42,7 @@ jobs:
         run: corepack pnpm test
       - name: Build the demo
         env:
-          VITE_DEMO_MODE: "true"
+          VITE_APP_MODE: browser
         run: corepack pnpm build:demo
       # The build above is the artifact that gets published, so it is served from
       # a real subpath and asked for its own assets before it is uploaded.
