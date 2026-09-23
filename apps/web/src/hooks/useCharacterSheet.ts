@@ -5,7 +5,7 @@ import {
   type ResolvedRoll,
   type RollPlan,
 } from "@threepointpf/dice";
-import { RulesEngine } from "@threepointpf/rules-core";
+import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, setTemporaryHp } from "@threepointpf/rules-core";
 import {
   attackFromProfile,
   attackProfileCatalog,
@@ -46,7 +46,9 @@ import {
 } from "../lib/sample-characters";
 import { activeSheetEnvironment, sheetModeFor } from "../lib/sheet-mode";
 import {
+  loadSelectedCharacterId,
   loadSelectedSampleId,
+  saveSelectedCharacterId,
   saveSelectedSampleId,
 } from "../lib/sheet-session";
 import {
@@ -56,6 +58,7 @@ import {
 import { useDiscordRollSettings } from "./useDiscordRollSettings";
 import { publishCompletedRoll } from "../lib/discord-roll-publishing";
 import { formatRollResultNotice } from "../lib/roll-result";
+import { copyWithNewCharacterId, importCharacterSnapshot } from "../lib/character-portability";
 
 /**
  * A caller-selected authored character. Omit `characterId` for the standalone
@@ -161,10 +164,11 @@ export function useCharacterSheetController({
   // saved snapshot may replace it once, at mount; later sample switches are
   // explicit choices and are never overwritten by a load.
   const startingSampleId = useRef(loadSelectedSampleId()).current;
+  const savedCharacterId = useRef(loadSelectedCharacterId()).current;
   const callerCharacterId = usableCharacterId(requestedCharacterId);
   const isCharacterIdControlled = callerCharacterId !== undefined;
   const startingCharacterId = useRef(
-    callerCharacterId ?? sampleCharacter(startingSampleId).character.id,
+    callerCharacterId ?? savedCharacterId ?? sampleCharacter(startingSampleId).character.id,
   ).current;
   const [sampleId, setSampleId] = useState(startingSampleId);
   const [uncontrolledCharacterId, setUncontrolledCharacterId] = useState(
@@ -228,6 +232,11 @@ export function useCharacterSheetController({
   const [weaponStrengthRating, setWeaponStrengthRating] = useState("");
   const [profileId, setProfileId] = useState("");
   const [repo] = useState(() => repositoryFor(mode, environment));
+  const [savedCharacters, setSavedCharacters] = useState<Array<{ id: string; name: string }>>([]);
+  const refreshSavedCharacters = async () => {
+    try { setSavedCharacters(await repo.list?.() ?? []); } catch { setSavedCharacters([]); }
+  };
+  useEffect(() => { void refreshSavedCharacters(); }, [repo]);
   const editRevision = useRef(0);
   const loadRevision = useRef(0);
   const pendingSampleDraft = useRef<PendingSampleDraft | null>(null);
@@ -345,6 +354,17 @@ export function useCharacterSheetController({
   };
   const update = (changes: Partial<CharacterInput>, success?: string) =>
     apply({ ...character, ...changes }, success);
+  const healthAction = (operation: (value: CharacterInput) => CharacterInput, message: string) => {
+    try { apply(operation(character), message); }
+    catch (failure) { fail(errorText(failure)); }
+  };
+  const takeDamage = (amount: number) => {
+    const absorbed = Math.min(character.temporaryHp, amount);
+    healthAction((value) => applyDamage(value, amount), `Took ${amount} damage: ${absorbed} temporary HP absorbed, ${amount - absorbed} HP lost`);
+  };
+  const heal = (amount: number) => healthAction((value) => applyHealing(value, amount), `Healed ${amount} HP`);
+  const grantTemporaryHp = (amount: number) => healthAction((value) => setTemporaryHp(value, amount), `Temporary HP set to ${amount}`);
+  const removeTemporaryHp = () => healthAction(clearTemporaryHp, "Temporary HP cleared");
   const fail = (message: string) => {
     setError(message);
     setNotice("Change not applied");
@@ -610,9 +630,11 @@ export function useCharacterSheetController({
         return false;
       }
       onCharacterIdChange(nextCharacterId);
+      saveSelectedCharacterId(nextCharacterId);
       return true;
     }
     setUncontrolledCharacterId(nextCharacterId);
+    saveSelectedCharacterId(nextCharacterId);
     return true;
   };
   /**
@@ -645,6 +667,7 @@ export function useCharacterSheetController({
 
     setSampleId(id);
     saveSelectedSampleId(id);
+    saveSelectedCharacterId(next.id);
     if (!targetChanges) {
       apply(next, sampleNotice, true);
       return;
@@ -919,6 +942,7 @@ export function useCharacterSheetController({
   const save = async () => {
     try {
       await repo.save(character);
+      await refreshSavedCharacters();
       setError(null);
       setNotice(
         mode === "cloud"
@@ -955,10 +979,48 @@ export function useCharacterSheetController({
       fail("Reload failed: " + errorText(failure));
     }
   };
+  const importSnapshot = async (text: string, copyOnCollision = false) => {
+    try {
+      let imported = importCharacterSnapshot(text);
+      if (await repo.load(imported.id)) {
+        if (!copyOnCollision) return "collision" as const;
+        imported = copyWithNewCharacterId(imported);
+      }
+      await repo.save(imported);
+      await refreshSavedCharacters();
+      selectCharacter(imported.id);
+      setNotice(`Imported ${imported.name}`);
+      setError(null);
+      return "imported" as const;
+    } catch (failure) {
+      setError(errorText(failure));
+      setNotice("Import failed");
+      return false as const;
+    }
+  };
+  const commitLifecycleCharacter = async (next: CharacterInput, success: string) => {
+    try {
+      parseCharacterInput(next);
+      new RulesEngine(next, rulesCatalogs).derive();
+      await repo.save(next);
+      await refreshSavedCharacters();
+      if (next.id !== characterId) {
+        const selected = selectCharacter(next.id);
+        if (!selected) throw new Error("The saved character could not be selected by this sheet host.");
+        setNotice(success);
+        return true;
+      }
+      return apply(next, success);
+    } catch (failure) {
+      fail(errorText(failure));
+      return false;
+    }
+  };
   return {
     dice,
     mode,
     characterId,
+    savedCharacters,
     selectCharacter,
     samples: sampleCharacters,
     sampleId,
@@ -998,6 +1060,10 @@ export function useCharacterSheetController({
     rollWithoutTarget,
     dismissTargetPrompt,
     update,
+    takeDamage,
+    heal,
+    grantTemporaryHp,
+    removeTemporaryHp,
     fail,
     updateAbility,
     updateAdvancement,
@@ -1023,6 +1089,8 @@ export function useCharacterSheetController({
     canRollCriticalDamage,
     save,
     reload,
+    importSnapshot,
+    commitLifecycleCharacter,
     featureOptions,
     equipmentOptions,
     profileOptions,

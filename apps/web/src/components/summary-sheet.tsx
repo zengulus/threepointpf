@@ -1,4 +1,5 @@
 import { formatModifier } from "@threepointpf/dice";
+import { useState } from "react";
 import { abilities, abilityLabels } from "../lib/options";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
 import { RollTargetField, WeaponActionControls } from "./roll-actions";
@@ -17,6 +18,9 @@ export function SummarySheet({
   onSelectTab: (tab: "skills") => void;
 }) {
   const { character, derived } = sheet;
+  const [damageAmount, setDamageAmount] = useState("1");
+  const [healingAmount, setHealingAmount] = useState("1");
+  const [temporaryAmount, setTemporaryAmount] = useState(String(character.temporaryHp));
   const level =
     derived.advancement?.slotCount ?? character.hitDiceCount ?? 1;
   const maxHp = Math.max(1, derived.maxHp.value);
@@ -102,6 +106,16 @@ export function SummarySheet({
           </div>
           <small>{healthPercent}% ready</small>
         </button>
+        <div className="health-management" aria-label="Hit point management">
+          <div><b>Damage taken</b><span>{character.damageTaken}</span><b>Temporary HP</b><span>{character.temporaryHp}</span></div>
+          <label>Damage amount<input aria-label="Damage amount" type="number" min="0" step="1" value={damageAmount} onChange={(event) => setDamageAmount(event.target.value)} /></label>
+          <button type="button" onClick={() => sheet.takeDamage(Number(damageAmount))}>Apply damage</button>
+          <label>Healing amount<input aria-label="Healing amount" type="number" min="0" step="1" value={healingAmount} onChange={(event) => setHealingAmount(event.target.value)} /></label>
+          <button type="button" onClick={() => sheet.heal(Number(healingAmount))}>Apply healing</button>
+          <label>Set temporary HP<input aria-label="Set temporary HP" type="number" min="0" step="1" value={temporaryAmount} onChange={(event) => setTemporaryAmount(event.target.value)} /></label>
+          <button type="button" onClick={() => sheet.grantTemporaryHp(Number(temporaryAmount))}>Set temp HP</button>
+          <button type="button" onClick={sheet.removeTemporaryHp}>Clear temp HP</button>
+        </div>
 
         <div className="summary-combat-pair">
           <SummaryValue

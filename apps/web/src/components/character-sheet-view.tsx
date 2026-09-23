@@ -1,5 +1,5 @@
 import { formatModifier } from "@threepointpf/dice";
-import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AdvancementEditor, AdvancementSummary } from "./advancement";
 import { CustomClassEditor } from "./custom-class-editor";
 import { DiceSettingsPanel } from "./dice-settings";
@@ -19,6 +19,8 @@ import {
 } from "./panels";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
 import type { ThemePreferenceController } from "../hooks/useThemePreference";
+import { characterFilename, exportCharacterSnapshot } from "../lib/character-portability";
+import { LifecycleWizard } from "./lifecycle-wizard";
 
 const sheetTabs = [
   { id: "summary", label: "Summary" },
@@ -102,6 +104,30 @@ export function CharacterSheetView({
   ).length;
   const viewId = useId();
   const tabButtons = useRef(new Map<SheetTab, HTMLButtonElement>());
+  const importInput = useRef<HTMLInputElement>(null);
+  const [managementError, setManagementError] = useState<string | null>(null);
+  const [lifecycleMode, setLifecycleMode] = useState<"create" | "level-up" | null>(null);
+  const exportCurrent = () => {
+    const blob = new Blob([exportCharacterSnapshot(character)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = characterFilename(character.name);
+    anchor.click();
+    globalThis.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+  const importFile = async (file?: File) => {
+    if (!file) return;
+    setManagementError(null);
+    const contents = await file.text();
+    const result = await sheet.importSnapshot(contents);
+    if (result === "collision") {
+      if (confirm("That character id already exists. Import this character as a copy?")) {
+        const copied = await sheet.importSnapshot(contents, true);
+        if (!copied) setManagementError("The character could not be imported. Check the validation error above.");
+      }
+    } else if (!result) setManagementError("The character file could not be imported. Check its format, version, and content.");
+  };
 
   const selectTab = (tab: SheetTab) => onActiveTabChange(tab);
   const handleTabKeyDown = (
@@ -147,6 +173,14 @@ export function CharacterSheetView({
             ⚙ Settings
           </button>
         </nav>
+        <div className="character-management-actions">
+          <label className="saved-character-picker">Open character<select aria-label="Open saved character" value={sheet.characterId} onChange={(event) => sheet.selectCharacter(event.target.value)}><option value={sheet.characterId}>{character.name}{sheet.savedCharacters.some((item) => item.id === sheet.characterId) ? "" : " (current)"}</option>{sheet.savedCharacters.filter((item) => item.id !== sheet.characterId).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <button type="button" onClick={() => setLifecycleMode("create")}>Create character</button>
+          {character.advancementSlots?.length ? <button type="button" onClick={() => setLifecycleMode("level-up")}>Level up</button> : null}
+          <input ref={importInput} type="file" accept="application/json,.json" hidden aria-label="Import character file" onChange={(event) => { void importFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
+          <button type="button" onClick={() => importInput.current?.click()}>Import character</button>
+          <button type="button" onClick={exportCurrent}>Export character</button>
+        </div>
         <div className="top-actions">
           <span className="status-dot" />
           <span className="sheet-notice" role="status" aria-live="polite" title={sheet.notice}>
@@ -178,6 +212,8 @@ export function CharacterSheetView({
           </button>
         </div>
       </header>
+      {lifecycleMode && <LifecycleWizard mode={lifecycleMode} sheet={sheet} onClose={() => setLifecycleMode(null)} />}
+      {managementError && <p role="alert" className="error-banner">{managementError}</p>}
       <section className="hero sheet-identity">
         <div className="character-portrait" aria-hidden="true">
           <span className="portrait-rune">3</span>

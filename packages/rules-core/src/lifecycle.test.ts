@@ -281,6 +281,25 @@ describe("character lifecycle domain", () => {
     expect(derived.advancement?.progressionLevels["pf1e.table.wizard"]?.value).toBe(2);
   });
 
+  it("preserves current damage and temporary HP across a level-up", () => {
+    const campaign = profile([{ id: "main", name: "Class" }]);
+    const created = commitCharacterCreation(createLevelOne(campaign, [
+      { trackId: "main", progressionId: "pf1e.table.fighter" },
+    ], { damageTaken: 15, temporaryHp: 6 }));
+    const original = JSON.stringify(created);
+    const proposal = proposeAdvancement(beginAdvancement(created, campaign, rules), {
+      progressionChoices: { main: "pf1e.table.fighter" },
+      hpAcquisition: { amount: 8 },
+      skillAllocation: { ranks: {} },
+    });
+    const advanced = commitAdvancement(proposal);
+    expect(JSON.stringify(created)).toBe(original);
+    expect(advanced).toMatchObject({ damageTaken: 15, temporaryHp: 6 });
+    expect(new RulesEngine(advanced, rules).derive().currentHp).toBe(
+      new RulesEngine(created, rules).derive().currentHp + 8,
+    );
+  });
+
   it("uses custom monster progressions and feature choices without a separate rules path", () => {
     const campaign = profile([
       { id: "class", name: "Class" },

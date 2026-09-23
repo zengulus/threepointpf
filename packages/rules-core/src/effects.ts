@@ -53,7 +53,12 @@ export function collectFeatureEffects(
     const definition = feature.definitionId
       ? lookup(catalog, feature.definitionId)
       : undefined;
-    if (feature.definitionId && !definition && !feature.effects.length)
+    if (
+      feature.definitionId &&
+      feature.definitionId !== "lifecycle.choice" &&
+      !definition &&
+      !feature.effects.length
+    )
       throw new Error(`Unknown feature definition ${feature.definitionId}`);
     if (!feature.enabled) continue;
     if (feature.definitionId && excludedDefinitionIds.has(feature.definitionId)) continue;

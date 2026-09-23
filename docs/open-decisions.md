@@ -52,14 +52,14 @@ critical multiplier is authored per weapon/profile, a plan declares its own
 primary check die, and threat-range expansion covers Improved Critical/Keen
 doubling with weapon scoping and nonstacking.
 
-Settled by the character-lifecycle pass, and no longer open: creation and
-level-up are pure domain transactions over ordinary `CharacterInput`, not an
-incrementally saved builder or a React workflow. A caller supplies a campaign
-character profile, proposes choices, receives structured validation and a
-semantic preview, then commits the resulting authored state. The profile makes
-track topology, content sources, HP acquisition, skill allocation, and explicit
-trusted-table overrides visible; it does not declare one universal Pathfinder
-answer, create a backend campaign service, or add a player-facing wizard.
+Settled by the character-lifecycle pass: creation and level-up are pure domain
+transactions over ordinary `CharacterInput`. The sheet's guided creation and
+level-up dialogs call the lifecycle proposal, validation, preview, and commit
+APIs; abandoned proposals never touch saved state. The profile makes track
+topology, content sources, HP acquisition, skill allocation, and explicit
+trusted-table overrides visible. The current demo flow uses a small local
+profile and does not define a universal Pathfinder answer or backend campaign
+service.
 
 Settled by the ability/resource pass, and no longer open: abilities group zero
 or more effects and have explicit passive/toggleable/activated state; resources
@@ -71,23 +71,19 @@ feature instances remain compatible.
 
 ## Product decisions
 
-1. **Character-creation presentation and samples.** The lifecycle can construct
-   and commit a normal `CharacterInput`, but the demo samples remain
-   hand-authored values, including the level 1 fighter's ability assignment
-   (elite array with the human +2 already applied) and its three feats. There is
-   still no point-buy, race, or full feat-picker UI. The open product choice is
-   whether samples should stay curated fixtures or be generated through a small
-   creation surface, and how much guidance a newcomer needs before the sheet's
-   existing expert editor is appropriate.
-2. **Sample selection scope.** The selected sample is browser-scoped
-   (`threepointpf.sheet.sample`), not per character and not synced. A reload
-   returns to the same sample, but a second browser starts on the default. If
-   samples become cloud content, the selection belongs to the account instead.
-3. **Demo save semantics.** Demo mode saves to browser storage and offers no
-   accounts, sharing or export. That is deliberate for a public showcase; if the
-   demo needs to be handed over (a file, a link, a campaign), export/import and
-   an account boundary would have to be designed together with cloud-mode auth,
-   which is still open below.
+1. **Character profiles and broad legality.** The guided flow supports manual
+   ability entry, single/gestalt/three-track starts, lifecycle feature choices,
+   and preview/commit. Profiles are not yet persisted as campaign records.
+   There is no point-buy, race builder, or general feat legality automation;
+   curated samples remain useful fixtures.
+2. **Selection scope.** The selected sample preference remains browser-scoped
+   (`threepointpf.sheet.sample`). The active saved character ID has a separate
+   browser key, and local/cloud repositories expose saved characters to the
+   sheet picker. A second browser starts with its own selection.
+3. **Demo portability.** Demo mode saves to browser storage and exports or
+   imports a versioned JSON character snapshot entirely client-side. It offers
+   no accounts, sharing, or cloud sync; cloud authentication and policy remain
+   open below.
 4. **Cloud authentication.** Cloud mode still relies on deployment-side
    credentials and policies (short-lived tokens, row-level policy review,
    rate limiting, deployment secrets) as recorded in

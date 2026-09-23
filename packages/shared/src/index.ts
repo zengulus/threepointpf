@@ -28,12 +28,15 @@ import { z } from "zod";
 export interface CharacterRepository {
   save(character: CharacterInput): Promise<void>;
   load(id: string): Promise<CharacterInput | null>;
+  list?(): Promise<Array<Pick<CharacterInput, "id" | "name">>>;
 }
 
 /** A small structural subset keeps browser persistence testable without DOM globals. */
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  length?: number;
+  key?(index: number): string | null;
 }
 
 /**
@@ -156,6 +159,10 @@ export class InMemoryCharacterRepository implements CharacterRepository {
     const value = this.records.get(id);
     return value ? normalizeAuthoredCharacter(clone(value), this.rules) : null;
   }
+
+  async list(): Promise<Array<Pick<CharacterInput, "id" | "name">>> {
+    return [...this.records.values()].map(({ id, name }) => ({ id, name }));
+  }
 }
 
 function isStorageLike(value: unknown): value is StorageLike {
@@ -235,6 +242,20 @@ export class LocalStorageCharacterRepository implements CharacterRepository {
       throw new Error(`Stored character ${id} is not valid JSON`);
     }
     return normalizeAuthoredCharacter(parsed as CharacterInput, this.rules);
+  }
+
+  async list(): Promise<Array<Pick<CharacterInput, "id" | "name">>> {
+    const found: Array<Pick<CharacterInput, "id" | "name">> = [];
+    for (let index = 0; index < (this.storage.length ?? 0); index++) {
+      const key = this.storage.key?.(index);
+      if (!key?.startsWith(this.prefix)) continue;
+      const id = key.slice(this.prefix.length);
+      try {
+        const character = await this.load(id);
+        if (character) found.push({ id: character.id, name: character.name });
+      } catch { /* A corrupt local record is reported when opened directly. */ }
+    }
+    return found.sort((left, right) => left.name.localeCompare(right.name));
   }
 }
 
@@ -364,6 +385,12 @@ export class SupabaseCharacterRepository implements CharacterRepository {
       } as CharacterInput,
       this.rules,
     );
+  }
+
+  async list(): Promise<Array<Pick<CharacterInput, "id" | "name">>> {
+    const { data, error } = await this.client.from("characters").select("id,name").order("name");
+    if (error) throw error;
+    return (data ?? []).filter((row: unknown): row is { id: string; name: string } => isSnapshot(row) && typeof row.id === "string" && typeof row.name === "string").map(({ id, name }: { id: string; name: string }) => ({ id, name }));
   }
 }
 

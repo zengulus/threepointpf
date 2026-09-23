@@ -13,6 +13,7 @@ import {
  */
 
 export const sampleStorageKey = "threepointpf.sheet.sample";
+export const characterStorageKey = "threepointpf.sheet.character";
 
 export interface SampleStorage {
   getItem(key: string): string | null;
@@ -52,4 +53,13 @@ export function saveSelectedSampleId(
   } catch {
     // A browser that refuses storage still has a working in-memory session.
   }
+}
+
+export function loadSelectedCharacterId(storage: SampleStorage | null = browserSampleStorage()): string | null {
+  try { return storage?.getItem(characterStorageKey) || null; }
+  catch { return null; }
+}
+
+export function saveSelectedCharacterId(id: string, storage: SampleStorage | null = browserSampleStorage()): void {
+  try { storage?.setItem(characterStorageKey, id); } catch { /* Selection remains active in memory. */ }
 }
