@@ -31,6 +31,7 @@ export type ReplaceBaseEffect = Extract<Effect, { kind: "replaceBase" }>;
 export function collectFeatureEffects(
   character: CharacterInput,
   catalog: FeatureCatalog = {},
+  excludedDefinitionIds: ReadonlySet<string> = new Set(),
 ): Effect[] {
   const effects: Effect[] = [];
   const seenDefinitions = new Set<string>();
@@ -55,6 +56,7 @@ export function collectFeatureEffects(
     if (feature.definitionId && !definition && !feature.effects.length)
       throw new Error(`Unknown feature definition ${feature.definitionId}`);
     if (!feature.enabled) continue;
+    if (feature.definitionId && excludedDefinitionIds.has(feature.definitionId)) continue;
     if (definition && !feature.effects.length) {
       if (seenDefinitions.has(definition.id)) continue;
       if (

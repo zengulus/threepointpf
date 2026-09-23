@@ -717,8 +717,10 @@ export function useCharacterSheetController({
             "Discord publishing failed. Your local roll is still available.",
           );
         });
+      return result;
     } catch (failure) {
       setNotice("Roll could not be completed: " + errorText(failure));
+      return null;
     }
   };
   /** Build one exact weapon action for both display and button execution. */

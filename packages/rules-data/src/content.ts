@@ -415,6 +415,8 @@ export const abilityCatalog: AbilityCatalog = Object.fromEntries(
     activation: "toggleable" as const,
     effects: definition.effects,
     ...(definition.contextFlags ? { contextFlags: definition.contextFlags } : {}),
+    ...(definition.exclusiveGroup ? { exclusiveGroup: definition.exclusiveGroup } : {}),
+    ...(definition.priority !== undefined ? { priority: definition.priority } : {}),
     ...(definition.source ? { source: definition.source } : {}),
   }]),
 );

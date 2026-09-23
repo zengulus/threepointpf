@@ -371,6 +371,11 @@ test("expert ability authoring connects resources, composed damage, activation a
   await page.getByLabel("Resource maximum", { exact: true }).fill("3");
   await page.getByRole("button", { name: "+ Add resource", exact: true }).click();
   await expect(page.getByLabel("Resources")).toContainText("Maximum: 3 · Remaining: 3 · Spent: 0");
+  await page.getByLabel("Resource name").fill("Breath Recharge");
+  await page.getByLabel("Resource maximum", { exact: true }).fill("1");
+  await page.getByLabel("Resource refresh rule").selectOption("rechargeRoll");
+  await page.getByLabel("Resource refresh rounds").fill("4");
+  await page.getByRole("button", { name: "+ Add resource", exact: true }).click();
 
   await page.getByLabel("Ability name").fill("Titan Stance");
   await page.getByLabel("Ability effect target").selectOption("attack.melee");
@@ -384,6 +389,8 @@ test("expert ability authoring connects resources, composed damage, activation a
   await page.getByLabel("Ability cost resource").selectOption({ label: "Titan Charges" });
   await page.getByLabel("Ability cost amount").fill("1");
   await page.getByRole("button", { name: "+ Add cost", exact: true }).click();
+  await page.getByLabel("Ability cost timing").selectOption("perRound");
+  await page.getByRole("button", { name: "+ Add cost", exact: true }).click();
   await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
 
   await selectTab(page, "Combat");
@@ -392,6 +399,53 @@ test("expert ability authoring connects resources, composed damage, activation a
   await selectTab(page, "Features");
   await page.getByLabel("Toggle ability Titan Stance").click();
   await expect(page.getByLabel("Resources")).toContainText("Remaining: 2 · Spent: 1");
+  await page.getByLabel("Advance resource round").click();
+  await expect(page.getByLabel("Resources")).toContainText("Remaining: 1 · Spent: 2");
+
+  await page.getByLabel("Ability name").fill("Flame Burst");
+  await page.getByLabel("Ability activation").selectOption("activated");
+  await page.getByLabel("Ability effect kind").selectOption("damageDice");
+  await page.getByLabel("Ability effect target").selectOption("damage.ranged");
+  await page.getByLabel("Ability damage dice").fill("1d6");
+  await page.getByLabel("Ability damage type").fill("fire");
+  await page.getByRole("button", { name: "+ Add effect", exact: true }).click();
+  await page.getByLabel("Ability cost resource").selectOption({ label: "Titan Charges" });
+  await page.getByLabel("Ability cost timing").selectOption("onUse");
+  await page.getByRole("button", { name: "+ Add cost", exact: true }).click();
+  await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
+  await page.getByLabel("Use ability Flame Burst").click();
+  await expect(page.locator(".sheet-notice")).toContainText(/Flame Burst damage: dice \d+ · modifier \+0 · total \d+/);
+  await expect(page.getByLabel("Resources")).toContainText("Remaining: 0 · Spent: 3");
+  await dismissDice(page);
+
+  await page.getByLabel("Ability name").fill("Breath Weapon");
+  await page.getByLabel("Ability activation").selectOption("activated");
+  await page.getByLabel("Ability cost resource").selectOption({ label: "Breath Recharge" });
+  await page.getByLabel("Ability cost timing").selectOption("onUse");
+  await page.getByRole("button", { name: "+ Add cost", exact: true }).click();
+  await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
+  await page.getByLabel("Use ability Breath Weapon").click();
+  await expect(page.getByTestId("dice-overlay")).toBeVisible();
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Breath Recharge recharge");
+  await dismissDice(page);
+  const breathResource = page.getByLabel("Resources").locator(".feature-row").filter({ hasText: "Breath Recharge" });
+  await expect(breathResource).toContainText("Remaining: 0 · Spent: 1");
+  await expect(breathResource).toContainText(/\d rounds remaining/);
+
+  await page.getByLabel("Ability name").fill("Defensive Threat Expert");
+  await page.getByLabel("Ability activation").selectOption("passive");
+  await page.getByLabel("Ability effect kind").selectOption("modifier");
+  await page.getByLabel("Ability effect target").selectOption("ac");
+  await page.getByLabel("Ability effect value").fill("2");
+  await page.getByLabel("AC applicability contexts").selectOption(["normal", "flatFooted"]);
+  await page.getByRole("button", { name: "+ Add effect", exact: true }).click();
+  await page.getByLabel("Ability effect kind").selectOption("criticalRange");
+  await page.getByLabel("Ability effect target").selectOption("attack.melee");
+  await page.getByLabel("Critical range operation").selectOption("double");
+  await page.getByRole("button", { name: "+ Add effect", exact: true }).click();
+  await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
+  await expect(page.getByLabel("Abilities")).toContainText("normal + flatFooted");
+  await expect(page.getByLabel("Abilities")).toContainText("double base threat range");
   await selectTab(page, "Combat");
   await expect(attack.locator(".attack-name strong")).not.toHaveText(before ?? "");
   await expect(attack.locator(".attack-name small")).toContainText("2d6 force");
@@ -403,7 +457,9 @@ test("expert ability authoring connects resources, composed damage, activation a
   await page.reload();
   await selectTab(page, "Features");
   await expect(page.getByLabel("Abilities")).toContainText("Titan Stance");
-  await expect(page.getByLabel("Resources")).toContainText("Remaining: 2 · Spent: 1");
+  await expect(page.getByLabel("Resources")).toContainText("Remaining: 0 · Spent: 3");
+  await expect(page.getByLabel("Resources").locator(".feature-row").filter({ hasText: "Breath Recharge" })).toContainText("Remaining: 0 · Spent: 1");
+  await expect(page.getByLabel("Abilities")).toContainText("double base threat range");
   await page.getByLabel("Edit ability Titan Stance").click();
   await page.getByLabel("Ability description").fill("Edited and persisted");
   await page.getByRole("button", { name: "Save ability", exact: true }).click();

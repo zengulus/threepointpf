@@ -446,6 +446,11 @@ export function AttacksPanel({ sheet }: { sheet: CharacterSheet }) {
                   `${term.dice.count}d${term.dice.sides} ${term.source.label}${term.damageType ? ` (${term.damageType})` : ""}${term.criticalBehavior === "notMultiplied" ? " · not multiplied" : ""}`,
                 ).join(" · ")}
               </span>
+              {attack.damage.excludedDamageTerms?.map((term, index) => (
+                <span className="damage-term-provenance excluded" key={`${term.source.id}-${index}`}>
+                  Excluded {term.dice.count}d{term.dice.sides} {term.label}: {term.reason}
+                </span>
+              ))}
             </button>
             <div className="attack-sequence">
               <button

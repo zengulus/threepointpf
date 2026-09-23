@@ -108,6 +108,7 @@ import {
   abilityContextFlags,
   collectAbilityEffects,
   deriveResources,
+  excludedLegacyFeatureDefinitions,
   validateAbilityReferences,
 } from "./ability-resources.js";
 
@@ -200,6 +201,7 @@ export class RulesEngine implements RulesRuntime {
     const effects = collectFeatureEffects(
       this.character,
       options.featureCatalog,
+      excludedLegacyFeatureDefinitions(this.character, options.abilityCatalog),
     );
     effects.push(...collectAbilityEffects(this.character, options.abilityCatalog));
     for (const feature of this.advancement?.features ?? []) {

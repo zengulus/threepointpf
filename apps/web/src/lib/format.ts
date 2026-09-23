@@ -70,6 +70,7 @@ export function describeEffect(effect: Effect): string {
       effect.bonusType +
       " → " +
       labelFor(effect.target) +
+      (effect.target === "ac" ? ` (${effect.appliesTo.join(" + ")})` : "") +
       ("appliesWhen" in effect && effect.appliesWhen ? " (situational)" : "")
     );
   if (effect.kind === "replaceBase")
@@ -82,8 +83,9 @@ export function describeEffect(effect: Effect): string {
     return "maximum " + effect.value + " → " + labelFor(effect.target);
   if (effect.kind === "criticalRange")
     return (
-      "widen threat range by " +
-      effect.widenBy +
+      (effect.operation === "double"
+        ? "double base threat range"
+        : "widen threat range by " + effect.widenBy) +
       " → " +
       labelFor(effect.target) +
       (effect.appliesWhen ? " (situational)" : "")

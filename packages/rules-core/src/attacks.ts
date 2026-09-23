@@ -279,6 +279,19 @@ export function evaluateDamage(
     excluded: modifiers.excluded,
   });
   const modifier = damageResult.value;
+  const excludedDamageTerms = runtime.effects.flatMap((effect) => {
+    if (effect.kind !== "damageDice" || effect.target !== damageTarget) return [];
+    const applicability = applicabilityOf(effect, { attack: definition, context });
+    if (applicability.applies) return [];
+    return [{
+      dice: effect.dice,
+      label: effect.label ?? effect.source?.label ?? effect.damageType ?? "Additional damage",
+      source: effect.source ?? { id: "effect", label: "Damage dice effect" },
+      ...(effect.damageType ? { damageType: effect.damageType } : {}),
+      reason: applicability.reason ?? "not applicable",
+      rollContext: context,
+    }];
+  });
   const terms: DamageDiceTerm[] = [
     {
       kind: "dice",
@@ -314,6 +327,7 @@ export function evaluateDamage(
     contributions: damageResult.contributions,
     terms,
     ...(damageResult.excluded ? { excluded: damageResult.excluded } : {}),
+    ...(excludedDamageTerms.length ? { excludedDamageTerms } : {}),
   };
 }
 
@@ -398,6 +412,9 @@ function damagePlanFrom(
         ...term,
         multiplier: criticalDamage && term.criticalBehavior === "normal" ? times : 1,
       })),
+      ...(evaluation.excludedDamageTerms?.length
+        ? { excludedDamageTerms: evaluation.excludedDamageTerms }
+        : {}),
     },
   };
 }

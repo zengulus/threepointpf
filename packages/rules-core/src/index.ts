@@ -112,11 +112,17 @@ export {
 export {
   abilityContextFlags,
   abilityIsEffective,
+  advanceAbilityResourceRound,
   advanceResourceRound,
   cloneAbilityDefinition,
   collectAbilityEffects,
   commitAbilityActivation,
+  costTiming,
+  createRechargeRollPlan,
   deriveResources,
+  excludedCatalogAbilityDefinitions,
+  excludedLegacyFeatureDefinitions,
+  prepareAbilityExecution,
   refreshResource,
   refreshResources,
   resolveAbility,
@@ -129,7 +135,10 @@ export {
 export type {
   AbilityActivationProposal,
   AbilityActivationResult,
+  AbilityExecutionPlan,
+  AbilityExecutionPreparation,
   AbilityValidationIssue,
+  ResourceRoundResult,
   ResourceFacts,
 } from "./ability-resources.js";
 export type {

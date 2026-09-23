@@ -533,6 +533,8 @@ export interface RollPlanProvenance {
   criticalRange?: CriticalRangeEvaluation;
   /** Damage dice remain separate, sourced semantic terms through execution. */
   damageTerms?: DamageDiceTerm[];
+  /** Authored dice filtered from this context, retained without a fake value. */
+  excludedDamageTerms?: ExcludedDamageDiceTerm[];
 }
 
 /**
@@ -760,9 +762,17 @@ export const abilityActivationTypes = [
 ] as const;
 export type AbilityActivationType = (typeof abilityActivationTypes)[number];
 
+export const resourceCostTimings = ["onActivate", "onUse", "perRound"] as const;
+export type ResourceCostTiming = (typeof resourceCostTimings)[number];
+
 export interface ResourceCost {
   resourceId: string;
   amount: number;
+  /**
+   * When this cost is paid. Missing values are accepted only for persisted
+   * compatibility and are normalized by rules-core before execution.
+   */
+  timing?: ResourceCostTiming;
   /** Optional availability gate greater than the amount actually spent. */
   minimumRemaining?: number;
 }
@@ -775,6 +785,9 @@ export interface AbilityDefinition {
   effects: Effect[];
   costs?: ResourceCost[];
   contextFlags?: string[];
+  /** Catalog migration semantics shared with the legacy feature definition. */
+  exclusiveGroup?: string;
+  priority?: number;
   source?: ProgressionSourceMetadata;
 }
 export type AbilityCatalog = Record<string, AbilityDefinition>;
@@ -791,10 +804,18 @@ export interface AbilityInstance {
   effects: Effect[];
   costs?: ResourceCost[];
   contextFlags?: string[];
+  exclusiveGroup?: string;
+  priority?: number;
 }
 
 export type ResourceMaximumTerm =
-  | { kind: "abilityModifier"; ability: AbilityId; multiplier?: number }
+  | {
+      kind: "abilityModifier";
+      ability: AbilityId;
+      multiplier?: number;
+      /** Current includes active effects; base reads the authored base score. */
+      source?: "base" | "current";
+    }
   | { kind: "progressionLevel"; progressionId: string; multiplier?: number }
   | { kind: "constant"; value: number; label?: string };
 
@@ -1976,6 +1997,7 @@ export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
 export const resourceCostSchema: z.ZodType<ResourceCost> = z.object({
   resourceId: z.string().min(1),
   amount: z.number().finite().int().positive(),
+  timing: z.enum(resourceCostTimings).optional(),
   minimumRemaining: z.number().finite().int().nonnegative().optional(),
 });
 export const abilityDefinitionSchema: z.ZodType<AbilityDefinition> = z.object({
@@ -1986,6 +2008,8 @@ export const abilityDefinitionSchema: z.ZodType<AbilityDefinition> = z.object({
   effects: z.array(effectSchema),
   costs: z.array(resourceCostSchema).optional(),
   contextFlags: z.array(flagSchema).min(1).optional(),
+  exclusiveGroup: z.string().min(1).optional(),
+  priority: z.number().finite().int().optional(),
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 export const abilityCatalogSchema: z.ZodType<AbilityCatalog> = z.record(
@@ -2004,6 +2028,8 @@ export const abilityInstanceSchema: z.ZodType<AbilityInstance> = z.object({
   effects: z.array(effectSchema),
   costs: z.array(resourceCostSchema).optional(),
   contextFlags: z.array(flagSchema).min(1).optional(),
+  exclusiveGroup: z.string().min(1).optional(),
+  priority: z.number().finite().int().optional(),
 });
 export const resourceMaximumSchema: z.ZodType<ResourceMaximum> = z.discriminatedUnion(
   "kind",
@@ -2014,7 +2040,7 @@ export const resourceMaximumSchema: z.ZodType<ResourceMaximum> = z.discriminated
       kind: z.literal("derived"),
       base: z.number().finite().optional(),
       terms: z.array(z.discriminatedUnion("kind", [
-        z.object({ kind: z.literal("abilityModifier"), ability: abilityIdSchema, multiplier: z.number().finite().optional() }),
+        z.object({ kind: z.literal("abilityModifier"), ability: abilityIdSchema, multiplier: z.number().finite().optional(), source: z.enum(["base", "current"]).optional() }),
         z.object({ kind: z.literal("progressionLevel"), progressionId: z.string().min(1), multiplier: z.number().finite().optional() }),
         z.object({ kind: z.literal("constant"), value: z.number().finite(), label: z.string().min(1).optional() }),
       ])),
@@ -2745,6 +2771,16 @@ export interface DamageEvaluation {
   terms: DamageDiceTerm[];
   /** Contextual filtering provenance for damage effects. */
   excluded?: ExcludedContribution[];
+  excludedDamageTerms?: ExcludedDamageDiceTerm[];
+}
+
+export interface ExcludedDamageDiceTerm {
+  dice: DiceExpression;
+  label: string;
+  source: SourceReference;
+  damageType?: string;
+  reason: string;
+  rollContext?: RollContext;
 }
 
 export interface DamageDiceTerm {
