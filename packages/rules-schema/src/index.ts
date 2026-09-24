@@ -132,6 +132,11 @@ export type TargetId =
   | "skill.all"
   | `skill.${string}`
   | `resource.${string}.maximum`
+  | `spellcasting.${string}.casterLevel`
+  | `spellcasting.${string}.concentration`
+  | `spellcasting.${string}.dc.${number}`
+  | `spellcasting.${string}.slot.${number}`
+  | `spellcasting.${string}.maximumSpellLevel`
   /** A character-global level in a named progression, such as progression.fighter.level. */
   | `progression.${string}.level`;
 
@@ -267,6 +272,8 @@ export interface RollContext {
   saveId?: SaveId;
   /** The skill being rolled, when the roll is a skill check. */
   skillId?: string;
+  /** Semantic spell identity for spell damage or attack plans. */
+  spellId?: string;
   /** Weapon classification tags resolved from the attack definition. */
   attackTags?: AttackTag[];
   /** Ranged or melee, for weapon rolls. */
@@ -645,7 +652,11 @@ export function isTargetId(value: string): value is TargetId {
       value.length > "progression..level".length) ||
     (value.startsWith("resource.") &&
       value.endsWith(".maximum") &&
-      value.length > "resource..maximum".length)
+      value.length > "resource..maximum".length) ||
+    /^spellcasting\..+\.(?:casterLevel|concentration)$/.test(value) ||
+    /^spellcasting\..+\.dc\.\d+$/.test(value)
+    || /^spellcasting\..+\.slot\.\d+$/.test(value)
+    || /^spellcasting\..+\.maximumSpellLevel$/.test(value)
   );
 }
 
@@ -806,6 +817,45 @@ export interface AbilityInstance {
   contextFlags?: string[];
   exclusiveGroup?: string;
   priority?: number;
+  /** Optional semantic link for spell-like abilities; ability costs remain authoritative. */
+  spellId?: string;
+}
+
+/** Spell levels are associated with lists, never assumed to be universal. */
+export interface SpellLevelAssociation { spellListId: string; level: number }
+export type CastingTime = { action: "standard" | "swift" | "immediate" | "fullRound" | "move" | "free" } | { action: "timed"; unit: "rounds" | "minutes" | "hours" | "custom"; amount: number; label?: string };
+export interface SpellDefinition {
+  id: string; name: string; description: string; school: string; subschool?: string; descriptors?: string[];
+  levels: SpellLevelAssociation[]; castingTime: CastingTime; components: string[];
+  range?: string; target?: string; area?: string; duration?: string;
+  savingThrow?: { save?: SaveId; result: "negates" | "half" | "partial" | "disbelief" | "harmless" | "none" };
+  spellResistance?: boolean;
+  execution?: { damage?: { dice: DiceExpression; damageType: string; perCasterLevel?: boolean; casterLevelCap?: number }; attack?: "meleeTouch" | "rangedTouch" };
+  source?: ProgressionSourceMetadata;
+}
+export type SpellCatalog = Record<string, SpellDefinition>;
+export interface SpellSlotProgressionRow {
+  level: number; casterLevel: number; maximumSpellLevel: number;
+  slots: Record<string, number>; spellsKnown?: Record<string, number>;
+}
+export interface SpellcastingAdvancement {
+  /** Global identity is stable across advancement tracks. */
+  sourceId?: string;
+  progressionId: string;
+  levels: number;
+  selection?: "source";
+  /** References an ordinary progression feature choice when selection is required. */
+  choiceFeatureId?: string;
+  choiceRequirementId?: string;
+}
+export interface PreparedSpellAllocation { id: string; spellId: string; spellLevel: number; expended?: boolean }
+export interface SpellcastingSource {
+  id: string; name: string; mode: "prepared" | "spontaneous" | (string & {});
+  castingAbility: AbilityId; progressionId?: string; progressionLevel?: number;
+  spellListId: string; spellListAccess: "list" | "spellbook"; bonusSlots: "standard" | "none";
+  progression: SpellSlotProgressionRow[];
+  knownSpellIds?: string[]; spellbookSpellIds?: string[]; preparedSpells?: PreparedSpellAllocation[];
+  source?: ProgressionSourceMetadata;
 }
 
 export type ResourceMaximumTerm =
@@ -1264,6 +1314,8 @@ export interface ProgressionDefinition {
   classSkills?: string[];
   classSkillsSource?: ProgressionSourceMetadata;
   features?: ProgressionFeatureDefinition[];
+  /** Typed level contribution; no class-name behavior is inferred. */
+  spellcastingAdvancement?: SpellcastingAdvancement[];
   /** When present, the evaluator uses these cumulative values instead of the generic chassis formula. */
   chart?: ProgressionChartLevel[];
   /** Historical ids that are normalized to this source-qualified id on load. */
@@ -1325,6 +1377,10 @@ export interface CharacterInput {
   resources?: ResourceDefinition[];
   /** Mutable play state, conceptually separate but snapshot-persisted for compatibility. */
   resourceStates?: ResourceState[];
+  /** Character-owned independent casting sources; capacities are derived from their tables. */
+  spellcastingSources?: SpellcastingSource[];
+  /** Custom spell definitions travel with this character and never mutate imported catalogs. */
+  customSpells?: SpellCatalog;
   equipment?: EquipmentInstance[];
   /** Mutable damage state; current HP is derived from max HP minus this value. */
   damageTaken: number;
@@ -1451,6 +1507,7 @@ export const rollContextSchema: z.ZodType<RollContext> = z
     attackId: z.string().min(1).optional(),
     saveId: z.enum(saveIds).optional(),
     skillId: z.string().min(1).optional(),
+    spellId: z.string().min(1).optional(),
     attackTags: z.array(attackTagSchema).optional(),
     mode: attackModeSchema.optional(),
     touch: z.boolean().optional(),
@@ -2030,6 +2087,45 @@ export const abilityInstanceSchema: z.ZodType<AbilityInstance> = z.object({
   contextFlags: z.array(flagSchema).min(1).optional(),
   exclusiveGroup: z.string().min(1).optional(),
   priority: z.number().finite().int().optional(),
+  spellId: z.string().min(1).optional(),
+});
+const castingTimeSchema = z.union([
+  z.object({ action: z.enum(["standard", "swift", "immediate", "fullRound", "move", "free"]) }),
+  z.object({ action: z.literal("timed"), unit: z.enum(["rounds", "minutes", "hours", "custom"]), amount: z.number().finite().positive(), label: z.string().optional() }),
+]);
+export const spellDefinitionSchema: z.ZodType<SpellDefinition> = z.object({
+  id: z.string().min(1), name: z.string().min(1), description: z.string(), school: z.string().min(1),
+  subschool: z.string().optional(), descriptors: z.array(z.string()).optional(),
+  levels: z.array(z.object({ spellListId: z.string().min(1), level: z.number().int().nonnegative() })).min(1),
+  castingTime: castingTimeSchema, components: z.array(z.string()), range: z.string().optional(), target: z.string().optional(), area: z.string().optional(), duration: z.string().optional(),
+  savingThrow: z.object({ save: saveIdSchema.optional(), result: z.enum(["negates", "half", "partial", "disbelief", "harmless", "none"]) }).optional(),
+  spellResistance: z.boolean().optional(),
+  execution: z.object({ damage: z.object({ dice: diceExpressionSchema, damageType: z.string().min(1), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional() }).optional(), attack: z.enum(["meleeTouch", "rangedTouch"]).optional() }).optional(),
+  source: z.lazy(() => progressionSourceMetadataSchema).optional(),
+});
+export const spellCatalogSchema: z.ZodType<SpellCatalog> = z.record(spellDefinitionSchema).superRefine((catalog, context) => {
+  for (const [id, spell] of Object.entries(catalog)) if (id !== spell.id) context.addIssue({ code: z.ZodIssueCode.custom, path: [id], message: "Spell catalog key must match definition id" });
+});
+const spellProgressionRowSchema: z.ZodType<SpellSlotProgressionRow> = z.object({
+  level: z.number().int().nonnegative(), casterLevel: z.number().int().nonnegative(), maximumSpellLevel: z.number().int().nonnegative(),
+  slots: z.record(z.string().regex(/^\d+$/), z.number().int().nonnegative()),
+  spellsKnown: z.record(z.string().regex(/^\d+$/), z.number().int().nonnegative()).optional(),
+});
+const spellcastingAdvancementSchema: z.ZodType<SpellcastingAdvancement> = z.object({ sourceId: z.string().min(1).optional(), progressionId: z.string().min(1), levels: z.number().int().positive(), selection: z.literal("source").optional(), choiceFeatureId: z.string().min(1).optional(), choiceRequirementId: z.string().min(1).optional() }).superRefine((rule, context) => {
+  if (rule.selection === "source" && (!rule.choiceFeatureId || !rule.choiceRequirementId)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["choiceRequirementId"], message: "Source choices must reference a lifecycle feature and requirement" });
+  if (rule.selection !== "source" && !rule.sourceId) context.addIssue({ code: z.ZodIssueCode.custom, path: ["sourceId"], message: "Fixed casting advancement requires a source id" });
+});
+const preparedSpellAllocationSchema: z.ZodType<PreparedSpellAllocation> = z.object({ id: z.string().min(1), spellId: z.string().min(1), spellLevel: z.number().int().nonnegative(), expended: z.boolean().optional() });
+export const spellcastingSourceSchema: z.ZodType<SpellcastingSource> = z.object({
+  id: z.string().min(1), name: z.string().min(1), mode: z.string().min(1), castingAbility: abilityIdSchema,
+  progressionId: z.string().min(1).optional(), progressionLevel: z.number().int().nonnegative().optional(),
+  spellListId: z.string().min(1), spellListAccess: z.enum(["list", "spellbook"]), bonusSlots: z.enum(["standard", "none"]),
+  progression: z.array(spellProgressionRowSchema).min(1), knownSpellIds: z.array(z.string().min(1)).optional(), spellbookSpellIds: z.array(z.string().min(1)).optional(), preparedSpells: z.array(preparedSpellAllocationSchema).optional(), source: z.lazy(() => progressionSourceMetadataSchema).optional(),
+}).superRefine((source, context) => {
+  const levels = source.progression.map((row) => row.level);
+  if (new Set(levels).size !== levels.length) context.addIssue({ code: z.ZodIssueCode.custom, path: ["progression"], message: "Duplicate spellcasting progression level" });
+  if (source.mode === "prepared" && !source.preparedSpells) context.addIssue({ code: z.ZodIssueCode.custom, path: ["preparedSpells"], message: "Prepared sources require prepared spell allocations" });
+  if (source.mode === "spontaneous" && !source.knownSpellIds) context.addIssue({ code: z.ZodIssueCode.custom, path: ["knownSpellIds"], message: "Spontaneous sources require known spells" });
 });
 export const resourceMaximumSchema: z.ZodType<ResourceMaximum> = z.discriminatedUnion(
   "kind",
@@ -2283,6 +2379,7 @@ export const progressionDefinitionSchema: z.ZodType<ProgressionDefinition> = z
     classSkillsSource: progressionSourceMetadataSchema.optional(),
     classSkills: z.array(skillIdSchema).optional(),
     features: z.array(progressionFeatureDefinitionSchema).optional(),
+    spellcastingAdvancement: z.array(spellcastingAdvancementSchema).optional(),
     chart: z.array(progressionChartLevelSchema).min(1).optional(),
     aliases: z.array(z.string().min(1)).optional(),
     source: progressionSourceMetadataSchema.optional(),
@@ -2564,6 +2661,8 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
     abilities: z.array(abilityInstanceSchema).optional(),
     resources: z.array(resourceDefinitionSchema).optional(),
     resourceStates: z.array(resourceStateSchema).optional(),
+    spellcastingSources: z.array(spellcastingSourceSchema).optional(),
+    customSpells: spellCatalogSchema.optional(),
     damageTaken: z.number().finite().int().nonnegative(),
     temporaryHp: z.number().finite().int().nonnegative(),
     baseLandSpeed: z.number().finite().optional(),
@@ -2601,10 +2700,22 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
         ids.add(item.id);
       }
     }
+    const sources = new Set((character.spellcastingSources ?? []).map((item) => item.id));
+    const sourceIds = [...sources];
+    if (sources.size !== (character.spellcastingSources ?? []).length)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["spellcastingSources"], message: "Duplicate spellcasting source id" });
+    for (const [index, source] of (character.spellcastingSources ?? []).entries()) {
+      const allocationIds = new Set<string>();
+      for (const allocation of source.preparedSpells ?? []) {
+        if (allocationIds.has(allocation.id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["spellcastingSources", index, "preparedSpells"], message: `Duplicate prepared spell allocation ${allocation.id}` });
+        allocationIds.add(allocation.id);
+      }
+    }
     const resourceIds = new Set((character.resources ?? []).map((item) => item.id));
     const stateIds = new Set<string>();
     for (const state of character.resourceStates ?? []) {
-      if (!resourceIds.has(state.resourceId))
+      const dynamicSpellSlot = /^spell\.(.+)\.slot\.(\d+)$/.exec(state.resourceId);
+      if (!resourceIds.has(state.resourceId) && !(dynamicSpellSlot && sourceIds.includes(dynamicSpellSlot[1]!)))
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["resourceStates"],

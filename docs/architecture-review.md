@@ -145,13 +145,17 @@ Resources are independent authored objects. `ResourceDefinition` owns identity, 
 
 The expert Features tab now contains structured resource and ability editors. Resources expose capacity policy, refresh, remaining/spent state, and manual controls. Abilities support catalog addition, catalog-to-local cloning, editing, multiple reorderable effects, costs selected by resource name/ID, activation, and typed applicability fields. Referenced resources cannot be silently deleted. Local abilities/resources and mutable use state travel in the existing atomic `CharacterInput` snapshot; editor drafts do not. Older snapshots omit the optional collections and retain their exact legacy feature behavior.
 
-This is intentionally a spellcasting seam, not a spellcasting implementation:
+### Spellcasting foundation
 
 ```text
-spellcasting source → slot/spell-point resource → spell ability → resource cost → roll/effect execution
+advancement → source-owned casting progression → source-specific spell availability / preparation → ordinary slot resource state → cast validation → shared roll plan
 ```
 
-Spell level metadata, prepared/spontaneous progression, spells known/prepared, spellbooks, caster-level rules, concentration, DC construction, metamagic, and full spell lists remain dedicated future concepts. They should reference this resource/activation layer without erasing spell-specific identity.
+`SpellDefinition` carries per-list levels, casting metadata, descriptors, saving-throw and resistance metadata, plus optional execution data; it remains distinct from `AbilityDefinition`. A character owns stable `SpellcastingSource` records with independent mode, casting ability, list access and cumulative progression rows. The advancement evaluator aggregates typed source contributions by character-global source ID, even as a class moves tracks. Direct source-backed progressions also support local progression tables. Prestige rules can bind a selected source ID to an ordinary progression feature choice; the existing lifecycle selection determines which stable source ID advances.
+
+Prepared sources retain spellbook IDs and separately identified prepared allocations with independent expended flags. Allocations are checked against spellbook and list-relative spell-level access; explicit source refresh restores spent slots and preparations. Spontaneous sources retain known-spell IDs and consume the source's slot resource for the spell's list-specific level. Slot capacities are derived from the current progression row; only spent state is persisted. Caster level, concentration, spell DC and slot values expose contributions. Concentration checks and modeled spell damage use ordinary sourced `RollPlan` values; damage supports dice per caster level with a cap. The curated rules-data set is intentionally small.
+
+The current automation does not calculate bonus-spell slots, resolve spell attack rolls, apply healing, consume spell effects as persistent buffs, resolve target saves or spell resistance, enforce components/range/actions, or import complete spell lists. The editor offers basic source/progression and custom spell forms; obscure content remains data-authored. See `docs/open-decisions.md` for source-selection lifecycle work.
 
 ### The roll and outcome contract
 

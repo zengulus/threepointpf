@@ -31,6 +31,7 @@ import {
   type RulesEngineOptions,
 } from "./character.js";
 import type { DerivedCharacter } from "@threepointpf/rules-schema";
+import { deriveSpellcastingSource } from "./spellcasting.js";
 
 /**
  * A progression choice is deliberately addressed by character level and the
@@ -202,7 +203,10 @@ export interface LifecycleChange {
     | "hitDie"
     | "feature"
     | "hp"
-    | "skillBudget";
+    | "skillBudget"
+    | "casterLevel"
+    | "maximumSpellLevel"
+    | "spellSlots";
   label: string;
   before?: number;
   after?: number;
@@ -210,6 +214,7 @@ export interface LifecycleChange {
   trackId?: string;
   progressionId?: string;
   saveId?: "fortitude" | "reflex" | "will";
+  sourceId?: string;
 }
 
 export interface CharacterCreationPreview {
@@ -1291,7 +1296,7 @@ function inspectCandidate(
     return {
       character,
       derived: engine.derive(),
-      advancement: evaluateAdvancement(slots, catalog, rules.progressionAliases),
+      advancement: evaluateAdvancement(slots, catalog, rules.progressionAliases, character.lifecycle?.choiceSelections ?? []),
       catalog,
     };
   } catch (error) {
@@ -2091,6 +2096,8 @@ function semanticChanges(
   expected: readonly ExpectedSlot[],
   hp: readonly HpAcquisitionPreview[],
   skills: readonly SkillAllocationPreview[],
+  beforeCharacter?: CharacterInput,
+  rules: RulesEngineOptions = {},
 ): LifecycleChange[] {
   if (!inspection) return [];
   const after = inspection.derived;
@@ -2189,6 +2196,28 @@ function semanticChanges(
         trackId: preview.winningChassis?.trackId,
         progressionId: preview.winningChassis?.progressionId,
       });
+  const currentEngine = new RulesEngine(inspection.character, rules);
+  const priorEngine = beforeCharacter ? new RulesEngine(beforeCharacter, rules) : undefined;
+  const priorSources = new Map((beforeCharacter?.spellcastingSources ?? []).map((source) => [source.id, source]));
+  for (const source of inspection.character.spellcastingSources ?? []) {
+    const current = deriveSpellcastingSource(currentEngine, source);
+    const priorSource = priorSources.get(source.id);
+    const previous = priorSource && priorEngine ? deriveSpellcastingSource(priorEngine, priorSource) : undefined;
+    const oldCasterLevel = previous?.casterLevel.value ?? 0;
+    if (oldCasterLevel !== current.casterLevel.value)
+      changes.push({ kind: "casterLevel", label: `${source.name} caster level ${oldCasterLevel} → ${current.casterLevel.value}`, before: oldCasterLevel, after: current.casterLevel.value, sourceId: source.id });
+    const oldMaximumSpellLevel = previous?.maximumSpellLevel ?? 0;
+    if (oldMaximumSpellLevel !== current.maximumSpellLevel)
+      changes.push({ kind: "maximumSpellLevel", label: `${source.name} maximum spell level ${oldMaximumSpellLevel} → ${current.maximumSpellLevel}`, before: oldMaximumSpellLevel, after: current.maximumSpellLevel, sourceId: source.id });
+    const previousSlots = new Map((previous?.slots ?? []).map((slot) => [slot.level, slot.capacity]));
+    const currentSlots = new Map(current.slots.map((slot) => [slot.level, slot.capacity]));
+    for (const spellLevel of [...new Set([...previousSlots.keys(), ...currentSlots.keys()])].sort((a, b) => a - b)) {
+      const oldCapacity = previousSlots.get(spellLevel) ?? 0;
+      const capacity = currentSlots.get(spellLevel) ?? 0;
+      if (oldCapacity !== capacity)
+        changes.push({ kind: "spellSlots", label: `${source.name} level ${spellLevel} slots ${oldCapacity} → ${capacity}`, before: oldCapacity, after: capacity, sourceId: source.id });
+    }
+  }
   return changes;
 }
 
@@ -2211,6 +2240,8 @@ export function previewCharacterCreation(
       expected,
       assessment.hp,
       assessment.skills,
+      undefined,
+      proposal.rules,
     ),
     requirements: assessment.requirements,
     hp: assessment.hp,
@@ -2249,6 +2280,8 @@ export function previewAdvancement(
       expected,
       assessment.hp,
       assessment.skills,
+      proposal.character,
+      proposal.rules,
     ),
     requirements: assessment.requirements,
     ...(assessment.hp[0] ? { hp: assessment.hp[0] } : {}),

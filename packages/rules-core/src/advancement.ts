@@ -12,6 +12,7 @@ import {
   type SaveId,
   type SaveProgression,
   type Effect,
+  type ChoiceSelection,
 } from "@threepointpf/rules-schema";
 
 export interface ProgressionIncrement {
@@ -89,6 +90,17 @@ export interface AdvancementEvaluation {
   /** One winning skill-point chassis per ordered slot, in slot order. */
   skillPointSources: SlotSkillPointSource[];
   skillPoints: number;
+  /** Character-global casting source levels granted by progression content. */
+  spellcastingLevels: Record<string, number>;
+  spellcastingContributions: SpellcastingLevelContribution[];
+}
+
+export interface SpellcastingLevelContribution {
+  sourceId: string;
+  progressionId: string;
+  levels: number;
+  slotId: string;
+  trackId: string;
 }
 
 interface AdvancementValues {
@@ -192,6 +204,7 @@ export function evaluateAdvancement(
   slots: AdvancementSlot[],
   catalog: ProgressionCatalog,
   aliases: ProgressionAliasMap = {},
+  choiceSelections: ChoiceSelection[] = [],
 ): AdvancementEvaluation {
   slots = advancementSlotsSchema.parse(slots);
   catalog = parseProgressionCatalog(catalog);
@@ -202,6 +215,8 @@ export function evaluateAdvancement(
   const hitDieSources: SlotHitDie[] = [];
   const skillPointSources: SlotSkillPointSource[] = [];
   const featureGrants: AdvancementFeatureGrant[] = [];
+  const spellcastingLevels: Record<string, number> = {};
+  const spellcastingContributions: SpellcastingLevelContribution[] = [];
 
   for (const slot of canonicalSlots) {
     const slotCandidates: Array<{
@@ -241,6 +256,16 @@ export function evaluateAdvancement(
         hitDieSides: definition.hitDieSides,
         skillPoints: definition.skillPointsPerLevel ?? 0,
       };
+      for (const casting of definition.spellcastingAdvancement ?? []) {
+        const selectedSourceIds = casting.selection === "source"
+          ? choiceSelections.find((selection) => selection.requirement.progressionId === definition.id && selection.requirement.featureId === casting.choiceFeatureId && selection.requirement.slotId === slot.id && selection.requirement.trackId === track.id && selection.requirement.requirementId === casting.choiceRequirementId)?.optionIds ?? []
+          : casting.sourceId ? [casting.sourceId] : [];
+        for (const sourceId of selectedSourceIds)
+          {
+            spellcastingLevels[sourceId] = (spellcastingLevels[sourceId] ?? 0) + casting.levels;
+            spellcastingContributions.push({ sourceId, progressionId: casting.progressionId, levels: casting.levels, slotId: slot.id, trackId: track.id });
+          }
+      }
       progression.level = level;
       progression.increments.push(increment);
       globalProgressionLevels.set(definition.id, progression);
@@ -327,6 +352,8 @@ export function evaluateAdvancement(
       (total, source) => total + source.skillPoints,
       0,
     ),
+    spellcastingLevels,
+    spellcastingContributions,
   };
 }
 

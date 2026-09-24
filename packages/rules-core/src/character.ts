@@ -111,6 +111,7 @@ import {
   excludedLegacyFeatureDefinitions,
   validateAbilityReferences,
 } from "./ability-resources.js";
+import { deriveSpellcastingSource, slotResourceId } from "./spellcasting.js";
 
 /**
  * The situational inputs a caller may supply for one roll: which flags to add or
@@ -192,6 +193,7 @@ export class RulesEngine implements RulesRuntime {
         canonicalSlots,
         this.progressionCatalog,
         this.progressionAliases,
+        this.character.lifecycle?.choiceSelections ?? [],
       );
     } else {
       this.character = character;
@@ -561,6 +563,18 @@ export class RulesEngine implements RulesRuntime {
     );
   }
 
+  spellcastingLevel(sourceId: string, fallbackProgressionId?: string, manualLevel = 0): number {
+    const granted = this.advancement?.spellcastingLevels[sourceId];
+    if (granted !== undefined) return granted;
+    if (fallbackProgressionId && this.advancement)
+      return this.advancement.progressionLevels.find((item) => item.id === fallbackProgressionId)?.level ?? 0;
+    return manualLevel;
+  }
+
+  spellcastingContributions(sourceId: string) {
+    return this.advancement?.spellcastingContributions.filter((item) => item.sourceId === sourceId) ?? [];
+  }
+
   /** Explicit class feature unlocks; mechanics are never inferred from names. */
   progressionFeatures(progressionId?: string): DerivedProgressionFeature[] {
     if (progressionId && this.progressionCatalog)
@@ -898,12 +912,14 @@ export class RulesEngine implements RulesRuntime {
       attacks: this.attackDefinitions.map((attack) =>
         deriveAttack(this, attack),
       ),
-      resources: deriveResources(this.character, {
+      resources: [...deriveResources(this.character, {
         abilityModifier: (id) => this.abilityModifierValue(id),
         progressionLevel: (id) => this.advancement
           ? (this.advancement.progressionLevels.find((item) => item.id === id)?.level ?? 0)
           : 0,
-      }),
+      }), ...(this.character.spellcastingSources ?? []).flatMap((source) => deriveSpellcastingSource(this, source).slots.map((slot) => ({
+        id: slotResourceId(source.id, slot.level), name: `${source.name} level ${slot.level} slots`, maximum: slot.capacity, spent: slot.spent, remaining: slot.remaining, refresh: { kind: "daily" as const }, provenance: slot.provenance.contributions,
+      })))],
     };
   }
 

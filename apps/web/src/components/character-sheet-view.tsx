@@ -21,6 +21,7 @@ import type { CharacterSheet } from "../hooks/useCharacterSheet";
 import type { ThemePreferenceController } from "../hooks/useThemePreference";
 import { characterFilename, exportCharacterSnapshot } from "../lib/character-portability";
 import { LifecycleWizard } from "./lifecycle-wizard";
+import { SpellcastingPanel } from "./spellcasting-panel";
 
 const sheetTabs = [
   { id: "summary", label: "Summary" },
@@ -28,6 +29,7 @@ const sheetTabs = [
   { id: "combat", label: "Combat" },
   { id: "inventory", label: "Inventory" },
   { id: "features", label: "Features" },
+  { id: "spells", label: "Spells" },
   { id: "skills", label: "Skills" },
   { id: "advancement", label: "Advancement" },
   { id: "notes", label: "Notes" },
@@ -321,6 +323,16 @@ export function CharacterSheetView({
           <div className="summary-utilities">
             <SamplePanel sheet={sheet} />
           </div>
+        </section>
+        <section
+          className="sheet-tab-panel"
+          role="tabpanel"
+          id={viewId + "-sheet-panel-spells"}
+          aria-labelledby={viewId + "-sheet-tab-spells"}
+          tabIndex={0}
+          hidden={activeTab !== "spells"}
+        >
+          <SpellcastingPanel sheet={sheet} />
         </section>
         <section
           className="sheet-tab-panel"

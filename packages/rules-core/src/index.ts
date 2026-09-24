@@ -91,6 +91,8 @@ export {
   skillOutcomePolicy,
 } from "./outcomes.js";
 export { experienceResult } from "./experience.js";
+export { castSpell, concentrationRollPlan, deriveSpellcastingSource, prepareSpells, refreshSpellcasting, slotResourceId } from "./spellcasting.js";
+export type { DerivedSpellcastingSource, SpellCastRequest, SpellCastResult, SpellValidationIssue } from "./spellcasting.js";
 export { applyDamage, applyHealing, setTemporaryHp, clearTemporaryHp } from "./health.js";
 export type { RulesRuntime, EquipmentEntry, ResultOptions } from "./runtime.js";
 export {

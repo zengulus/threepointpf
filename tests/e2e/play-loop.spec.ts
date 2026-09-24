@@ -30,6 +30,7 @@ test("all sheet pages are reachable and Settings preserves the active sheet", as
     "Combat",
     "Inventory",
     "Features",
+    "Spells",
     "Skills",
     "Advancement",
     "Notes",
@@ -44,6 +45,77 @@ test("all sheet pages are reachable and Settings preserves the active sheet", as
   await expect(page.getByRole("heading", { name: "Dice and table integrations" })).toBeVisible();
   await selectTab(page, "Summary");
   await expect(page.getByLabel("Character name")).toHaveValue("Settings Return Hero");
+});
+
+test("spontaneous spell casts use and persist source-owned slots", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await selectTab(page, "Spells");
+  await page.getByRole("textbox", { name: "Source name", exact: true }).fill("Arcane E2E");
+  await page.getByRole("button", { name: "Add source" }).click();
+  await page.getByLabel("Name", { exact: true }).last().fill("E2E Bolt");
+  await page.getByRole("button", { name: "Add custom spell" }).click();
+  await page.getByLabel("Add spell to Arcane E2E").selectOption("local.e2e-bolt");
+  await page.getByRole("button", { name: "Learn spell" }).click();
+  await page.getByRole("button", { name: "Cast", exact: true }).click();
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("E2E Bolt");
+  await dismissDice(page);
+  await expect(page.getByText("1", { exact: true }).last()).toBeVisible();
+  await page.getByRole("button", { name: "Save character" }).click();
+  await expect(page.locator(".sheet-notice")).toContainText("Saved in this browser");
+  await page.reload();
+  await selectTab(page, "Spells");
+  await expect(page.getByRole("heading", { name: "Arcane E2E" })).toBeVisible();
+  const firstLevelSlots = page.locator(".spell-slot-table tr").filter({ has: page.getByRole("rowheader", { name: "1", exact: true }) });
+  await expect(firstLevelSlots.getByRole("cell").last()).toHaveText("0");
+});
+
+test("prepared spell allocations expend independently and refresh with their source", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await selectTab(page, "Spells");
+  await page.getByRole("textbox", { name: "Source name", exact: true }).fill("Prepared E2E");
+  await page.getByRole("combobox", { name: "Mode", exact: true }).selectOption("prepared");
+  await page.getByRole("button", { name: "Add source" }).click();
+  await page.getByLabel("Name", { exact: true }).last().fill("Prepared Bolt");
+  await page.getByRole("button", { name: "Add custom spell" }).click();
+  await page.getByLabel("Add spell to Prepared E2E").selectOption("local.prepared-bolt");
+  await page.getByRole("button", { name: "Add to spellbook" }).click();
+  await page.getByRole("button", { name: "Prepare first spellbook entry" }).click();
+  await page.getByRole("button", { name: "Cast prepared" }).click();
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Prepared Bolt");
+  await dismissDice(page);
+  const source = page.locator(".spell-source").filter({ hasText: "Prepared E2E" });
+  await expect(source.getByText("Expended: 1")).toBeVisible();
+  await expect(source.getByRole("button", { name: "Cast prepared" })).toHaveCount(0);
+  await source.getByRole("button", { name: "Refresh slots and preparations" }).click();
+  await expect(source.getByRole("button", { name: "Cast prepared" })).toBeVisible();
+});
+
+test("two spontaneous sources keep their own spell slots", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await selectTab(page, "Spells");
+  await page.getByRole("textbox", { name: "Source name", exact: true }).fill("Arcane Source A");
+  await page.getByRole("button", { name: "Add source" }).click();
+  await page.getByLabel("Name", { exact: true }).last().fill("Shared Bolt");
+  await page.getByRole("button", { name: "Add custom spell" }).click();
+  await page.getByLabel("Add spell to Arcane Source A").selectOption("local.shared-bolt");
+  await page.getByRole("button", { name: "Learn spell" }).click();
+  await page.getByRole("textbox", { name: "Source name", exact: true }).fill("Arcane Source B");
+  await page.getByRole("button", { name: "Add source" }).click();
+  await page.getByLabel("Add spell to Arcane Source B").selectOption("local.shared-bolt");
+  await page.locator(".spell-source").filter({ hasText: "Arcane Source B" }).getByRole("button", { name: "Learn spell" }).click();
+  const first = page.locator(".spell-source").filter({ hasText: "Arcane Source A" });
+  const second = page.locator(".spell-source").filter({ hasText: "Arcane Source B" });
+  await first.getByRole("button", { name: "Cast", exact: true }).click();
+  await dismissDice(page);
+  const secondLevelOne = second.locator(".spell-slot-table tr").filter({ has: page.getByRole("rowheader", { name: "1", exact: true }) });
+  await expect(secondLevelOne.getByRole("cell").last()).toHaveText("1");
+  await second.getByRole("button", { name: "Cast", exact: true }).click();
+  await dismissDice(page);
+  const firstLevelOne = first.locator(".spell-slot-table tr").filter({ has: page.getByRole("rowheader", { name: "1", exact: true }) });
+  await expect(firstLevelOne.getByRole("cell").last()).toHaveText("0");
 });
 
 test("Summary and Combat use paired action plans for ordinary weapon play", async ({

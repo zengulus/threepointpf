@@ -3870,3 +3870,16 @@ summary:focus-visible {
     flex-direction: column;
   }
 }
+.spellcasting-panel { display: grid; gap: 1rem; }
+.spell-source { margin: 1rem 0; }
+.spell-summary { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; margin: .7rem 0; }
+.spell-summary span, .spell-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.spell-slot-table { width: 100%; border-collapse: collapse; margin: .8rem 0; }
+.spell-slot-table th, .spell-slot-table td { padding: .45rem .6rem; border-bottom: 1px solid var(--line); text-align: left; }
+.spell-entry-row { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0; }
+.spell-list { display: grid; gap: .4rem; margin-top: .8rem; }
+.spell-level-group { display: grid; gap: .35rem; }
+.spell-level-group h4 { margin: .3rem 0 0; color: var(--muted); }
+.spell-row { padding: .6rem 0; border-top: 1px solid var(--line); }
+.spell-row > div { display: grid; gap: .2rem; }
+.spell-row small { color: var(--muted); }

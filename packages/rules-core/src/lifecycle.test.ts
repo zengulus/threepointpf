@@ -281,6 +281,22 @@ describe("character lifecycle domain", () => {
     expect(derived.advancement?.progressionLevels["pf1e.table.wizard"]?.value).toBe(2);
   });
 
+  it("previews caster level, maximum spell level, and slot-capacity changes semantically", () => {
+    const campaign = profile([{ id: "main", name: "Class" }]);
+    const created = commitCharacterCreation(createLevelOne(campaign, [{ trackId: "main", progressionId: "pf1e.table.wizard" }]));
+    const original: CharacterInput = { ...created, spellcastingSources: [{ id: "wizard-casting", name: "Wizard Casting", mode: "prepared", castingAbility: "int", progressionId: "pf1e.table.wizard", spellListId: "arcane", spellListAccess: "spellbook", bonusSlots: "none", progression: [
+      { level: 0, casterLevel: 0, maximumSpellLevel: 0, slots: {} },
+      { level: 1, casterLevel: 1, maximumSpellLevel: 1, slots: { "1": 1 } },
+      { level: 2, casterLevel: 2, maximumSpellLevel: 2, slots: { "1": 2, "2": 1 } },
+    ], spellbookSpellIds: [], preparedSpells: [] }] };
+    const proposal = proposeAdvancement(beginAdvancement(original, campaign, rules), { progressionChoices: { main: "pf1e.table.wizard" }, hpAcquisition: { amount: 4 }, skillAllocation: { ranks: {} } });
+    const changes = previewAdvancement(proposal).changes;
+    expect(changes).toContainEqual(expect.objectContaining({ kind: "casterLevel", label: "Wizard Casting caster level 1 → 2" }));
+    expect(changes).toContainEqual(expect.objectContaining({ kind: "maximumSpellLevel", label: "Wizard Casting maximum spell level 1 → 2" }));
+    expect(changes).toContainEqual(expect.objectContaining({ kind: "spellSlots", label: "Wizard Casting level 1 slots 1 → 2" }));
+    expect(changes).toContainEqual(expect.objectContaining({ kind: "spellSlots", label: "Wizard Casting level 2 slots 0 → 1" }));
+  });
+
   it("preserves current damage and temporary HP across a level-up", () => {
     const campaign = profile([{ id: "main", name: "Class" }]);
     const created = commitCharacterCreation(createLevelOne(campaign, [

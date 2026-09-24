@@ -2,6 +2,7 @@ import {
   parseProgressionCatalog,
   parseSkillCatalog,
   experienceCatalogSchema,
+  spellCatalogSchema,
   type ProgressionAliasMap,
   type ProgressionCatalog,
   type ProgressionDefinition,
@@ -50,6 +51,14 @@ export const experienceCatalog = experienceCatalogSchema.parse(
   generatedAutosheetExperienceCatalog,
 );
 
+/** Small curated examples for the spellcasting foundation, not a full rules corpus. */
+export const spellCatalog = spellCatalogSchema.parse({
+  "sample.magic-missile": { id: "sample.magic-missile", name: "Magic Missile", description: "Force darts strike their targets automatically.", school: "evocation", levels: [{ spellListId: "arcane", level: 1 }], castingTime: { action: "standard" }, components: ["verbal", "somatic"], range: "close", target: "up to five creatures", duration: "instantaneous", savingThrow: { result: "none" }, spellResistance: true, source: { document: "Curated foundation examples", sheet: "sample spell set", system: "PF1e-compatible" } },
+  "sample.fireball": { id: "sample.fireball", name: "Fireball", description: "A burst of fire deals damage in an area.", school: "evocation", levels: [{ spellListId: "arcane", level: 3 }], castingTime: { action: "standard" }, components: ["verbal", "somatic", "material"], range: "long", area: "20-foot-radius spread", duration: "instantaneous", savingThrow: { save: "reflex", result: "half" }, spellResistance: true, execution: { damage: { dice: { count: 1, sides: 6 }, damageType: "fire", perCasterLevel: true, casterLevelCap: 10 } }, source: { document: "Curated foundation examples", sheet: "sample spell set", system: "PF1e-compatible" } },
+  "sample.cure-light-wounds": { id: "sample.cure-light-wounds", name: "Cure Light Wounds", description: "Positive energy heals a living target.", school: "conjuration", descriptors: ["healing"], levels: [{ spellListId: "divine", level: 1 }], castingTime: { action: "standard" }, components: ["verbal", "somatic"], range: "touch", target: "creature touched", duration: "instantaneous", savingThrow: { result: "harmless" }, spellResistance: false, source: { document: "Curated foundation examples", sheet: "sample spell set", system: "PF1e-compatible" } },
+  "sample.detect-magic": { id: "sample.detect-magic", name: "Detect Magic", description: "Sense the presence of magic.", school: "divination", levels: [{ spellListId: "arcane", level: 0 }, { spellListId: "divine", level: 0 }], castingTime: { action: "standard" }, components: ["verbal", "somatic"], range: "60 feet", area: "cone-shaped emanation", duration: "concentration, up to 1 minute/level", savingThrow: { result: "none" }, spellResistance: false, source: { document: "Curated foundation examples", sheet: "sample spell set", system: "PF1e-compatible" } },
+});
+
 /** The application-level composition root; rules semantics remain catalog-free. */
 export const rulesCatalogs = {
   progressionCatalog,
@@ -59,6 +68,7 @@ export const rulesCatalogs = {
   equipmentCatalog,
   attackProfileCatalog,
   experienceCatalog,
+  spellCatalog,
 };
 
 export function progressionOptions(

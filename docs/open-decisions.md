@@ -192,3 +192,4 @@ feature instances remain compatible.
     or generic lifecycle choices; those are authored as data/JSON today.
     Whether that stays a power-user path or gains a form is a product choice,
     and it should follow decision 9 and the lifecycle-choice decision above.
+15. **Spellcasting source choice authoring.** The advancement model can bind a selected source ID to a regular progression feature choice and lifecycle selection. Remaining question: whether expert authoring should generate that linked feature-choice metadata from a simpler prestige editor instead of requiring content authors to keep the two references aligned.

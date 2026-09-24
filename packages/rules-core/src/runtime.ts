@@ -20,7 +20,7 @@ import type {
   SkillCatalog,
   TargetId,
 } from "@threepointpf/rules-schema";
-import type { ProgressionLevelResult } from "./advancement.js";
+import type { ProgressionLevelResult, SpellcastingLevelContribution } from "./advancement.js";
 
 /** An equipment instance with its catalog definition already merged in. */
 export interface EquipmentEntry extends EquipmentInstance {
@@ -65,6 +65,8 @@ export interface RulesRuntime {
   /** Character-global progression levels from the advancement evaluation. */
   advancementProgressionLevels(): ProgressionLevelResult[];
   progressionDefinition(id: string): ProgressionDefinition | undefined;
+  spellcastingLevel(sourceId: string, fallbackProgressionId?: string, manualLevel?: number): number;
+  spellcastingContributions(sourceId: string): SpellcastingLevelContribution[];
   /** The injected progression catalog, when advancement content is present. */
   readonly progressionCatalog?: ProgressionCatalog;
   /** Situational flags contributed by enabled features. */

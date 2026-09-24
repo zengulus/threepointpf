@@ -39,7 +39,9 @@ describe("character portability", () => {
       ] })),
       equipment: [{ id: "ogre-boneplate", name: "Ogre boneplate", equipped: true, weight: 35, effects: [{ kind: "modifier", target: "ac", value: 5, bonusType: "armor", appliesTo: ["normal", "flatFooted"] }] }],
       resources: [{ id: "shared-resource", name: "Ogre fury", maximum: { kind: "fixed", value: 3 }, refresh: { kind: "daily" } }],
-      resourceStates: [{ resourceId: "shared-resource", spent: 2 }],
+      spellcastingSources: [{ id: "wizard-track", name: "Wizard Casting", mode: "prepared", castingAbility: "int", progressionId: "pf1e.paizo.wizard", spellListId: "arcane", spellListAccess: "spellbook", bonusSlots: "none", progression: [{ level: 1, casterLevel: 1, maximumSpellLevel: 1, slots: { "1": 1 } }], spellbookSpellIds: ["local.test-spell"], preparedSpells: [{ id: "prepared-copy", spellId: "local.test-spell", spellLevel: 1, expended: true }] }],
+      customSpells: { "local.test-spell": { id: "local.test-spell", name: "Local Spark", description: "A local spell.", school: "evocation", levels: [{ spellListId: "arcane", level: 1 }], castingTime: { action: "standard" }, components: [], savingThrow: { result: "none" }, source: { document: "Character content", sheet: "local spell", system: "homebrew" } } },
+      resourceStates: [{ resourceId: "shared-resource", spent: 2 }, { resourceId: "spell.wizard-track.slot.1", spent: 1 }],
       abilities: [
         { id: "ogre-roar", name: "Ogre roar", activation: "passive", effects: [{ kind: "modifier", target: "skill.intimidate", value: 1, bonusType: "untyped" }] },
         { id: "ogre-fury", name: "Ogre fury", activation: "activated", effects: [], costs: [{ resourceId: "shared-resource", amount: 1, timing: "onUse" }] },
