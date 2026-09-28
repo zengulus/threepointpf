@@ -24,6 +24,7 @@ import {
   type DerivedProgressionFeature,
   type Effect,
   type EquipmentCatalog,
+  type EquipmentMaterialCatalog,
   type EvaluationResult,
   type ExcludedContribution,
   type ExperienceCatalog,
@@ -137,6 +138,7 @@ export interface RulesEngineOptions {
   featureCatalog?: FeatureCatalog;
   abilityCatalog?: AbilityCatalog;
   equipmentCatalog?: EquipmentCatalog;
+  equipmentMaterialCatalog?: EquipmentMaterialCatalog;
   attackProfileCatalog?: AttackProfileCatalog;
   experienceCatalog?: ExperienceCatalog;
   /**
@@ -218,7 +220,7 @@ export class RulesEngine implements RulesRuntime {
           },
         });
     }
-    this.equipment = resolveEquipment(character, options.equipmentCatalog);
+    this.equipment = resolveEquipment(character, options.equipmentCatalog, options.equipmentMaterialCatalog);
     effects.push(...collectEquipmentEffects(this.equipment));
     this.effects = effects.map((effect) => effectSchema.parse(effect));
     this.featureFlags = [...new Set([
@@ -857,10 +859,18 @@ export class RulesEngine implements RulesRuntime {
     const skillKeys = new Set(Object.keys(this.character.skillRanks));
     for (const id of Object.keys(this.character.skills ?? {}))
       skillKeys.add(id);
-    for (const id of Object.keys(this.skillCatalog ?? {})) skillKeys.add(id);
+    const consolidatedSkills = this.character.workbookOptions?.skillMode === "consolidated";
+    for (const id of skillKeys) {
+      const system = this.skillCatalog?.[id]?.system;
+      if (system && (system === "consolidated") !== consolidatedSkills) skillKeys.delete(id);
+    }
+    for (const [id, definition] of Object.entries(this.skillCatalog ?? {})) {
+      if ((definition.system === "consolidated") === consolidatedSkills) skillKeys.add(id);
+    }
     for (const progression of this.advancement?.progressionLevels ?? []) {
-      for (const id of this.progressionCatalog?.[progression.id]?.classSkills ??
-        [])
+      const definition = this.progressionCatalog?.[progression.id];
+      const classSkills = consolidatedSkills ? definition?.consolidatedClassSkills : definition?.classSkills;
+      for (const id of classSkills ?? [])
         skillKeys.add(id);
     }
     const skills: Record<string, DerivedSkillLike> = {};

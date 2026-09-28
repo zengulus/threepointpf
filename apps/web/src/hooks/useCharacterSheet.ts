@@ -5,7 +5,7 @@ import {
   type ResolvedRoll,
   type RollPlan,
 } from "@threepointpf/dice";
-import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, setTemporaryHp } from "@threepointpf/rules-core";
+import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, mitigateDamage, setTemporaryHp, unchainedWoundPenalty } from "@threepointpf/rules-core";
 import {
   attackFromProfile,
   attackProfileCatalog,
@@ -320,7 +320,25 @@ export function useCharacterSheetController({
   );
   const evaluated = useMemo(() => {
     try {
-      const engine = new RulesEngine(character, rulesCatalogs);
+      let evaluationCharacter = character;
+      if (character.workbookOptions?.woundThresholds) {
+        const baseline = new RulesEngine(character, rulesCatalogs).derive();
+        const penalty = unchainedWoundPenalty(baseline.currentHp, baseline.maxHp.value);
+        if (penalty) {
+          const source = { id: "autosheet.unchained-wounds", label: "Unchained Wound System" };
+          const effects: Effect[] = [
+            { kind: "modifier", target: "ac", value: penalty, bonusType: "penalty", appliesTo: ["normal", "touch", "flatFooted"], source },
+            ...(["fortitude", "reflex", "will"] as const).map((save) => ({ kind: "modifier" as const, target: `save.${save}` as const, value: penalty, bonusType: "penalty" as const, source })),
+            { kind: "modifier" as const, target: "attack.melee" as const, value: penalty, bonusType: "penalty" as const, source },
+            { kind: "modifier" as const, target: "attack.ranged" as const, value: penalty, bonusType: "penalty" as const, source },
+            { kind: "modifier" as const, target: "skill.all" as const, value: penalty, bonusType: "penalty" as const, source },
+            { kind: "modifier" as const, target: "casterLevel" as const, value: penalty, bonusType: "penalty" as const, source },
+          ];
+          const feature: FeatureInstance = { id: "autosheet-unchained-wounds", name: "Unchained Wound System", description: `Current HP threshold penalty: ${penalty}.`, enabled: true, effects };
+          evaluationCharacter = { ...character, features: [...character.features, feature] };
+        }
+      }
+      const engine = new RulesEngine(evaluationCharacter, rulesCatalogs);
       return { engine, derived: engine.derive(), error: null as string | null };
     } catch (failure) {
       const engine = new RulesEngine(defaultSample().character, rulesCatalogs);
@@ -365,9 +383,12 @@ export function useCharacterSheetController({
     try { apply(operation(character), message); }
     catch (failure) { fail(errorText(failure)); }
   };
-  const takeDamage = (amount: number) => {
-    const absorbed = Math.min(character.temporaryHp, amount);
-    healthAction((value) => applyDamage(value, amount), `Took ${amount} damage: ${absorbed} temporary HP absorbed, ${amount - absorbed} HP lost`);
+  const takeDamage = (amount: number, damageType = "untyped", bypass?: string) => {
+    try {
+      const mitigation = mitigateDamage(character, amount, damageType, bypass);
+      const absorbed = Math.min(character.temporaryHp, mitigation.afterDamageReduction);
+      apply(applyDamage(character, mitigation.afterDamageReduction), `Took ${amount} ${damageType} damage: ${mitigation.immune ? "immune" : `${mitigation.resistance} resistance and ${mitigation.damageReduction} DR`} applied; ${absorbed} temporary HP absorbed, ${mitigation.afterDamageReduction - absorbed} HP lost`);
+    } catch (failure) { fail(errorText(failure)); }
   };
   const heal = (amount: number) => healthAction((value) => applyHealing(value, amount), `Healed ${amount} HP`);
   const grantTemporaryHp = (amount: number) => healthAction((value) => setTemporaryHp(value, amount), `Temporary HP set to ${amount}`);

@@ -180,6 +180,7 @@ export type ManeuverId = (typeof maneuverIds)[number] | (string & {});
 export const rollKinds = [
   "attack",
   "damage",
+  "healing",
   "maneuver",
   "save",
   "skill",
@@ -705,6 +706,8 @@ export interface NonAcModifierEffect {
   target: Exclude<EffectTargetId, "ac">;
   value: number;
   bonusType: BonusType;
+  /** Damage subtype for a flat damage contribution (for example, bleed). */
+  damageType?: string;
   source?: SourceReference;
   scaling?: BabStepScaling;
   /** Legacy tag/mode filter; new content should use `appliesWhen`. */
@@ -819,6 +822,13 @@ export interface AbilityInstance {
   priority?: number;
   /** Optional semantic link for spell-like abilities; ability costs remain authoritative. */
   spellId?: string;
+  /** Workbook spell-like category, including at-will/constant tracking. */
+  spellLike?: boolean;
+  spellLikeFrequency?: "onePerDay" | "threePerDay" | "atWill" | "constant" | "custom";
+  /** Daily uses; omitted means unlimited or passive. */
+  usesPerDay?: number;
+  /** Daily uses already spent. */
+  usesSpent?: number;
 }
 
 /** Spell levels are associated with lists, never assumed to be universal. */
@@ -830,13 +840,28 @@ export interface SpellDefinition {
   range?: string; target?: string; area?: string; duration?: string;
   savingThrow?: { save?: SaveId; result: "negates" | "half" | "partial" | "disbelief" | "harmless" | "none" };
   spellResistance?: boolean;
-  execution?: { damage?: { dice: DiceExpression; damageType: string; perCasterLevel?: boolean; casterLevelCap?: number }; attack?: "meleeTouch" | "rangedTouch" };
+  execution?: { damage?: { dice: DiceExpression; damageType: string; perCasterLevel?: boolean; casterLevelCap?: number }; healing?: { dice: DiceExpression; perCasterLevel?: boolean; casterLevelCap?: number; flatBonus?: number; bonusPerCasterLevel?: boolean; casterLevelBonusCap?: number }; attack?: "meleeTouch" | "rangedTouch" };
   source?: ProgressionSourceMetadata;
 }
 export type SpellCatalog = Record<string, SpellDefinition>;
 export interface SpellSlotProgressionRow {
   level: number; casterLevel: number; maximumSpellLevel: number;
   slots: Record<string, number>; spellsKnown?: Record<string, number>;
+  /** Spell levels available without a daily slot, such as spontaneous cantrips. */
+  unlimitedSpellLevels?: number[];
+}
+/** A workbook class chart that can seed a character-owned casting source. */
+export interface SpellcastingClassTemplate {
+  sourceId: string;
+  progressionId: string;
+  name: string;
+  mode: "prepared" | "spontaneous";
+  castingAbility: AbilityId;
+  spellListId: string;
+  spellListAccess: "list" | "spellbook";
+  bonusSlots: "standard" | "none";
+  progression: SpellSlotProgressionRow[];
+  source?: ProgressionSourceMetadata;
 }
 export interface SpellcastingAdvancement {
   /** Global identity is stable across advancement tracks. */
@@ -946,6 +971,8 @@ export interface ChoiceSelection {
 
 export const hpAcquisitionMethods = [
   "maximum",
+  "averageDown",
+  "averageUp",
   "fixed",
   "rolled",
   "manual",
@@ -1032,6 +1059,10 @@ export interface MaximumHpAcquisitionRule {
   kind: "maximum";
 }
 
+export interface AverageHpAcquisitionRule {
+  kind: "averageDown" | "averageUp";
+}
+
 export interface FixedHpAcquisitionRule {
   kind: "fixed";
   amount: number;
@@ -1055,6 +1086,7 @@ export interface CustomHpAcquisitionRule {
 
 export type HpAcquisitionRule =
   | MaximumHpAcquisitionRule
+  | AverageHpAcquisitionRule
   | FixedHpAcquisitionRule
   | RolledHpAcquisitionRule
   | ManualHpAcquisitionRule
@@ -1168,6 +1200,7 @@ export interface SkillDefinition {
   governingAbility: AbilityId;
   trainedOnly?: boolean;
   armorCheckPenalty?: boolean;
+  system?: "classic" | "consolidated";
   source?: ProgressionSourceMetadata;
 }
 
@@ -1234,14 +1267,35 @@ export interface EquipmentDefinition {
   reduceLandSpeed?: boolean;
   /** Retained source metadata; spellcasting failure is not evaluated yet. */
   arcaneSpellFailureChance?: number;
+  /** Workbook armor/shield material compatibility class. */
+  materialType?: string;
   weight?: number;
   source?: ProgressionSourceMetadata;
 }
 export type EquipmentCatalog = Record<string, EquipmentDefinition>;
+export interface EquipmentMaterialVariant {
+  materialType: string;
+  shield?: boolean;
+  armorClassAdjustment?: number;
+  maxDexterityAdjustment?: number;
+  armorCheckPenaltyAdjustment?: number;
+  arcaneSpellFailureAdjustment?: number;
+  weightCategoryAdjustment?: number;
+  notes?: string;
+  source?: ProgressionSourceMetadata;
+}
+export interface EquipmentMaterialDefinition {
+  id: string;
+  name: string;
+  variants: EquipmentMaterialVariant[];
+  source?: ProgressionSourceMetadata;
+}
+export type EquipmentMaterialCatalog = Record<string, EquipmentMaterialDefinition>;
 export interface EquipmentInstance {
   id: string;
   definitionId?: string;
   name?: string;
+  kind?: EquipmentDefinition["kind"];
   equipped: boolean;
   effects?: Effect[];
   attack?: AttackDefinition;
@@ -1250,6 +1304,84 @@ export interface EquipmentInstance {
   reduceLandSpeed?: boolean;
   weight?: number;
   quantity?: number;
+  carried?: boolean;
+  price?: number;
+  slot?: string;
+  material?: string;
+  materialType?: string;
+  arcaneSpellFailureChance?: number;
+  containerId?: string;
+  containerCapacity?: number;
+  containerWeightMultiplier?: number;
+}
+
+export interface CharacterInventory {
+  platinum?: number;
+  gold?: number;
+  silver?: number;
+  copper?: number;
+  storageNotes?: string;
+  companion?: { name?: string; size?: SizeCategory; strength?: number; items?: EquipmentInstance[] };
+}
+
+export const characterSystemKinds = ["maneuvers", "veilweaving", "spheresOfPower", "spheresOfMight", "psionics", "ffd20"] as const;
+export type CharacterSystemKind = (typeof characterSystemKinds)[number];
+export interface CharacterSystemProgressionRow {
+  level: number;
+  casterLevel: number;
+  maximumTier: number;
+  resourceMaximum?: number;
+  resourceBonusByAbility?: Record<string, number>;
+  knownCount?: number;
+  knownByTier?: Record<string, number>;
+  talentCount?: number;
+}
+export interface CharacterSystemEntry {
+  id: string;
+  name: string;
+  category?: string;
+  tier?: number;
+  ranks?: number;
+  description?: string;
+  known?: boolean;
+  prepared?: boolean;
+  readied?: boolean;
+  expended?: boolean;
+  resourceCost?: number;
+  usesPerDay?: number;
+  usesSpent?: number;
+  /** Authored roll for a specialized spell, power, maneuver, or veil. */
+  roll?: { kind: "damage" | "healing"; dice: DiceExpression; damageType?: string; perCasterLevel?: boolean; casterLevelCap?: number; flatBonus?: number };
+}
+/** Character-owned table-backed pages for martial and nonstandard magic tabs. */
+export interface CharacterSystemSource {
+  id: string;
+  kind: CharacterSystemKind;
+  name: string;
+  progressionId?: string;
+  keyAbility: AbilityId;
+  level?: number;
+  casterLevelBonus?: number;
+  effectiveBabBonus?: number;
+  dcAdjustment?: number;
+  resourceName?: string;
+  resourceSpent?: number;
+  /** Manual workbook adjustment added to the calculated resource maximum. */
+  resourceMaximumBonus?: number;
+  progression: CharacterSystemProgressionRow[];
+  entries: CharacterSystemEntry[];
+  notes?: string;
+}
+/** An imported class-chart profile that seeds a character-owned special system. */
+export interface CharacterSystemTemplate {
+  id: string;
+  kind: CharacterSystemKind;
+  name: string;
+  progressionId: string;
+  keyAbility: AbilityId;
+  resourceName?: string;
+  progression: CharacterSystemProgressionRow[];
+  source?: ProgressionSourceMetadata;
 }
 
 export const babProgressions = [
@@ -1312,10 +1444,13 @@ export interface ProgressionDefinition {
   saveProgressions: Record<SaveId, SaveProgression>;
   skillPointsPerLevel?: number;
   classSkills?: string[];
+  consolidatedClassSkills?: string[];
   classSkillsSource?: ProgressionSourceMetadata;
   features?: ProgressionFeatureDefinition[];
   /** Typed level contribution; no class-name behavior is inferred. */
   spellcastingAdvancement?: SpellcastingAdvancement[];
+  spellcastingTemplates?: SpellcastingClassTemplate[];
+  characterSystemTemplates?: CharacterSystemTemplate[];
   /** When present, the evaluator uses these cumulative values instead of the generic chassis formula. */
   chart?: ProgressionChartLevel[];
   /** Historical ids that are normalized to this source-qualified id on load. */
@@ -1350,6 +1485,15 @@ export interface CharacterInput {
   id: string;
   campaignId?: string;
   name: string;
+  /** Player-facing identity and descriptive sections from the Main Sheet. */
+  record?: CharacterRecord;
+  /** Character-sheet defenses that are not represented by the attack/AC bonus engine. */
+  defenses?: CharacterDefenses;
+  nonlethalDamage?: number;
+  inventory?: CharacterInventory;
+  systems?: CharacterSystemSource[];
+  /** Optional Autosheet rule switches; each follows the Welcome Page default when absent. */
+  workbookOptions?: { woundThresholds?: boolean; minimumFourPlusIntSkillRanks?: boolean; backgroundSkills?: boolean; skillMode?: "background" | "classic" | "consolidated" | "ultimate-psionics-background" };
   baseAbilities: AbilityScores;
   /** Manual/legacy baseline. Omit in advancement mode. */
   baseBab?: number;
@@ -1392,6 +1536,45 @@ export interface CharacterInput {
   baseSpeeds?: Partial<Record<MovementMode, number>>;
   /** Structural size baseline; relative size effects adjust it in ordered steps. */
   baseSize?: SizeCategory;
+}
+
+export interface CharacterRecord {
+  alignment?: string;
+  race?: string;
+  deity?: string;
+  age?: string;
+  ageCategory?: string;
+  height?: string;
+  weight?: string;
+  homeland?: string;
+  gender?: string;
+  languages?: string[];
+  traits?: string[];
+  drawbacks?: string[];
+  racialFeatures?: string[];
+  classFeatures?: string[];
+  feats?: string[];
+  story?: {
+    background?: string;
+    raisedWith?: string;
+    learnedSkillsFrom?: string;
+    lifeGoals?: string;
+    beliefs?: string;
+    flaws?: string;
+    fears?: string;
+    notes?: string;
+  };
+  savingThrowNotes?: string;
+  armorClassNotes?: string;
+  attackNotes?: string;
+  armorNotes?: string;
+}
+
+export interface CharacterDefenses {
+  damageReduction?: Array<{ amount: number; bypass?: string }>;
+  spellResistance?: number;
+  energyResistances?: Record<string, number>;
+  energyImmunities?: string[];
 }
 
 export const diceExpressionSchema = z.object({
@@ -1560,6 +1743,7 @@ const nonAcModifierSchema = z.object({
   ),
   value: z.number().finite(),
   bonusType: z.enum(bonusTypes),
+  damageType: z.string().min(1).optional(),
   source: sourceReferenceSchema.optional(),
   scaling: scalingSchema.optional(),
   attackSelector: attackSelectorSchema.optional(),
@@ -1913,6 +2097,8 @@ export const characterLifecycleStateSchema: z.ZodType<CharacterLifecycleState> =
 export const hpAcquisitionRuleSchema: z.ZodType<HpAcquisitionRule> = z
   .discriminatedUnion("kind", [
     z.object({ kind: z.literal("maximum") }),
+    z.object({ kind: z.literal("averageDown") }),
+    z.object({ kind: z.literal("averageUp") }),
     z.object({
       kind: z.literal("fixed"),
       amount: z.number().finite().nonnegative(),
@@ -2088,6 +2274,10 @@ export const abilityInstanceSchema: z.ZodType<AbilityInstance> = z.object({
   exclusiveGroup: z.string().min(1).optional(),
   priority: z.number().finite().int().optional(),
   spellId: z.string().min(1).optional(),
+  spellLike: z.boolean().optional(),
+  spellLikeFrequency: z.enum(["onePerDay", "threePerDay", "atWill", "constant", "custom"]).optional(),
+  usesPerDay: z.number().finite().int().nonnegative().optional(),
+  usesSpent: z.number().finite().int().nonnegative().optional(),
 });
 const castingTimeSchema = z.union([
   z.object({ action: z.enum(["standard", "swift", "immediate", "fullRound", "move", "free"]) }),
@@ -2100,7 +2290,7 @@ export const spellDefinitionSchema: z.ZodType<SpellDefinition> = z.object({
   castingTime: castingTimeSchema, components: z.array(z.string()), range: z.string().optional(), target: z.string().optional(), area: z.string().optional(), duration: z.string().optional(),
   savingThrow: z.object({ save: saveIdSchema.optional(), result: z.enum(["negates", "half", "partial", "disbelief", "harmless", "none"]) }).optional(),
   spellResistance: z.boolean().optional(),
-  execution: z.object({ damage: z.object({ dice: diceExpressionSchema, damageType: z.string().min(1), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional() }).optional(), attack: z.enum(["meleeTouch", "rangedTouch"]).optional() }).optional(),
+  execution: z.object({ damage: z.object({ dice: diceExpressionSchema, damageType: z.string().min(1), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional() }).optional(), healing: z.object({ dice: diceExpressionSchema, perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional(), flatBonus: z.number().finite().optional(), bonusPerCasterLevel: z.boolean().optional(), casterLevelBonusCap: z.number().int().positive().optional() }).optional(), attack: z.enum(["meleeTouch", "rangedTouch"]).optional() }).optional(),
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 export const spellCatalogSchema: z.ZodType<SpellCatalog> = z.record(spellDefinitionSchema).superRefine((catalog, context) => {
@@ -2110,6 +2300,18 @@ const spellProgressionRowSchema: z.ZodType<SpellSlotProgressionRow> = z.object({
   level: z.number().int().nonnegative(), casterLevel: z.number().int().nonnegative(), maximumSpellLevel: z.number().int().nonnegative(),
   slots: z.record(z.string().regex(/^\d+$/), z.number().int().nonnegative()),
   spellsKnown: z.record(z.string().regex(/^\d+$/), z.number().int().nonnegative()).optional(),
+  unlimitedSpellLevels: z.array(z.number().int().nonnegative()).optional(),
+});
+const spellcastingClassTemplateSchema: z.ZodType<SpellcastingClassTemplate> = z.object({
+  sourceId: z.string().min(1), progressionId: z.string().min(1), name: z.string().min(1),
+  mode: z.enum(["prepared", "spontaneous"]), castingAbility: abilityIdSchema,
+  spellListId: z.string().min(1), spellListAccess: z.enum(["list", "spellbook"]), bonusSlots: z.enum(["standard", "none"]),
+  progression: z.array(spellProgressionRowSchema).min(1), source: z.lazy(() => progressionSourceMetadataSchema).optional(),
+});
+const characterSystemTemplateSchema: z.ZodType<CharacterSystemTemplate> = z.object({
+  id: z.string().min(1), kind: z.enum(characterSystemKinds), name: z.string().min(1), progressionId: z.string().min(1), keyAbility: abilityIdSchema,
+  resourceName: z.string().optional(), progression: z.array(z.object({ level: z.number().int().nonnegative(), casterLevel: z.number().int().nonnegative(), maximumTier: z.number().int().nonnegative(), resourceMaximum: z.number().int().nonnegative().optional(), resourceBonusByAbility: z.record(z.string().regex(/^\d+$/), z.number().int().nonnegative()).optional(), knownCount: z.number().int().nonnegative().optional(), knownByTier: z.record(z.string().regex(/^\d+$/), z.number().int().nonnegative()).optional(), talentCount: z.number().int().nonnegative().optional() })).min(1),
+  source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 const spellcastingAdvancementSchema: z.ZodType<SpellcastingAdvancement> = z.object({ sourceId: z.string().min(1).optional(), progressionId: z.string().min(1), levels: z.number().int().positive(), selection: z.literal("source").optional(), choiceFeatureId: z.string().min(1).optional(), choiceRequirementId: z.string().min(1).optional() }).superRefine((rule, context) => {
   if (rule.selection === "source" && (!rule.choiceFeatureId || !rule.choiceRequirementId)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["choiceRequirementId"], message: "Source choices must reference a lifecycle feature and requirement" });
@@ -2268,13 +2470,24 @@ export const equipmentDefinitionSchema: z.ZodType<EquipmentDefinition> =
     armorCheckPenalty: z.number().finite().nonpositive().optional(),
     reduceLandSpeed: z.boolean().optional(),
     arcaneSpellFailureChance: z.number().finite().min(0).max(1).optional(),
+    materialType: z.string().optional(),
     weight: z.number().finite().nonnegative().optional(),
     source: progressionSourceMetadataSchema.optional(),
   });
+const equipmentMaterialVariantSchema: z.ZodType<EquipmentMaterialVariant> = z.object({
+  materialType: z.string().min(1), shield: z.boolean().optional(),
+  armorClassAdjustment: z.number().finite().optional(), maxDexterityAdjustment: z.number().finite().optional(),
+  armorCheckPenaltyAdjustment: z.number().finite().optional(), arcaneSpellFailureAdjustment: z.number().finite().optional(),
+  weightCategoryAdjustment: z.number().finite().optional(), notes: z.string().optional(), source: progressionSourceMetadataSchema.optional(),
+});
+export const equipmentMaterialCatalogSchema: z.ZodType<EquipmentMaterialCatalog> = z.record(z.object({ id: z.string().min(1), name: z.string().min(1), variants: z.array(equipmentMaterialVariantSchema).min(1), source: progressionSourceMetadataSchema.optional() })).superRefine((catalog, context) => {
+  for (const [id, material] of Object.entries(catalog)) if (material.id !== id) context.addIssue({ code: z.ZodIssueCode.custom, path: [id], message: "Equipment material catalog key must match definition id" });
+});
 export const equipmentInstanceSchema: z.ZodType<EquipmentInstance> = z.object({
   id: z.string().min(1),
   definitionId: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
+  kind: z.enum(["armor", "shield", "weapon", "wondrous", "other"]).optional(),
   equipped: z.boolean(),
   effects: z.array(effectSchema).optional(),
   attack: attackDefinitionSchema.optional(),
@@ -2283,6 +2496,15 @@ export const equipmentInstanceSchema: z.ZodType<EquipmentInstance> = z.object({
   reduceLandSpeed: z.boolean().optional(),
   weight: z.number().finite().nonnegative().optional(),
   quantity: z.number().finite().int().positive().optional(),
+  carried: z.boolean().optional(),
+  price: z.number().finite().nonnegative().optional(),
+  slot: z.string().optional(),
+  material: z.string().optional(),
+  materialType: z.string().optional(),
+  arcaneSpellFailureChance: z.number().finite().min(0).max(1).optional(),
+  containerId: z.string().min(1).optional(),
+  containerCapacity: z.number().finite().nonnegative().optional(),
+  containerWeightMultiplier: z.number().finite().min(0).max(1).optional(),
 });
 function catalogSchema<T extends { id: string }>(
   schema: z.ZodType<T>,
@@ -2350,6 +2572,7 @@ export const skillDefinitionSchema: z.ZodType<SkillDefinition> = z.object({
   governingAbility: abilityIdSchema,
   trainedOnly: z.boolean().optional(),
   armorCheckPenalty: z.boolean().optional(),
+  system: z.enum(["classic", "consolidated"]).optional(),
   source: progressionSourceMetadataSchema.optional(),
 });
 export const skillCatalogSchema: z.ZodType<SkillCatalog> = z
@@ -2378,8 +2601,11 @@ export const progressionDefinitionSchema: z.ZodType<ProgressionDefinition> = z
     skillPointsPerLevel: z.number().finite().int().nonnegative().optional(),
     classSkillsSource: progressionSourceMetadataSchema.optional(),
     classSkills: z.array(skillIdSchema).optional(),
+    consolidatedClassSkills: z.array(skillIdSchema).optional(),
     features: z.array(progressionFeatureDefinitionSchema).optional(),
     spellcastingAdvancement: z.array(spellcastingAdvancementSchema).optional(),
+    spellcastingTemplates: z.array(spellcastingClassTemplateSchema).optional(),
+    characterSystemTemplates: z.array(characterSystemTemplateSchema).optional(),
     chart: z.array(progressionChartLevelSchema).min(1).optional(),
     aliases: z.array(z.string().min(1)).optional(),
     source: progressionSourceMetadataSchema.optional(),
@@ -2616,6 +2842,43 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
     id: z.string().min(1),
     campaignId: z.string().optional(),
     name: z.string().min(1),
+    record: z.object({
+      alignment: z.string().optional(), race: z.string().optional(), deity: z.string().optional(),
+      age: z.string().optional(), ageCategory: z.string().optional(), height: z.string().optional(),
+      weight: z.string().optional(), homeland: z.string().optional(), gender: z.string().optional(),
+      languages: z.array(z.string()).optional(), traits: z.array(z.string()).optional(),
+      drawbacks: z.array(z.string()).optional(), racialFeatures: z.array(z.string()).optional(),
+      classFeatures: z.array(z.string()).optional(), feats: z.array(z.string()).optional(),
+      story: z.object({ background: z.string().optional(), raisedWith: z.string().optional(),
+        learnedSkillsFrom: z.string().optional(), lifeGoals: z.string().optional(), beliefs: z.string().optional(),
+        flaws: z.string().optional(), fears: z.string().optional(), notes: z.string().optional() }).optional(),
+      savingThrowNotes: z.string().optional(), armorClassNotes: z.string().optional(),
+      attackNotes: z.string().optional(), armorNotes: z.string().optional(),
+    }).optional(),
+    defenses: z.object({
+      damageReduction: z.array(z.object({ amount: z.number().finite().nonnegative(), bypass: z.string().optional() })).optional(),
+      spellResistance: z.number().finite().nonnegative().optional(),
+      energyResistances: z.record(z.number().finite().nonnegative()).optional(),
+      energyImmunities: z.array(z.string().min(1)).optional(),
+    }).optional(),
+    nonlethalDamage: z.number().finite().nonnegative().optional(),
+    inventory: z.object({
+      platinum: z.number().finite().nonnegative().optional(), gold: z.number().finite().nonnegative().optional(),
+      silver: z.number().finite().nonnegative().optional(), copper: z.number().finite().nonnegative().optional(),
+      storageNotes: z.string().optional(),
+      companion: z.object({ name: z.string().optional(), size: z.enum(sizeCategories).optional(), strength: z.number().finite().positive().optional(), items: z.array(equipmentInstanceSchema).optional() }).optional(),
+    }).optional(),
+    systems: z.array(z.object({
+      id: z.string().min(1), kind: z.enum(characterSystemKinds), name: z.string().min(1),
+      progressionId: z.string().min(1).optional(), keyAbility: abilityIdSchema,
+      level: z.number().finite().int().nonnegative().optional(),
+      casterLevelBonus: z.number().finite().optional(), effectiveBabBonus: z.number().finite().optional(), dcAdjustment: z.number().finite().optional(),
+      resourceName: z.string().optional(), resourceSpent: z.number().finite().nonnegative().optional(), resourceMaximumBonus: z.number().finite().optional(),
+      progression: z.array(z.object({ level: z.number().int().positive(), casterLevel: z.number().finite().nonnegative(), maximumTier: z.number().finite().nonnegative(), resourceMaximum: z.number().finite().nonnegative().optional(), resourceBonusByAbility: z.record(z.string().regex(/^\d+$/), z.number().finite().nonnegative()).optional(), knownCount: z.number().finite().nonnegative().optional(), knownByTier: z.record(z.string().regex(/^\d+$/), z.number().finite().nonnegative()).optional(), talentCount: z.number().finite().nonnegative().optional() })),
+      entries: z.array(z.object({ id: z.string().min(1), name: z.string().min(1), category: z.string().optional(), tier: z.number().finite().nonnegative().optional(), ranks: z.number().finite().nonnegative().optional(), description: z.string().optional(), known: z.boolean().optional(), prepared: z.boolean().optional(), readied: z.boolean().optional(), expended: z.boolean().optional(), resourceCost: z.number().finite().nonnegative().optional(), usesPerDay: z.number().finite().int().nonnegative().optional(), usesSpent: z.number().finite().int().nonnegative().optional(), roll: z.object({ kind: z.enum(["damage", "healing"]), dice: diceExpressionSchema, damageType: z.string().min(1).optional(), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional(), flatBonus: z.number().finite().optional() }).optional() })),
+      notes: z.string().optional(),
+    })).optional(),
+    workbookOptions: z.object({ woundThresholds: z.boolean().optional(), minimumFourPlusIntSkillRanks: z.boolean().optional(), backgroundSkills: z.boolean().optional(), skillMode: z.enum(["background", "classic", "consolidated", "ultimate-psionics-background"]).optional() }).optional(),
     customProgressions: progressionCatalogSchema.optional(),
     lifecycle: characterLifecycleStateSchema.optional(),
     experience: z
@@ -2678,6 +2941,10 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
     baseSize: z.enum(sizeCategories).optional(),
   })
   .superRefine((character, context) => {
+    if (character.defenses?.energyResistances)
+      for (const [damageType, value] of Object.entries(character.defenses.energyResistances))
+        if (!damageType.trim() || value < 0)
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["defenses", "energyResistances", damageType], message: "Resistance needs a damage type and non-negative value" });
     if (
       character.baseLandSpeed !== undefined &&
       character.baseSpeeds?.land !== undefined &&
@@ -2688,7 +2955,7 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
         path: ["baseSpeeds", "land"],
         message: "baseLandSpeed and baseSpeeds.land disagree",
       });
-    for (const key of ["features", "abilities", "resources", "attacks", "equipment"] as const) {
+    for (const key of ["features", "abilities", "resources", "attacks", "equipment", "systems"] as const) {
       const ids = new Set<string>();
       for (const item of character[key] ?? []) {
         if (ids.has(item.id))
@@ -2824,6 +3091,8 @@ export interface Contribution {
   label: string;
   source: string;
   bonusType?: BonusType;
+  /** Damage subtype when this contribution is a typed flat damage bonus. */
+  damageType?: string;
   appliesTo?: DefenseContext[];
   /** Nested evidence for a derived contribution, such as STR modifier ← STR score ← Rage. */
   children?: Contribution[];

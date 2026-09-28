@@ -42,6 +42,336 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-finesse",
+      "consolidated-spellcraft",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.alchemist.spellcasting",
+        "progressionId": "pf1e.paizo.alchemist.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.alchemist.spellcasting",
+        "progressionId": "pf1e.paizo.alchemist.spellcasting-table",
+        "name": "Alchemist",
+        "mode": "prepared",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "spellbook",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 3,
+          "range": "I3:K3; A358:K378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -87,6 +417,246 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "stealth"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.antipaladin.spellcasting",
+        "progressionId": "pf1e.paizo.antipaladin.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.antipaladin.spellcasting",
+        "progressionId": "pf1e.paizo.antipaladin.spellcasting-table",
+        "name": "Antipaladin",
+        "mode": "prepared",
+        "castingAbility": "cha",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 1,
+              "2": 1
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1,
+              "3": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1,
+              "4": 1
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 4,
+          "range": "I4:K4; A381:K401"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -130,6 +700,10 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-nature"
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -193,6 +767,473 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-influence",
+      "consolidated-perception",
+      "consolidated-performance",
+      "consolidated-society",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.bard.spellcasting",
+        "progressionId": "pf1e.paizo.bard.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.bard.spellcasting",
+        "progressionId": "pf1e.paizo.bard.spellcasting-table",
+        "name": "Bard",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 6,
+          "range": "I6:K6; A358:K378; N358:X378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -236,6 +1277,11 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-nature"
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -284,6 +1330,309 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-spellcraft",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.cleric.spellcasting",
+        "progressionId": "pf1e.paizo.cleric.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.cleric.spellcasting",
+        "progressionId": "pf1e.paizo.cleric.spellcasting-table",
+        "name": "Cleric",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 4,
+              "1": 2
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 3,
+              "6": 2
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 3,
+              "7": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 3,
+              "9": 3
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 8,
+          "range": "I8:K8; A335:K355"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -331,6 +1680,309 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-nature",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.druid.spellcasting",
+        "progressionId": "pf1e.paizo.druid.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.druid.spellcasting",
+        "progressionId": "pf1e.paizo.druid.spellcasting-table",
+        "name": "Druid",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 4,
+              "1": 2
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 3,
+              "6": 2
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 3,
+              "7": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 3,
+              "9": 3
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 9,
+          "range": "I9:K9; A335:K355"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -374,6 +2026,10 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics"
     ],
     "aliases": [
       "fighter"
@@ -425,6 +2081,10 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-survival"
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -480,6 +2140,473 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-influence",
+      "consolidated-performance",
+      "consolidated-spellcraft",
+      "consolidated-stealth",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.inquisitor.spellcasting",
+        "progressionId": "pf1e.paizo.inquisitor.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.inquisitor.spellcasting",
+        "progressionId": "pf1e.paizo.inquisitor.spellcasting-table",
+        "name": "Inquisitor",
+        "mode": "spontaneous",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 12,
+          "range": "I12:K12; A358:K378; N358:X378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -525,6 +2652,335 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.magus.spellcasting",
+        "progressionId": "pf1e.paizo.magus.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.magus.spellcasting",
+        "progressionId": "pf1e.paizo.magus.spellcasting-table",
+        "name": "Magus",
+        "mode": "prepared",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "spellbook",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 13,
+          "range": "I13:K13; A358:K378"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -572,6 +3028,11 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-perception"
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -628,6 +3089,14 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-finesse",
+      "consolidated-influence",
+      "consolidated-perception",
+      "consolidated-society",
+      "consolidated-stealth"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -670,6 +3139,519 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "sense-motive",
       "spellcraft"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-religion"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.oracle.spellcasting",
+        "progressionId": "pf1e.paizo.oracle.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.oracle.spellcasting",
+        "progressionId": "pf1e.paizo.oracle.spellcasting-table",
+        "name": "Oracle",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 4
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 5
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 5,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 7,
+              "1": 4,
+              "2": 2,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 4
+            },
+            "spellsKnown": {
+              "0": 7,
+              "1": 5,
+              "2": 3,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 8,
+              "1": 5,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            "spellsKnown": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 5,
+              "7": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 5,
+              "8": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 5,
+              "9": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 6,
+              "9": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 6,
+              "9": 6
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 3,
+              "9": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 16,
+          "range": "I16:K16; A312:K332; N312:X332"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -714,6 +3696,246 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive",
       "spellcraft"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.paladin.spellcasting",
+        "progressionId": "pf1e.paizo.paladin.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.paladin.spellcasting",
+        "progressionId": "pf1e.paizo.paladin.spellcasting-table",
+        "name": "Paladin",
+        "mode": "prepared",
+        "castingAbility": "cha",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 1,
+              "2": 1
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1,
+              "3": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1,
+              "4": 1
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 17,
+          "range": "I17:K17; A381:K401"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -763,6 +3985,249 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-nature",
+      "consolidated-perception",
+      "consolidated-stealth",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.ranger.spellcasting",
+        "progressionId": "pf1e.paizo.ranger.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.ranger.spellcasting",
+        "progressionId": "pf1e.paizo.ranger.spellcasting-table",
+        "name": "Ranger",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 1,
+              "2": 1
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1,
+              "3": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1,
+              "4": 1
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 18,
+          "range": "I18:K18; A381:K401"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -819,6 +4284,14 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-finesse",
+      "consolidated-influence",
+      "consolidated-perception",
+      "consolidated-society",
+      "consolidated-stealth"
+    ],
     "aliases": [
       "rogue"
     ],
@@ -866,6 +4339,11 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-nature"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -912,6 +4390,14 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-nature",
+      "consolidated-perception",
+      "consolidated-stealth",
+      "consolidated-survival"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -954,6 +4440,520 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-influence",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.sorcerer.spellcasting",
+        "progressionId": "pf1e.paizo.sorcerer.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.sorcerer.spellcasting",
+        "progressionId": "pf1e.paizo.sorcerer.spellcasting-table",
+        "name": "Sorcerer",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 4
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 5
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 5,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 7,
+              "1": 4,
+              "2": 2,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 4
+            },
+            "spellsKnown": {
+              "0": 7,
+              "1": 5,
+              "2": 3,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 8,
+              "1": 5,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            "spellsKnown": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 5,
+              "7": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 5,
+              "8": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 5,
+              "9": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 6,
+              "9": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 6,
+              "9": 6
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 3,
+              "9": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 22,
+          "range": "I22:K22; A312:K332; N312:X332"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1005,6 +5005,470 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "spellcraft",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.summoner.spellcasting",
+        "progressionId": "pf1e.paizo.summoner.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.summoner.spellcasting",
+        "progressionId": "pf1e.paizo.summoner.spellcasting-table",
+        "name": "Summoner",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 23,
+          "range": "I23:K23; A358:K378; N358:X378"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1061,6 +5525,17 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-finesse",
+      "consolidated-influence",
+      "consolidated-perception",
+      "consolidated-performance",
+      "consolidated-society",
+      "consolidated-stealth",
+      "consolidated-survival"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1105,6 +5580,309 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-nature",
+      "consolidated-religion",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.witch.spellcasting",
+        "progressionId": "pf1e.paizo.witch.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.witch.spellcasting",
+        "progressionId": "pf1e.paizo.witch.spellcasting-table",
+        "name": "Witch",
+        "mode": "prepared",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "spellbook",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 4,
+              "1": 2
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 3,
+              "6": 2
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 3,
+              "7": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 3,
+              "9": 3
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 25,
+          "range": "I25:K25; A335:K355"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1156,6 +5934,309 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-society",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.wizard.spellcasting",
+        "progressionId": "pf1e.paizo.wizard.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.wizard.spellcasting",
+        "progressionId": "pf1e.paizo.wizard.spellcasting-table",
+        "name": "Wizard",
+        "mode": "prepared",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "spellbook",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 4,
+              "1": 2
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 3,
+              "6": 2
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 3,
+              "7": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 3,
+              "9": 3
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 26,
+          "range": "I26:K26; A335:K355"
+        }
+      }
+    ],
     "aliases": [
       "wizard"
     ],
@@ -1202,6 +6283,10 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-nature"
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1250,6 +6335,11 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-perception"
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1306,6 +6396,14 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-finesse",
+      "consolidated-influence",
+      "consolidated-perception",
+      "consolidated-society",
+      "consolidated-stealth"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1356,6 +6454,470 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "spellcraft",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.summoner-unchained.spellcasting",
+        "progressionId": "pf1e.paizo.summoner-unchained.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.summoner-unchained.spellcasting",
+        "progressionId": "pf1e.paizo.summoner-unchained.spellcasting-table",
+        "name": "Summoner (Unchained)",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Base",
+          "row": 30,
+          "range": "I30:K30; A358:K378; N358:X378"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1408,6 +6970,361 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-religion",
+      "consolidated-society",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.arcanist.spellcasting",
+        "progressionId": "pf1e.paizo.arcanist.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.arcanist.spellcasting",
+        "progressionId": "pf1e.paizo.arcanist.spellcasting-table",
+        "name": "Arcanist",
+        "mode": "prepared",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "spellbook",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 35,
+          "range": "I35:K35; A427:K447"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1454,6 +7371,11 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-perception"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1498,6 +7420,334 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.bloodrager.spellcasting",
+        "progressionId": "pf1e.paizo.bloodrager.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.bloodrager.spellcasting",
+        "progressionId": "pf1e.paizo.bloodrager.spellcasting-table",
+        "name": "Bloodrager",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 0,
+            "slots": {
+              "0": 0
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "1": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "1": 3
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "1": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 1,
+              "2": 1
+            },
+            "spellsKnown": {
+              "1": 4,
+              "2": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 1,
+              "2": 1
+            },
+            "spellsKnown": {
+              "1": 4,
+              "2": 3
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1
+            },
+            "spellsKnown": {
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1,
+              "3": 1
+            },
+            "spellsKnown": {
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 1,
+              "3": 1
+            },
+            "spellsKnown": {
+              "1": 5,
+              "2": 4,
+              "3": 3
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 2,
+              "2": 2,
+              "3": 1
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 5,
+              "3": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1,
+              "4": 1
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 1,
+              "4": 1
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 2,
+              "3": 2,
+              "4": 1
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 2
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 2
+            },
+            "spellsKnown": {
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 37,
+          "range": "I37:K37; A450:K470; M450:X470"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1546,6 +7796,337 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-nature",
+      "consolidated-perception",
+      "consolidated-stealth"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.hunter.spellcasting",
+        "progressionId": "pf1e.paizo.hunter.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.hunter.spellcasting",
+        "progressionId": "pf1e.paizo.hunter.spellcasting-table",
+        "name": "Hunter",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 38,
+          "range": "I38:K38; A358:K378"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1611,6 +8192,339 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-finesse",
+      "consolidated-influence",
+      "consolidated-perception",
+      "consolidated-society",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.investigator.spellcasting",
+        "progressionId": "pf1e.paizo.investigator.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.investigator.spellcasting",
+        "progressionId": "pf1e.paizo.investigator.spellcasting-table",
+        "name": "Investigator",
+        "mode": "prepared",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "spellbook",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 39,
+          "range": "I39:K39; A358:K378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1656,6 +8570,309 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "spellcraft",
       "survival"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-nature",
+      "consolidated-religion",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.shaman.spellcasting",
+        "progressionId": "pf1e.paizo.shaman.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.shaman.spellcasting",
+        "progressionId": "pf1e.paizo.shaman.spellcasting-table",
+        "name": "Shaman",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 4,
+              "1": 2
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 4,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 3,
+              "5": 3,
+              "6": 2
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 3,
+              "7": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 3,
+              "9": 3
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 4,
+              "1": 4,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 40,
+          "range": "I40:K40; A335:K355"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1720,6 +8937,472 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-influence",
+      "consolidated-performance",
+      "consolidated-society",
+      "consolidated-spellcraft"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.skald.spellcasting",
+        "progressionId": "pf1e.paizo.skald.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.skald.spellcasting",
+        "progressionId": "pf1e.paizo.skald.spellcasting-table",
+        "name": "Skald",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 41,
+          "range": "I41:K41; A358:K378; N358:X378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1771,6 +9454,12 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-influence",
+      "consolidated-stealth",
+      "consolidated-survival"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1821,6 +9510,12 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-influence",
+      "consolidated-perception"
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1869,6 +9564,336 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-athletics",
+      "consolidated-religion",
+      "consolidated-survival"
+    ],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.warpriest.spellcasting",
+        "progressionId": "pf1e.paizo.warpriest.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.warpriest.spellcasting",
+        "progressionId": "pf1e.paizo.warpriest.spellcasting-table",
+        "name": "Warpriest",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Hybrid",
+          "row": 44,
+          "range": "I44:K44; A358:K378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1912,6 +9937,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -1964,6 +9990,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2015,6 +10042,467 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.medium-archmage-heirophant-mode.spellcasting",
+        "progressionId": "pf1e.paizo.medium-archmage-heirophant-mode.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.medium-archmage-heirophant-mode.spellcasting",
+        "progressionId": "pf1e.paizo.medium-archmage-heirophant-mode.spellcasting-table",
+        "name": "Medium (Archmage/Heirophant Mode)",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Occult",
+          "row": 51,
+          "range": "I51:K51; A358:K378; N358:X378"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -2073,6 +10561,467 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.mesmerist.spellcasting",
+        "progressionId": "pf1e.paizo.mesmerist.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.mesmerist.spellcasting",
+        "progressionId": "pf1e.paizo.mesmerist.spellcasting-table",
+        "name": "Mesmerist",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Occult",
+          "row": 52,
+          "range": "I52:K52; A358:K378; N358:X378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2127,6 +11076,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2182,6 +11132,517 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "sense-motive",
       "spellcraft"
+    ],
+    "consolidatedClassSkills": [],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.psychic.spellcasting",
+        "progressionId": "pf1e.paizo.psychic.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.psychic.spellcasting",
+        "progressionId": "pf1e.paizo.psychic.spellcasting-table",
+        "name": "Psychic",
+        "mode": "spontaneous",
+        "castingAbility": "int",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 4
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 5
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 3,
+              "2": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 5,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 7,
+              "1": 4,
+              "2": 2,
+              "3": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 4
+            },
+            "spellsKnown": {
+              "0": 7,
+              "1": 5,
+              "2": 3,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 8,
+              "1": 5,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 4
+            },
+            "spellsKnown": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 2,
+              "6": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 5,
+              "7": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 3,
+              "6": 2,
+              "7": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 7,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 5,
+              "8": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 2,
+              "8": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 8,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 5,
+              "9": 3
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 2,
+              "9": 1
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 6,
+              "9": 4
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 3,
+              "9": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 9,
+            "slots": {
+              "0": 0,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6,
+              "7": 6,
+              "8": 6,
+              "9": 6
+            },
+            "spellsKnown": {
+              "0": 9,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 3,
+              "7": 3,
+              "8": 3,
+              "9": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Occult",
+          "row": 54,
+          "range": "I54:K54; A312:K332; N312:X332"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -2239,6 +11700,467 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.spiritualist.spellcasting",
+        "progressionId": "pf1e.paizo.spiritualist.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.spiritualist.spellcasting",
+        "progressionId": "pf1e.paizo.spiritualist.spellcasting-table",
+        "name": "Spiritualist",
+        "mode": "spontaneous",
+        "castingAbility": "cha",
+        "spellListId": "arcane",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 1
+            },
+            "spellsKnown": {
+              "0": 4,
+              "1": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 2
+            },
+            "spellsKnown": {
+              "0": 5,
+              "1": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 0,
+              "1": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 3,
+              "2": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 4,
+              "2": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 3,
+              "3": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 4,
+              "2": 4,
+              "3": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 3,
+              "4": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 4,
+              "4": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 3,
+              "5": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 4,
+              "5": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 3,
+              "6": 1
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 2
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 4,
+              "6": 3
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 4,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 5,
+              "5": 5,
+              "6": 4
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 6,
+            "slots": {
+              "0": 0,
+              "1": 5,
+              "2": 5,
+              "3": 5,
+              "4": 5,
+              "5": 5,
+              "6": 5
+            },
+            "spellsKnown": {
+              "0": 6,
+              "1": 6,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 5,
+              "6": 5
+            },
+            "unlimitedSpellLevels": [
+              0
+            ]
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "Occult",
+          "row": 55,
+          "range": "I55:K55; A358:K378; N358:X378"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2282,6 +12204,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2324,6 +12247,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2357,6 +12281,7 @@ export const generatedAutosheetProgressionCatalog = {
     "classSkills": [
       "lore"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2417,6 +12342,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2470,6 +12396,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2511,6 +12438,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2550,6 +12478,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2593,6 +12522,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2626,6 +12556,7 @@ export const generatedAutosheetProgressionCatalog = {
     "classSkills": [
       "lore"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2667,6 +12598,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2708,6 +12640,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2749,6 +12682,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2784,6 +12718,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2827,6 +12762,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2860,6 +12796,7 @@ export const generatedAutosheetProgressionCatalog = {
     "classSkills": [
       "lore"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -2902,6 +12839,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -2986,6 +12924,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3130,6 +13069,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3252,6 +13192,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3392,6 +13333,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3532,6 +13474,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3671,6 +13614,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3809,6 +13753,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -3896,6 +13841,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4027,6 +13973,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4169,6 +14116,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4303,6 +14251,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4378,6 +14327,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4519,6 +14469,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4659,6 +14610,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4803,6 +14755,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -4938,6 +14891,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5088,6 +15042,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5219,6 +15174,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5350,6 +15306,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5482,6 +15439,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5615,6 +15573,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5752,6 +15711,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5889,6 +15849,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -5987,6 +15948,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6127,6 +16089,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6259,6 +16222,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perform",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6392,6 +16356,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6530,6 +16495,7 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6662,6 +16628,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "profession"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6797,6 +16764,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -6928,6 +16896,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7075,6 +17044,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7204,6 +17174,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7339,6 +17310,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7424,6 +17396,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7560,6 +17533,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7693,6 +17667,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7826,6 +17801,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -7965,6 +17941,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8097,6 +18074,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8228,6 +18206,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8368,6 +18347,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8460,6 +18440,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8590,6 +18571,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8731,6 +18713,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -8865,6 +18848,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9001,6 +18985,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9131,6 +19116,7 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9200,6 +19186,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9269,6 +19256,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9404,6 +19392,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9538,6 +19527,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9671,6 +19661,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9815,6 +19806,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -9954,6 +19946,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10082,6 +20075,7 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10211,6 +20205,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10344,6 +20339,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10475,6 +20471,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10610,6 +20607,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10723,6 +20721,22 @@ export const generatedAutosheetProgressionCatalog = {
       "will": "prestigeGood"
     },
     "skillPointsPerLevel": 2,
+    "classSkillsSource": {
+      "document": "Chronicle of the Righteous",
+      "sheet": "Mystery Cultist class skills",
+      "system": "PF1e",
+      "publisher": "Paizo",
+      "category": "Paizo Prestige"
+    },
+    "classSkills": [
+      "diplomacy",
+      "heal",
+      "intimidate",
+      "knowledge-planes",
+      "knowledge-religion",
+      "sense-motive",
+      "spellcraft"
+    ],
     "chart": [
       {
         "level": 1,
@@ -10851,6 +20865,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -10981,6 +20996,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11116,6 +21132,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11249,6 +21266,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11380,6 +21398,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11530,6 +21549,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11659,6 +21679,7 @@ export const generatedAutosheetProgressionCatalog = {
       "intimidate",
       "lore"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11789,6 +21810,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -11922,6 +21944,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12054,6 +22077,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12188,6 +22212,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12301,6 +22326,25 @@ export const generatedAutosheetProgressionCatalog = {
       "will": "prestigePoor"
     },
     "skillPointsPerLevel": 2,
+    "classSkillsSource": {
+      "document": "Inner Sea Gods",
+      "sheet": "Sentinel class skills",
+      "system": "PF1e",
+      "publisher": "Paizo",
+      "category": "Paizo Prestige"
+    },
+    "classSkills": [
+      "climb",
+      "craft",
+      "handle-animal",
+      "intimidate",
+      "knowledge-religion",
+      "perception",
+      "profession",
+      "ride",
+      "survival",
+      "swim"
+    ],
     "chart": [
       {
         "level": 1,
@@ -12436,6 +22480,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12569,6 +22614,7 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "perception"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12699,6 +22745,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12831,6 +22878,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -12966,6 +23014,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13051,6 +23100,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13188,6 +23238,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13276,6 +23327,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13409,6 +23461,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13540,6 +23593,7 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13669,6 +23723,7 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13801,6 +23856,7 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -13932,6 +23988,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -14062,6 +24119,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -14193,6 +24251,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "chart": [
       {
         "level": 1,
@@ -14331,6 +24390,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14379,6 +24439,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14428,6 +24489,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14477,6 +24539,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14524,6 +24587,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14572,6 +24636,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14619,6 +24684,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14666,6 +24732,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14712,6 +24779,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14765,6 +24833,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14819,6 +24888,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14867,6 +24937,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14914,6 +24985,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -14958,6 +25030,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15009,6 +25082,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15049,6 +25123,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15111,6 +25186,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15156,6 +25232,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15205,6 +25282,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15255,6 +25333,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15309,6 +25388,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15365,6 +25445,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15425,6 +25506,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15472,6 +25554,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15517,6 +25600,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15572,6 +25656,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15617,6 +25702,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15671,6 +25757,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15712,6 +25799,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15763,6 +25851,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15807,6 +25896,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15852,6 +25942,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15899,6 +25990,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15947,6 +26039,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -15994,6 +26087,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16047,6 +26141,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16093,6 +26188,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16144,6 +26240,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16196,6 +26293,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16240,6 +26338,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16289,6 +26388,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16332,6 +26432,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "sleight-of-hand"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16387,6 +26488,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16434,6 +26536,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16481,6 +26584,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16528,6 +26632,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16577,6 +26682,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16623,6 +26729,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16676,6 +26783,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16728,6 +26836,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16772,6 +26881,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16824,6 +26934,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16872,6 +26983,257 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft",
       "survival"
+    ],
+    "consolidatedClassSkills": [],
+    "spellcastingAdvancement": [
+      {
+        "sourceId": "pf1e.paizo.adept.spellcasting",
+        "progressionId": "pf1e.paizo.adept.spellcasting-table",
+        "levels": 1
+      }
+    ],
+    "spellcastingTemplates": [
+      {
+        "sourceId": "pf1e.paizo.adept.spellcasting",
+        "progressionId": "pf1e.paizo.adept.spellcasting-table",
+        "name": "Adept",
+        "mode": "prepared",
+        "castingAbility": "wis",
+        "spellListId": "divine",
+        "spellListAccess": "list",
+        "bonusSlots": "standard",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 1
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumSpellLevel": 1,
+            "slots": {
+              "0": 3,
+              "1": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 3,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 3,
+              "1": 2,
+              "2": 1
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumSpellLevel": 2,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 2,
+              "3": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumSpellLevel": 3,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 2,
+              "4": 1
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumSpellLevel": 4,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 2,
+              "5": 1
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumSpellLevel": 5,
+            "slots": {
+              "0": 3,
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Paizo",
+          "category": "NPC",
+          "row": 228,
+          "range": "I228:K228; A473:K493"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -16932,6 +27294,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -16973,6 +27336,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17006,6 +27370,7 @@ export const generatedAutosheetProgressionCatalog = {
     "classSkills": [
       "lore"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17047,6 +27412,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17091,6 +27457,528 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.aegis.psionics",
+        "kind": "psionics",
+        "name": "Aegis",
+        "progressionId": "pf1e.dreamscarred-press.psionics.aegis",
+        "keyAbility": "int",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 0,
+            "resourceMaximum": 1,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 0,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 0,
+            "resourceMaximum": 3,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 0,
+            "resourceMaximum": 5,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 0,
+            "resourceMaximum": 7,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 0,
+            "resourceMaximum": 9,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 0,
+            "resourceMaximum": 11,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 0,
+            "resourceMaximum": 14,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 0,
+            "resourceMaximum": 17,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 0,
+            "resourceMaximum": 20,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 0,
+            "resourceMaximum": 24,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 0,
+            "resourceMaximum": 28,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 0,
+            "resourceMaximum": 32,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 0,
+            "resourceMaximum": 37,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 0,
+            "resourceMaximum": 42,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 0,
+            "resourceMaximum": 47,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 0,
+            "resourceMaximum": 52,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 0,
+            "resourceMaximum": 58,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 0,
+            "resourceMaximum": 64,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 0,
+            "resourceMaximum": 70,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 0
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 237,
+          "range": "I237:L237; B518:L538; G518:K538; O518:R538"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -17155,6 +28043,528 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.cryptic.psionics",
+        "kind": "psionics",
+        "name": "Cryptic",
+        "progressionId": "pf1e.dreamscarred-press.psionics.cryptic",
+        "keyAbility": "int",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 1,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 1
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 12,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 16,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 24,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 28,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 36,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 44,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 12
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 52,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 13
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 60,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 14
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 68,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 15
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 80,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 16
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 92,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 17
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 104,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 18
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 116,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 19
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 128,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 20
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 238,
+          "range": "I238:L238; B518:L538; G518:K538; O518:R538"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17203,6 +28613,528 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.dread.psionics",
+        "kind": "psionics",
+        "name": "Dread",
+        "progressionId": "pf1e.dreamscarred-press.psionics.dread",
+        "keyAbility": "cha",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 1,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 1
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 12,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 16,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 24,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 28,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 36,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 44,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 12
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 52,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 13
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 60,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 14
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 68,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 15
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 80,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 16
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 92,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 17
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 104,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 18
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 116,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 19
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 128,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 20
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 239,
+          "range": "I239:L239; B518:L538; G518:K538; O518:R538"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17250,6 +29182,528 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.marksman.psionics",
+        "kind": "psionics",
+        "name": "Marksman",
+        "progressionId": "pf1e.dreamscarred-press.psionics.marksman",
+        "keyAbility": "wis",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 1,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 0
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 1
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 1,
+            "resourceMaximum": 5,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 7,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 9,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 2,
+            "resourceMaximum": 14,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 17,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 3,
+            "resourceMaximum": 24,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 3,
+            "resourceMaximum": 28,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 4,
+            "resourceMaximum": 32,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 4,
+            "resourceMaximum": 37,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 4,
+            "resourceMaximum": 42,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 4,
+            "resourceMaximum": 47,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 4,
+            "resourceMaximum": 52,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 4,
+            "resourceMaximum": 58,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 4,
+            "resourceMaximum": 64,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 12
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 4,
+            "resourceMaximum": 70,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 12
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 240,
+          "range": "I240:L240; B518:L538; G518:K538; O518:R538"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -17300,6 +29754,528 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.psion.psionics",
+        "kind": "psionics",
+        "name": "Psion",
+        "progressionId": "pf1e.dreamscarred-press.psionics.psion",
+        "keyAbility": "int",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 17,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 25,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 35,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 13
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 46,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 15
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 58,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 17
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 72,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 19
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 88,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 21
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 106,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 22
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 126,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 24
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 147,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 25
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 170,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 27
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 195,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 28
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 221,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 30
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 250,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 31
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 280,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 33
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 311,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 34
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 343,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 36
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 241,
+          "range": "I241:L241; B518:L538; G518:K538; O518:R538"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17343,6 +30319,528 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "spellcraft",
       "swim"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.psychic-warrior.psionics",
+        "kind": "psionics",
+        "name": "Psychic Warrior",
+        "progressionId": "pf1e.dreamscarred-press.psionics.psychic-warrior",
+        "keyAbility": "wis",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 1,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 1
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 12,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 16,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 24,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 28,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 36,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 44,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 12
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 52,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 13
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 60,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 14
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 68,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 15
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 80,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 16
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 92,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 17
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 104,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 18
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 116,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 19
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 128,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 20
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 242,
+          "range": "I242:L242; B518:L538; G518:K538; O518:R538"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -17388,6 +30886,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17440,6 +30939,528 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.tactician.psionics",
+        "kind": "psionics",
+        "name": "Tactician",
+        "progressionId": "pf1e.dreamscarred-press.psionics.tactician",
+        "keyAbility": "int",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 1
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 17,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 25,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 35,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 46,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 58,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 72,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 88,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 106,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 126,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 12
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 147,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 13
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 170,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 14
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 195,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 15
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 221,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 16
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 250,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 17
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 280,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 18
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 311,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 19
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 343,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 20
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 244,
+          "range": "I244:L244; B518:L538; G518:K538; O518:R538"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17490,6 +31511,528 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.vitalist.psionics",
+        "kind": "psionics",
+        "name": "Vitalist",
+        "progressionId": "pf1e.dreamscarred-press.psionics.vitalist",
+        "keyAbility": "wis",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 17,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 25,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 35,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 46,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 58,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 72,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 88,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 106,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 126,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 147,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 170,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 195,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 221,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 250,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 280,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 311,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 11
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 343,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 11
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 245,
+          "range": "I245:L245; B518:L538; G518:K538; O518:R538"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17538,6 +32081,528 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "pf1e.dreamscarred-press.psionics.wilder.psionics",
+        "kind": "psionics",
+        "name": "Wilder",
+        "progressionId": "pf1e.dreamscarred-press.psionics.wilder",
+        "keyAbility": "cha",
+        "resourceName": "Power points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 0,
+              "2": 1,
+              "3": 1,
+              "4": 2,
+              "5": 2,
+              "6": 3,
+              "7": 3,
+              "8": 4,
+              "9": 4,
+              "10": 5,
+              "11": 5,
+              "12": 6,
+              "13": 6,
+              "14": 7,
+              "15": 7
+            },
+            "knownCount": 1
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 6,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 2,
+              "3": 3,
+              "4": 4,
+              "5": 5,
+              "6": 6,
+              "7": 7,
+              "8": 8,
+              "9": 9,
+              "10": 10,
+              "11": 11,
+              "12": 12,
+              "13": 13,
+              "14": 14,
+              "15": 15
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 11,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 1,
+              "2": 3,
+              "3": 4,
+              "4": 6,
+              "5": 7,
+              "6": 9,
+              "7": 10,
+              "8": 12,
+              "9": 13,
+              "10": 15,
+              "11": 16,
+              "12": 18,
+              "13": 19,
+              "14": 21,
+              "15": 22
+            },
+            "knownCount": 2
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 17,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 4,
+              "3": 6,
+              "4": 8,
+              "5": 10,
+              "6": 12,
+              "7": 14,
+              "8": 16,
+              "9": 18,
+              "10": 20,
+              "11": 22,
+              "12": 24,
+              "13": 26,
+              "14": 28,
+              "15": 30
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 25,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 2,
+              "2": 5,
+              "3": 7,
+              "4": 10,
+              "5": 12,
+              "6": 15,
+              "7": 17,
+              "8": 20,
+              "9": 22,
+              "10": 25,
+              "11": 27,
+              "12": 30,
+              "13": 32,
+              "14": 35,
+              "15": 37
+            },
+            "knownCount": 3
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 35,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 6,
+              "3": 9,
+              "4": 12,
+              "5": 15,
+              "6": 18,
+              "7": 21,
+              "8": 24,
+              "9": 27,
+              "10": 30,
+              "11": 33,
+              "12": 36,
+              "13": 39,
+              "14": 42,
+              "15": 45
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 46,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 3,
+              "2": 7,
+              "3": 10,
+              "4": 14,
+              "5": 17,
+              "6": 21,
+              "7": 24,
+              "8": 28,
+              "9": 31,
+              "10": 35,
+              "11": 38,
+              "12": 42,
+              "13": 45,
+              "14": 49,
+              "15": 52
+            },
+            "knownCount": 4
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 58,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 8,
+              "3": 12,
+              "4": 16,
+              "5": 20,
+              "6": 24,
+              "7": 28,
+              "8": 32,
+              "9": 36,
+              "10": 40,
+              "11": 44,
+              "12": 48,
+              "13": 52,
+              "14": 56,
+              "15": 60
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 4,
+            "resourceMaximum": 72,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 4,
+              "2": 9,
+              "3": 13,
+              "4": 18,
+              "5": 22,
+              "6": 27,
+              "7": 31,
+              "8": 36,
+              "9": 40,
+              "10": 45,
+              "11": 49,
+              "12": 54,
+              "13": 58,
+              "14": 63,
+              "15": 67
+            },
+            "knownCount": 5
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 88,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 10,
+              "3": 15,
+              "4": 20,
+              "5": 25,
+              "6": 30,
+              "7": 35,
+              "8": 40,
+              "9": 45,
+              "10": 50,
+              "11": 55,
+              "12": 60,
+              "13": 65,
+              "14": 70,
+              "15": 75
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 5,
+            "resourceMaximum": 106,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 5,
+              "2": 11,
+              "3": 16,
+              "4": 22,
+              "5": 27,
+              "6": 33,
+              "7": 38,
+              "8": 44,
+              "9": 49,
+              "10": 55,
+              "11": 60,
+              "12": 66,
+              "13": 71,
+              "14": 77,
+              "15": 82
+            },
+            "knownCount": 6
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 126,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 12,
+              "3": 18,
+              "4": 24,
+              "5": 30,
+              "6": 36,
+              "7": 42,
+              "8": 48,
+              "9": 54,
+              "10": 60,
+              "11": 66,
+              "12": 72,
+              "13": 78,
+              "14": 84,
+              "15": 90
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 6,
+            "resourceMaximum": 147,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 6,
+              "2": 13,
+              "3": 19,
+              "4": 26,
+              "5": 32,
+              "6": 39,
+              "7": 45,
+              "8": 52,
+              "9": 58,
+              "10": 65,
+              "11": 71,
+              "12": 78,
+              "13": 84,
+              "14": 91,
+              "15": 97
+            },
+            "knownCount": 7
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 170,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 14,
+              "3": 21,
+              "4": 28,
+              "5": 35,
+              "6": 42,
+              "7": 49,
+              "8": 56,
+              "9": 63,
+              "10": 70,
+              "11": 77,
+              "12": 84,
+              "13": 91,
+              "14": 98,
+              "15": 105
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 7,
+            "resourceMaximum": 195,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 7,
+              "2": 15,
+              "3": 22,
+              "4": 30,
+              "5": 37,
+              "6": 45,
+              "7": 52,
+              "8": 60,
+              "9": 67,
+              "10": 75,
+              "11": 82,
+              "12": 90,
+              "13": 97,
+              "14": 105,
+              "15": 112
+            },
+            "knownCount": 8
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 221,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 16,
+              "3": 24,
+              "4": 32,
+              "5": 40,
+              "6": 48,
+              "7": 56,
+              "8": 64,
+              "9": 72,
+              "10": 80,
+              "11": 88,
+              "12": 96,
+              "13": 104,
+              "14": 112,
+              "15": 120
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 8,
+            "resourceMaximum": 250,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 8,
+              "2": 17,
+              "3": 25,
+              "4": 34,
+              "5": 42,
+              "6": 51,
+              "7": 59,
+              "8": 68,
+              "9": 76,
+              "10": 85,
+              "11": 93,
+              "12": 102,
+              "13": 110,
+              "14": 119,
+              "15": 127
+            },
+            "knownCount": 9
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 280,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 18,
+              "3": 27,
+              "4": 36,
+              "5": 45,
+              "6": 54,
+              "7": 63,
+              "8": 72,
+              "9": 81,
+              "10": 90,
+              "11": 99,
+              "12": 108,
+              "13": 117,
+              "14": 126,
+              "15": 135
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 311,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 9,
+              "2": 19,
+              "3": 28,
+              "4": 38,
+              "5": 47,
+              "6": 57,
+              "7": 66,
+              "8": 76,
+              "9": 85,
+              "10": 95,
+              "11": 104,
+              "12": 114,
+              "13": 123,
+              "14": 133,
+              "15": 142
+            },
+            "knownCount": 10
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 343,
+            "resourceBonusByAbility": {
+              "0": 0,
+              "1": 10,
+              "2": 20,
+              "3": 30,
+              "4": 40,
+              "5": 50,
+              "6": 60,
+              "7": 70,
+              "8": 80,
+              "9": 90,
+              "10": 100,
+              "11": 110,
+              "12": 120,
+              "13": 130,
+              "14": 140,
+              "15": 150
+            },
+            "knownCount": 11
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "PF1e",
+          "publisher": "Dreamscarred Press",
+          "category": "3PP-Psionics",
+          "row": 246,
+          "range": "I246:L246; B518:L538; G518:K538; O518:R538"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -17591,6 +32656,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "stealth"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17639,6 +32705,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17688,6 +32755,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17738,6 +32806,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17784,6 +32853,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17844,6 +32914,302 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.bard.ffd20",
+        "kind": "ffd20",
+        "name": "Bard",
+        "progressionId": "ffd20.autosheet.bard",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 5,
+            "knownByTier": {
+              "0": 2,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 2,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 5,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 2,
+              "1": 7
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 4
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 6
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 15,
+            "knownCount": 18,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 6,
+              "3": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 26,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 32,
+            "knownCount": 25,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 39,
+            "knownCount": 27,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 4
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 47,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 56,
+            "knownCount": 32,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 65,
+            "knownCount": 34,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 75,
+            "knownCount": 36,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 86,
+            "knownCount": 39,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 98,
+            "knownCount": 41,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 4
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 110,
+            "knownCount": 43,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 122,
+            "knownCount": 45,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 8
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 135,
+            "knownCount": 48,
+            "knownByTier": {
+              "0": 7,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 10
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 258,
+          "range": "I258:K258; A541:U544; B568:K588"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17889,6 +33255,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17937,6 +33304,335 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.black-mage.ffd20",
+        "kind": "ffd20",
+        "name": "Black Mage",
+        "progressionId": "ffd20.autosheet.black-mage",
+        "keyAbility": "int",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 260,
+          "range": "I260:K260; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -17982,6 +33678,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18025,6 +33722,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18071,6 +33769,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18117,6 +33816,302 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "swim",
       "use-magic-device"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.red-mage.ffd20",
+        "kind": "ffd20",
+        "name": "Red Mage",
+        "progressionId": "ffd20.autosheet.red-mage",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 5,
+            "knownByTier": {
+              "0": 2,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 2,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 5,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 2,
+              "1": 7
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 4
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 6
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 15,
+            "knownCount": 18,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 6,
+              "3": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 26,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 32,
+            "knownCount": 25,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 39,
+            "knownCount": 27,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 4
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 47,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 56,
+            "knownCount": 32,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 65,
+            "knownCount": 34,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 75,
+            "knownCount": 36,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 86,
+            "knownCount": 39,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 98,
+            "knownCount": 41,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 4
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 110,
+            "knownCount": 43,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 122,
+            "knownCount": 45,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 8
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 135,
+            "knownCount": 48,
+            "knownByTier": {
+              "0": 7,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 10
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 264,
+          "range": "I264:K264; A541:U544; B568:K588"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -18171,6 +34166,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18213,6 +34209,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18262,6 +34259,335 @@ export const generatedAutosheetProgressionCatalog = {
       "perception",
       "profession",
       "spellcraft"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.white-mage.ffd20",
+        "kind": "ffd20",
+        "name": "White Mage",
+        "progressionId": "ffd20.autosheet.white-mage",
+        "keyAbility": "wis",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 267,
+          "range": "I267:K267; A541:U544; B546:K566"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -18313,6 +34639,335 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.astrologian.ffd20",
+        "kind": "ffd20",
+        "name": "Astrologian",
+        "progressionId": "ffd20.autosheet.astrologian",
+        "keyAbility": "wis",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 268,
+          "range": "I268:K268; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18354,6 +35009,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18406,6 +35062,335 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.blue-mage.ffd20",
+        "kind": "ffd20",
+        "name": "Blue Mage",
+        "progressionId": "ffd20.autosheet.blue-mage",
+        "keyAbility": "int",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 270,
+          "range": "I270:K270; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18451,6 +35436,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18494,6 +35480,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18539,6 +35526,302 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.cleric.ffd20",
+        "kind": "ffd20",
+        "name": "Cleric",
+        "progressionId": "ffd20.autosheet.cleric",
+        "keyAbility": "wis",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 5,
+            "knownByTier": {
+              "0": 2,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 2,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 5,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 2,
+              "1": 7
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 2
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 4
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 11,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 6
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 15,
+            "knownCount": 18,
+            "knownByTier": {
+              "0": 3,
+              "1": 7,
+              "2": 6,
+              "3": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 20,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 26,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 32,
+            "knownCount": 25,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 2
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 39,
+            "knownCount": 27,
+            "knownByTier": {
+              "0": 4,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 4
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 47,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 56,
+            "knownCount": 32,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 65,
+            "knownCount": 34,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 75,
+            "knownCount": 36,
+            "knownByTier": {
+              "0": 5,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 86,
+            "knownCount": 39,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 2
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 98,
+            "knownCount": 41,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 4
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 110,
+            "knownCount": 43,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 6
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 122,
+            "knownCount": 45,
+            "knownByTier": {
+              "0": 6,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 8
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 135,
+            "knownCount": 48,
+            "knownByTier": {
+              "0": 7,
+              "1": 7,
+              "2": 6,
+              "3": 6,
+              "4": 6,
+              "5": 6,
+              "6": 10
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 273,
+          "range": "I273:K273; A541:U544; B568:K588"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18582,6 +35865,251 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft",
       "stealth"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.dark-knight.ffd20",
+        "kind": "ffd20",
+        "name": "Dark Knight",
+        "progressionId": "ffd20.autosheet.dark-knight",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 0,
+            "resourceMaximum": 0,
+            "knownCount": 0
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 0,
+            "resourceMaximum": 0,
+            "knownCount": 0
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 0,
+            "resourceMaximum": 0,
+            "knownCount": 0
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 1,
+            "resourceMaximum": 1,
+            "knownCount": 1,
+            "knownByTier": {
+              "1": 1
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 2,
+            "knownByTier": {
+              "1": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 3,
+            "knownByTier": {
+              "1": 3
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 4,
+            "knownByTier": {
+              "1": 3,
+              "2": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 5,
+            "knownByTier": {
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "knownCount": 6,
+            "knownByTier": {
+              "1": 3,
+              "2": 3
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 3,
+            "resourceMaximum": 7,
+            "knownCount": 7,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 8,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 3,
+            "resourceMaximum": 10,
+            "knownCount": 9,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 4,
+            "resourceMaximum": 12,
+            "knownCount": 10,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 4,
+            "resourceMaximum": 14,
+            "knownCount": 11,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 4,
+            "resourceMaximum": 16,
+            "knownCount": 12,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 3
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 4,
+            "resourceMaximum": 19,
+            "knownCount": 13,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 4,
+            "resourceMaximum": 22,
+            "knownCount": 14,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 5
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 4,
+            "resourceMaximum": 25,
+            "knownCount": 15,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 6
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 4,
+            "resourceMaximum": 29,
+            "knownCount": 16,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 7
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 4,
+            "resourceMaximum": 33,
+            "knownCount": 17,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 274,
+          "range": "I274:K274; A541:U544; B590:K610"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -18628,6 +36156,7 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18679,6 +36208,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18725,6 +36255,335 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.geomancer.ffd20",
+        "kind": "ffd20",
+        "name": "Geomancer",
+        "progressionId": "ffd20.autosheet.geomancer",
+        "keyAbility": "wis",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 277,
+          "range": "I277:K277; A541:U544; B546:K566"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -18774,6 +36633,7 @@ export const generatedAutosheetProgressionCatalog = {
       "survival",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18815,6 +36675,251 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive",
       "spellcraft"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.holy-knight.ffd20",
+        "kind": "ffd20",
+        "name": "Holy Knight",
+        "progressionId": "ffd20.autosheet.holy-knight",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 0,
+            "resourceMaximum": 0,
+            "knownCount": 0
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 0,
+            "resourceMaximum": 0,
+            "knownCount": 0
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 0,
+            "resourceMaximum": 0,
+            "knownCount": 0
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 1,
+            "resourceMaximum": 1,
+            "knownCount": 1,
+            "knownByTier": {
+              "1": 1
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 2,
+            "knownByTier": {
+              "1": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 3,
+            "knownByTier": {
+              "1": 3
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 4,
+            "knownByTier": {
+              "1": 3,
+              "2": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 5,
+            "knownByTier": {
+              "1": 3,
+              "2": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "knownCount": 6,
+            "knownByTier": {
+              "1": 3,
+              "2": 3
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 3,
+            "resourceMaximum": 7,
+            "knownCount": 7,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 8,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 3,
+            "resourceMaximum": 10,
+            "knownCount": 9,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 4,
+            "resourceMaximum": 12,
+            "knownCount": 10,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 4,
+            "resourceMaximum": 14,
+            "knownCount": 11,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 4,
+            "resourceMaximum": 16,
+            "knownCount": 12,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 3
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 4,
+            "resourceMaximum": 19,
+            "knownCount": 13,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 4,
+            "resourceMaximum": 22,
+            "knownCount": 14,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 5
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 4,
+            "resourceMaximum": 25,
+            "knownCount": 15,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 6
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 4,
+            "resourceMaximum": 29,
+            "knownCount": 16,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 7
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 4,
+            "resourceMaximum": 33,
+            "knownCount": 17,
+            "knownByTier": {
+              "1": 3,
+              "2": 3,
+              "3": 3,
+              "4": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 279,
+          "range": "I279:K279; A541:U544; B590:K610"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -18862,6 +36967,335 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.illusionist.ffd20",
+        "kind": "ffd20",
+        "name": "Illusionist",
+        "progressionId": "ffd20.autosheet.illusionist",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 280,
+          "range": "I280:K280; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18905,6 +37339,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "survival"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -18956,6 +37391,335 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.necromancer.ffd20",
+        "kind": "ffd20",
+        "name": "Necromancer",
+        "progressionId": "ffd20.autosheet.necromancer",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 282,
+          "range": "I282:K282; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19006,6 +37770,335 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.summoner.ffd20",
+        "kind": "ffd20",
+        "name": "Summoner",
+        "progressionId": "ffd20.autosheet.summoner",
+        "keyAbility": "cha",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 283,
+          "range": "I283:K283; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19055,6 +38148,335 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.time-mage.ffd20",
+        "kind": "ffd20",
+        "name": "Time Mage",
+        "progressionId": "ffd20.autosheet.time-mage",
+        "keyAbility": "int",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 284,
+          "range": "I284:K284; A541:U544; B546:K566"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19100,6 +38522,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19160,6 +38583,7 @@ export const generatedAutosheetProgressionCatalog = {
       "stealth",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19204,6 +38628,335 @@ export const generatedAutosheetProgressionCatalog = {
       "spellcraft",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.druid.ffd20",
+        "kind": "ffd20",
+        "name": "Druid",
+        "progressionId": "ffd20.autosheet.druid",
+        "keyAbility": "wis",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 287,
+          "range": "I287:K287; A541:U544; B546:K566"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -19253,6 +39006,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sleight-of-hand",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19299,6 +39053,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19353,6 +39108,282 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.ninja.ffd20",
+        "kind": "ffd20",
+        "name": "Ninja",
+        "progressionId": "ffd20.autosheet.ninja",
+        "keyAbility": "wis",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 2,
+            "knownByTier": {
+              "1": 2
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 3,
+            "knownByTier": {
+              "1": 3
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 1,
+            "resourceMaximum": 4,
+            "knownCount": 4,
+            "knownByTier": {
+              "1": 4
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 5,
+            "knownByTier": {
+              "1": 4,
+              "2": 1
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 2,
+            "resourceMaximum": 6,
+            "knownCount": 6,
+            "knownByTier": {
+              "1": 4,
+              "2": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 2,
+            "resourceMaximum": 8,
+            "knownCount": 7,
+            "knownByTier": {
+              "1": 4,
+              "2": 3
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 3,
+            "resourceMaximum": 10,
+            "knownCount": 8,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 1
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 3,
+            "resourceMaximum": 13,
+            "knownCount": 9,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 2
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 3,
+            "resourceMaximum": 16,
+            "knownCount": 10,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 4,
+            "resourceMaximum": 20,
+            "knownCount": 11,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 1
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 4,
+            "resourceMaximum": 24,
+            "knownCount": 12,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 4,
+            "resourceMaximum": 29,
+            "knownCount": 13,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 5,
+            "resourceMaximum": 34,
+            "knownCount": 14,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 1
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 5,
+            "resourceMaximum": 39,
+            "knownCount": 15,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 2
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 5,
+            "resourceMaximum": 45,
+            "knownCount": 16,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 3
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 6,
+            "resourceMaximum": 51,
+            "knownCount": 17,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 3,
+              "6": 1
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 6,
+            "resourceMaximum": 57,
+            "knownCount": 18,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 3,
+              "6": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 6,
+            "resourceMaximum": 64,
+            "knownCount": 19,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 3,
+              "6": 3
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 6,
+            "resourceMaximum": 71,
+            "knownCount": 20,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 3,
+              "6": 4
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 6,
+            "resourceMaximum": 79,
+            "knownCount": 21,
+            "knownByTier": {
+              "1": 4,
+              "2": 3,
+              "3": 3,
+              "4": 3,
+              "5": 3,
+              "6": 5
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 290,
+          "range": "I290:K290; A541:U544; B612:K632"
+        }
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19396,6 +39427,7 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "swim"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19444,6 +39476,7 @@ export const generatedAutosheetProgressionCatalog = {
       "profession",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19489,6 +39522,7 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "sense-motive"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",
@@ -19536,6 +39570,335 @@ export const generatedAutosheetProgressionCatalog = {
       "lore",
       "profession",
       "spellcraft"
+    ],
+    "consolidatedClassSkills": [],
+    "characterSystemTemplates": [
+      {
+        "id": "ffd20.autosheet.arithmetician.ffd20",
+        "kind": "ffd20",
+        "name": "Arithmetician",
+        "progressionId": "ffd20.autosheet.arithmetician",
+        "keyAbility": "int",
+        "resourceName": "Magic points",
+        "progression": [
+          {
+            "level": 1,
+            "casterLevel": 1,
+            "maximumTier": 1,
+            "resourceMaximum": 2,
+            "knownCount": 7,
+            "knownByTier": {
+              "0": 4,
+              "1": 3
+            }
+          },
+          {
+            "level": 2,
+            "casterLevel": 2,
+            "maximumTier": 1,
+            "resourceMaximum": 3,
+            "knownCount": 9,
+            "knownByTier": {
+              "0": 4,
+              "1": 5
+            }
+          },
+          {
+            "level": 3,
+            "casterLevel": 3,
+            "maximumTier": 2,
+            "resourceMaximum": 4,
+            "knownCount": 12,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 2
+            }
+          },
+          {
+            "level": 4,
+            "casterLevel": 4,
+            "maximumTier": 2,
+            "resourceMaximum": 5,
+            "knownCount": 14,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4
+            }
+          },
+          {
+            "level": 5,
+            "casterLevel": 5,
+            "maximumTier": 3,
+            "resourceMaximum": 6,
+            "knownCount": 16,
+            "knownByTier": {
+              "0": 5,
+              "1": 5,
+              "2": 4,
+              "3": 2
+            }
+          },
+          {
+            "level": 6,
+            "casterLevel": 6,
+            "maximumTier": 3,
+            "resourceMaximum": 8,
+            "knownCount": 19,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4
+            }
+          },
+          {
+            "level": 7,
+            "casterLevel": 7,
+            "maximumTier": 4,
+            "resourceMaximum": 10,
+            "knownCount": 21,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 2
+            }
+          },
+          {
+            "level": 8,
+            "casterLevel": 8,
+            "maximumTier": 4,
+            "resourceMaximum": 13,
+            "knownCount": 23,
+            "knownByTier": {
+              "0": 6,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4
+            }
+          },
+          {
+            "level": 9,
+            "casterLevel": 9,
+            "maximumTier": 5,
+            "resourceMaximum": 16,
+            "knownCount": 26,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 2
+            }
+          },
+          {
+            "level": 10,
+            "casterLevel": 10,
+            "maximumTier": 5,
+            "resourceMaximum": 20,
+            "knownCount": 28,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4
+            }
+          },
+          {
+            "level": 11,
+            "casterLevel": 11,
+            "maximumTier": 6,
+            "resourceMaximum": 24,
+            "knownCount": 30,
+            "knownByTier": {
+              "0": 7,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 2
+            }
+          },
+          {
+            "level": 12,
+            "casterLevel": 12,
+            "maximumTier": 6,
+            "resourceMaximum": 29,
+            "knownCount": 33,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4
+            }
+          },
+          {
+            "level": 13,
+            "casterLevel": 13,
+            "maximumTier": 7,
+            "resourceMaximum": 34,
+            "knownCount": 35,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 2
+            }
+          },
+          {
+            "level": 14,
+            "casterLevel": 14,
+            "maximumTier": 7,
+            "resourceMaximum": 39,
+            "knownCount": 37,
+            "knownByTier": {
+              "0": 8,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4
+            }
+          },
+          {
+            "level": 15,
+            "casterLevel": 15,
+            "maximumTier": 8,
+            "resourceMaximum": 45,
+            "knownCount": 40,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 2
+            }
+          },
+          {
+            "level": 16,
+            "casterLevel": 16,
+            "maximumTier": 8,
+            "resourceMaximum": 51,
+            "knownCount": 42,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4
+            }
+          },
+          {
+            "level": 17,
+            "casterLevel": 17,
+            "maximumTier": 9,
+            "resourceMaximum": 57,
+            "knownCount": 44,
+            "knownByTier": {
+              "0": 9,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 2
+            }
+          },
+          {
+            "level": 18,
+            "casterLevel": 18,
+            "maximumTier": 9,
+            "resourceMaximum": 64,
+            "knownCount": 47,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 4
+            }
+          },
+          {
+            "level": 19,
+            "casterLevel": 19,
+            "maximumTier": 9,
+            "resourceMaximum": 71,
+            "knownCount": 49,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 6
+            }
+          },
+          {
+            "level": 20,
+            "casterLevel": 20,
+            "maximumTier": 9,
+            "resourceMaximum": 79,
+            "knownCount": 51,
+            "knownByTier": {
+              "0": 10,
+              "1": 5,
+              "2": 4,
+              "3": 4,
+              "4": 4,
+              "5": 4,
+              "6": 4,
+              "7": 4,
+              "8": 4,
+              "9": 8
+            }
+          }
+        ],
+        "source": {
+          "document": "Pathfinder Autosheet v6.2.1",
+          "sheet": "Class Charts",
+          "system": "FFd20",
+          "category": "FFd20",
+          "row": 294,
+          "range": "I294:K294; A541:U544; B546:K566"
+        }
+      }
     ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -19588,6 +39951,7 @@ export const generatedAutosheetProgressionCatalog = {
       "swim",
       "use-magic-device"
     ],
+    "consolidatedClassSkills": [],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Charts",

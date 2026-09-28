@@ -53,6 +53,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -81,6 +82,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -110,6 +112,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -139,6 +142,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.1,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -167,6 +171,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -196,6 +201,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -225,6 +231,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.1,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -254,6 +261,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.1,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -283,6 +291,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -312,6 +321,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -341,6 +351,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -370,6 +381,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -399,6 +411,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "materialType": "Wood",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -428,6 +441,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.2,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -457,6 +471,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.2,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -486,6 +501,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.2,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -515,6 +531,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -3,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.2,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -544,6 +561,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -573,6 +591,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "materialType": "Leather",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -602,6 +621,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -3,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.2,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -631,6 +651,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -660,6 +681,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -689,6 +711,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -718,6 +741,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.3,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -747,6 +771,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.3,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -776,6 +801,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.3,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -805,6 +831,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -834,6 +861,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -863,6 +891,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -892,6 +921,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -921,6 +951,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -950,6 +981,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -979,6 +1011,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1008,6 +1041,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1037,6 +1071,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1066,6 +1101,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1095,6 +1131,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1124,6 +1161,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1152,6 +1190,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1180,6 +1219,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1208,6 +1248,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1236,6 +1277,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1264,6 +1306,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.15,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1293,6 +1336,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -10,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.5,
+    "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",

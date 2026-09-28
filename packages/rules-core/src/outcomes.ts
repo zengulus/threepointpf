@@ -93,6 +93,7 @@ export const pf1eOutcomePolicies: RollOutcomePolicySet = {
 const families = {
   attack: "attack",
   damage: "plain",
+  healing: "plain",
   maneuver: "maneuver",
   save: "save",
   skill: "skill",

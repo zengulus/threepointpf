@@ -26,6 +26,9 @@ import type { ProgressionLevelResult, SpellcastingLevelContribution } from "./ad
 export interface EquipmentEntry extends EquipmentInstance {
   source?: ProgressionSourceMetadata;
   effects?: Effect[];
+  arcaneSpellFailureChance?: number;
+  materialNotes?: string;
+  materialWarning?: string;
 }
 
 export interface DirectModifierOptions {

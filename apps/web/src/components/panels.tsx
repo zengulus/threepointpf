@@ -1,7 +1,9 @@
 import { formatModifier } from "@threepointpf/dice";
+import { calculateCarryLoad, resolveEquipment } from "@threepointpf/rules-core";
 import {
   attackProfileCatalog,
   equipmentCatalog,
+  equipmentMaterialCatalog,
   experienceCatalog,
   featureCatalog,
   skillCatalog,
@@ -29,9 +31,11 @@ import {
 } from "../lib/format";
 import { abilities, abilityLabels, bonusTypes, effectTargets } from "../lib/options";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
+import { CharacterDefenseInputs, CharacterIdentityPanel, TextBlock } from "./character-record";
 
 export function InputsPanel({ sheet }: { sheet: CharacterSheet }) {
   return (
+      <>
       <section className="panel inputs-panel">
         <div className="panel-heading">
           <div>
@@ -200,6 +204,9 @@ export function InputsPanel({ sheet }: { sheet: CharacterSheet }) {
           </div>
         </div>
       </section>
+      <CharacterIdentityPanel sheet={sheet} />
+      <CharacterDefenseInputs sheet={sheet} />
+      </>
   );
 }
 
@@ -351,6 +358,15 @@ export function DefensesPanel({ sheet }: { sheet: CharacterSheet }) {
             inspect={() => sheet.inspect("CMD", sheet.derived.cmd)}
             testId="stat-cmd"
           />
+        </div>
+        <div className="defense-reminders" aria-label="Damage reduction and resistances">
+          {(sheet.character.defenses?.spellResistance ?? 0) > 0 && <span>Spell resistance <b>{sheet.character.defenses?.spellResistance}</b></span>}
+          {(sheet.character.defenses?.damageReduction ?? []).map((entry, index) => <span key={index}>DR <b>{entry.amount}{entry.bypass ? `/${entry.bypass}` : ""}</b></span>)}
+          {Object.entries(sheet.character.defenses?.energyResistances ?? {}).map(([type, value]) => value > 0 && <span key={type}>{type} resistance <b>{value}</b></span>)}
+          {(sheet.character.defenses?.energyImmunities ?? []).map((type) => <span key={type}>{type} immunity</span>)}
+          {(sheet.character.nonlethalDamage ?? 0) > 0 && <span>Nonlethal damage <b>{sheet.character.nonlethalDamage}</b></span>}
+          {sheet.character.record?.armorClassNotes && <span>AC: {sheet.character.record.armorClassNotes}</span>}
+          {sheet.character.record?.savingThrowNotes && <span>Saves: {sheet.character.record.savingThrowNotes}</span>}
         </div>
         <div className="saves-row">
           <RollTargetField
@@ -674,6 +690,14 @@ export function SkillsPanel({ sheet }: { sheet: CharacterSheet }) {
 }
 
 export function EquipmentPanel({ sheet }: { sheet: CharacterSheet }) {
+  const items = sheet.character.equipment ?? [];
+  const updateItem = (id: string, patch: Partial<(typeof items)[number]>) => sheet.update({ equipment: items.map((item) => item.id === id ? { ...item, ...patch } : item) });
+  const load = calculateCarryLoad(resolveEquipment(sheet.character, equipmentCatalog), sheet.derived.abilities.str.score.value, sheet.derived.size.category);
+  const inventory = sheet.character.inventory ?? {};
+  const companion = inventory.companion ?? { items: [] };
+  const companionItems = companion.items ?? [];
+  const companionLoad = companion.strength ? calculateCarryLoad(companionItems, companion.strength, companion.size ?? "medium") : undefined;
+  const updateCompanion = (changes: Partial<typeof companion>) => sheet.update({ inventory: { ...inventory, companion: { ...companion, ...changes } } });
   return (
       <section className="panel equipment-panel">
         <div className="panel-heading">
@@ -682,8 +706,16 @@ export function EquipmentPanel({ sheet }: { sheet: CharacterSheet }) {
             <h2>Catalog gear & custom weapons</h2>
           </div>
           <span className="helper">
-            Equipped effects and attacks derive from authored instances
+            Carried gear, worn items, storage, currency & encumbrance
           </span>
+        </div>
+        <div className="equipment-load-summary">
+          <b>{load.carriedWeight.toLocaleString()} lb carried · {load.band}</b>
+          <span>Light ≤ {load.lightLimit.toLocaleString()} lb · Medium ≤ {load.mediumLimit.toLocaleString()} lb · Heavy ≤ {load.heavyLimit.toLocaleString()} lb</span>
+          {load.containerOverloads.map((container) => <small className="error-banner" key={container.itemId}>{container.name}: {container.weight} lb exceeds its {container.capacity} lb capacity.</small>)}
+        </div>
+        <div className="form-grid inventory-currency">
+          {(["platinum", "gold", "silver", "copper"] as const).map((coin) => <Field key={coin} label={`${coin} pieces`} type="number" value={inventory[coin] ?? 0} onChange={(value) => sheet.update({ inventory: { ...inventory, [coin]: Math.max(0, Number(value) || 0) } })} />)}
         </div>
         <div className="catalog-add-row">
           <select
@@ -714,8 +746,9 @@ export function EquipmentPanel({ sheet }: { sheet: CharacterSheet }) {
               : ""}
           </p>
         )}
-        {(sheet.character.equipment ?? []).map((item) => (
+        {items.map((item) => (
           <div className="equipment-row" key={item.id}>
+            {(() => { const resolved = sheet.engine.equipment.find((entry) => entry.id === item.id); return resolved?.materialWarning ? <small className="error-banner">{resolved.materialWarning}</small> : resolved?.materialNotes ? <small className="muted">Material effect: {resolved.materialNotes}</small> : null; })()}
             <label>
               <input
                 aria-label={"Equip " + (item.name ?? item.id)}
@@ -751,7 +784,19 @@ export function EquipmentPanel({ sheet }: { sheet: CharacterSheet }) {
                     · {equipmentCatalog[item.definitionId]?.description}
                   </span>
                 )}
+              {(() => { const chance = sheet.engine.equipment.find((entry) => entry.id === item.id)?.arcaneSpellFailureChance; return chance !== undefined && chance > 0 ? <span> · Arcane spell failure {Math.round(chance * 100)}%</span> : null; })()}
             </small>
+            <div className="inventory-item-fields">
+              <label><input type="checkbox" aria-label={`Carry ${item.name ?? item.id}`} checked={item.carried !== false} onChange={(event) => updateItem(item.id, { carried: event.target.checked })} /> Carried</label>
+              <label>Quantity<input aria-label={`Quantity ${item.name ?? item.id}`} type="number" min="1" step="1" value={item.quantity ?? 1} onChange={(event) => updateItem(item.id, { quantity: Math.max(1, Number(event.target.value) || 1) })} /></label>
+              <label>Weight (lb)<input aria-label={`Weight ${item.name ?? item.id}`} type="number" min="0" step="0.1" value={item.weight ?? equipmentCatalog[item.definitionId ?? ""]?.weight ?? ""} onChange={(event) => updateItem(item.id, { weight: Math.max(0, Number(event.target.value) || 0) })} /></label>
+              <label>Value (gp)<input aria-label={`Value ${item.name ?? item.id}`} type="number" min="0" step="0.01" value={item.price ?? ""} onChange={(event) => updateItem(item.id, { price: Math.max(0, Number(event.target.value) || 0) })} /></label>
+              <label>Slot<input aria-label={`Slot ${item.name ?? item.id}`} value={item.slot ?? ""} onChange={(event) => updateItem(item.id, { slot: event.target.value })} /></label>
+              <label>Material<input aria-label={`Material ${item.name ?? item.id}`} list="autosheet-equipment-materials" value={item.material ?? ""} onChange={(event) => updateItem(item.id, { material: event.target.value })} /></label>
+              <label>Container<select aria-label={`Container for ${item.name ?? item.id}`} value={item.containerId ?? ""} onChange={(event) => updateItem(item.id, { containerId: event.target.value || undefined })}><option value="">None</option>{items.filter((container) => container.id !== item.id && container.containerCapacity !== undefined).map((container) => <option key={container.id} value={container.id}>{container.name ?? container.id}</option>)}</select></label>
+              <label>Capacity (lb)<input aria-label={`Capacity of ${item.name ?? item.id}`} type="number" min="0" step="0.1" value={item.containerCapacity ?? ""} onChange={(event) => updateItem(item.id, { containerCapacity: event.target.value === "" ? undefined : Math.max(0, Number(event.target.value) || 0) })} /></label>
+              <label>Contents weight<input aria-label={`Contents weight factor of ${item.name ?? item.id}`} type="number" min="0" max="1" step="0.1" value={item.containerWeightMultiplier ?? 1} onChange={(event) => updateItem(item.id, { containerWeightMultiplier: Math.min(1, Math.max(0, Number(event.target.value) || 0)) })} /></label>
+            </div>
             <button
               className="table-action"
               aria-label={"Remove " + (item.name ?? item.id)}
@@ -767,6 +812,25 @@ export function EquipmentPanel({ sheet }: { sheet: CharacterSheet }) {
             </button>
           </div>
         ))}
+        <datalist id="autosheet-equipment-materials">{Object.values(equipmentMaterialCatalog).map((material) => <option key={material.id} value={material.name} />)}</datalist>
+        <TextBlock label="Storage and container notes" value={inventory.storageNotes ?? ""} onChange={(value) => sheet.update({ inventory: { ...inventory, storageNotes: value } })} />
+        <div className="workbook-system-subsection companion-inventory">
+          <div className="panel-heading"><div><span className="eyebrow">EQUIPMENT · COMPANION</span><h3>{companion.name || "Companion carrying capacity"}</h3></div></div>
+          <div className="form-grid inventory-currency">
+            <Field label="Companion name" value={companion.name ?? ""} onChange={(value) => updateCompanion({ name: value })} />
+            <Field label="Strength" type="number" value={companion.strength ?? ""} onChange={(value) => updateCompanion({ strength: value === "" ? undefined : Math.max(1, Number(value) || 1) })} />
+            <label className="field"><span>Size</span><select value={companion.size ?? "medium"} onChange={(event) => updateCompanion({ size: event.target.value as typeof companion.size })}>{sizeCategories.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+          </div>
+          {companionLoad && <div className="equipment-load-summary"><b>{companionLoad.carriedWeight.toLocaleString()} lb carried · {companionLoad.band}</b><span>Light ≤ {companionLoad.lightLimit.toLocaleString()} lb · Medium ≤ {companionLoad.mediumLimit.toLocaleString()} lb · Heavy ≤ {companionLoad.heavyLimit.toLocaleString()} lb</span>{companionLoad.containerOverloads.map((container) => <small className="error-banner" key={container.itemId}>{container.name}: {container.weight} lb exceeds its {container.capacity} lb capacity.</small>)}</div>}
+          <button className="button quiet" type="button" onClick={() => updateCompanion({ items: [...companionItems, { id: crypto.randomUUID(), name: "Companion item", equipped: false, carried: true, quantity: 1, weight: 0 }] })}>+ Add companion item</button>
+          {companionItems.map((item) => <div className="inventory-item-fields" key={item.id}>
+            <label>Item<input aria-label="Companion item name" value={item.name ?? ""} onChange={(event) => updateCompanion({ items: companionItems.map((entry) => entry.id === item.id ? { ...entry, name: event.target.value } : entry) })} /></label>
+            <label>Quantity<input aria-label="Companion item quantity" type="number" min="1" value={item.quantity ?? 1} onChange={(event) => updateCompanion({ items: companionItems.map((entry) => entry.id === item.id ? { ...entry, quantity: Math.max(1, Number(event.target.value) || 1) } : entry) })} /></label>
+            <label>Weight (lb)<input aria-label="Companion item weight" type="number" min="0" step="0.1" value={item.weight ?? 0} onChange={(event) => updateCompanion({ items: companionItems.map((entry) => entry.id === item.id ? { ...entry, weight: Math.max(0, Number(event.target.value) || 0) } : entry) })} /></label>
+            <label><input type="checkbox" aria-label="Companion carries item" checked={item.carried !== false} onChange={(event) => updateCompanion({ items: companionItems.map((entry) => entry.id === item.id ? { ...entry, carried: event.target.checked } : entry) })} /> Carried</label>
+            <button className="table-action" aria-label={`Remove ${item.name ?? "companion item"}`} onClick={() => updateCompanion({ items: companionItems.filter((entry) => entry.id !== item.id) })}>×</button>
+          </div>)}
+        </div>
         <div className="custom-equipment-form">
           <input
             aria-label="Custom equipment name"

@@ -1,6 +1,7 @@
 import {
   attackProfileCatalogSchema,
   equipmentCatalogSchema,
+  equipmentMaterialCatalogSchema,
   featureCatalogSchema,
   movementModes,
   type AbilityCatalog,
@@ -15,7 +16,9 @@ import {
   type ProgressionSourceMetadata,
 } from "@threepointpf/rules-schema";
 import { generatedAutosheetEquipmentCatalog } from "./generated/autosheet-equipment.js";
+import { generatedAutosheetEquipmentMaterialCatalog } from "./generated/autosheet-equipment-materials.js";
 import { generatedAutosheetAgeCatalog } from "./generated/autosheet-age.js";
+import { generatedAutosheetConditionCatalog } from "./generated/autosheet-conditions.js";
 import { generatedAutosheetAttackProfileCatalog } from "./generated/autosheet-attacks.js";
 
 const workbook = (
@@ -371,6 +374,20 @@ const features: FeatureDefinition[] = [
     252,
     "Only a single move action each turn.",
   ),
+  feature(
+    "negative-levels",
+    "Negative Level",
+    [
+      ...attacks(-1),
+      ...saves(-1),
+      modifier("skill.all", -1, "penalty"),
+      modifier("hp", -5, "penalty"),
+      modifier("casterLevel", -1, "penalty"),
+    ],
+    115,
+    "One negative level: −1 on attacks, combat maneuvers, saves, skill checks, and caster level; −5 maximum hit points. Ability checks are not separately represented in the workbook formulas.",
+    "Main Sheet",
+  ),
 ];
 const contextFlagCatalog: Record<string, string[]> = {
   "pf1e.paizo.combat-expertise": ["combat-expertise"],
@@ -391,6 +408,7 @@ const severity: Record<string, { exclusiveGroup: string; priority: number }> = {
   },
 };
 export const featureCatalog = featureCatalogSchema.parse({
+  ...generatedAutosheetConditionCatalog,
   ...generatedAutosheetAgeCatalog,
   ...Object.fromEntries(
     features.map((item) => [
@@ -520,6 +538,7 @@ const equipment: EquipmentDefinition[] = [
 export const autosheetEquipmentCatalog = equipmentCatalogSchema.parse(
   generatedAutosheetEquipmentCatalog,
 );
+export const equipmentMaterialCatalog = equipmentMaterialCatalogSchema.parse(generatedAutosheetEquipmentMaterialCatalog);
 const armorSupplementSource: ProgressionSourceMetadata = {
   ...equipmentSource,
   document: "Pathfinder Ultimate Equipment / PRD",

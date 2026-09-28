@@ -31,16 +31,16 @@
           "name": "Spells, Spheres and other stuff",
           "state": "visible",
           "bounds": "A1:BG147",
-          "importStatus": "excluded",
-          "reason": "Spellcasting and sphere material is outside this advancement import scope."
+          "importStatus": "partial",
+          "reason": "Class-linked Psionics and FFd20 progressions are imported into character-owned system sources; specialized entry corpora and remaining system mechanics still need explicit mappings."
         },
         {
           "name": "Class Charts",
           "state": "visible",
           "bounds": "A1:AR633",
           "importStatus": "imported",
-          "reason": "Non-spellcasting class chassis rows are imported from the bounded semantic region.",
-          "semanticRows": "3:295"
+          "reason": "Class chassis, recognized prepared/spontaneous PF1e spell tables, Psionics charts, and FFd20 MP/spells-known tables are imported with provenance.",
+          "semanticRows": "3:295,312:492,518:538,541:632"
         },
         {
           "name": "Class Skills",
@@ -55,8 +55,8 @@
           "state": "visible",
           "bounds": "A1:AF323",
           "importStatus": "partial",
-          "reason": "Age adjustments, XP thresholds, ability-based attack profiles and armor/shield chassis are generated. Quick toggles, straightforward conditions and explicit PRD equipment supplements are reviewed declarative content in src/content.ts. Contextual material combinations and remaining spreadsheet formulas are not executed.",
-          "semanticRows": "28:34,45:61,114:134,149:206"
+          "reason": "Age adjustments, XP thresholds, ability-based attack profiles, armor/shield chassis and compatible material adjustments, and numeric condition modifiers are generated. Main Sheet quick toggles and additional PRD equipment supplements are reviewed declarative content in src/content.ts. Context-dependent special material notes and remaining spreadsheet formulas are not executed.",
+          "semanticRows": "28:34,45:61,114:134,149:232,237:268"
         },
         {
           "name": "Changelog",
@@ -71,12 +71,16 @@
   "summary": {
     "safelyParseableClassChartRows": 259,
     "generatedProgressions": 259,
-    "generatedSkillDefinitions": 42,
+    "progressionsWithSpellcastingTemplates": 27,
+    "progressionsWithCharacterSystemTemplates": 26,
+    "generatedSkillDefinitions": 54,
     "generatedEquipmentDefinitions": 45,
+    "generatedEquipmentMaterials": 21,
     "generatedExperienceTracks": 3,
     "generatedAgeFeatures": 5,
+    "generatedConditionFeatures": 20,
     "generatedAttackProfiles": 60,
-    "progressionsWithClassSkills": 257,
+    "progressionsWithClassSkills": 259,
     "explicitPrestigeCharts": 89,
     "classChartCategories": {
       "Base": 28,
@@ -169,7 +173,7 @@
           "AN": "knowledge-martial"
         }
       },
-      "ignoredAlternateConsolidatedColumns": {
+      "consolidatedColumns": {
         "AS": "C. Acrobatics",
         "AT": "C. Athletics",
         "AU": "C. Finesse",
@@ -2014,6 +2018,13 @@
         "sheet": "Class Charts",
         "row": 140,
         "range": "A140:L140"
+      },
+      "classSkillsSource": {
+        "document": "Chronicle of the Righteous",
+        "sheet": "Mystery Cultist class skills",
+        "system": "PF1e",
+        "publisher": "Paizo",
+        "category": "Paizo Prestige"
       }
     },
     {
@@ -2189,6 +2200,13 @@
         "sheet": "Class Charts",
         "row": 152,
         "range": "A152:L152"
+      },
+      "classSkillsSource": {
+        "document": "Inner Sea Gods",
+        "sheet": "Sentinel class skills",
+        "system": "PF1e",
+        "publisher": "Paizo",
+        "category": "Paizo Prestige"
       }
     },
     {
@@ -4609,6 +4627,281 @@
       }
     }
   ],
+  "equipmentMaterialRows": [
+    {
+      "id": "pf1e.autosheet.material.adamantine",
+      "name": "Adamantine",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 209,
+        "range": "A209:I209",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.angelskin",
+      "name": "Angelskin",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 210,
+        "range": "A210:I210",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.armored-kilt",
+      "name": "Armored Kilt",
+      "variants": 2,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 211,
+        "range": "A211:I211",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.bone",
+      "name": "Bone",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 213,
+        "range": "A213:I213",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.bronze",
+      "name": "Bronze",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 214,
+        "range": "A214:I214",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.darkleaf-cloth",
+      "name": "Darkleaf Cloth",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 215,
+        "range": "A215:I215",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.darkwood",
+      "name": "Darkwood",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 216,
+        "range": "A216:I216",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.dragonhide",
+      "name": "Dragonhide",
+      "variants": 2,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 217,
+        "range": "A217:I217",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.eel-hide",
+      "name": "Eel Hide",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 219,
+        "range": "A219:I219",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.elysian-bronze",
+      "name": "Elysian Bronze",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 220,
+        "range": "A220:I220",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.fire-forged-steel",
+      "name": "Fire-forged steel",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 221,
+        "range": "A221:I221",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.frost-forged-steel",
+      "name": "Frost-forged steel",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 222,
+        "range": "A222:I222",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.greenwood",
+      "name": "Greenwood",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 223,
+        "range": "A223:I223",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.griffon-mane",
+      "name": "Griffon mane",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 224,
+        "range": "A224:I224",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.horacalcum",
+      "name": "Horacalcum",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 225,
+        "range": "A225:I225",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.leather-hide",
+      "name": "Leather / Hide",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 226,
+        "range": "A226:I226",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.living-steel",
+      "name": "Living steel",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 227,
+        "range": "A227:I227",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.mithral",
+      "name": "Mithral",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 228,
+        "range": "A228:I228",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.mithral-armored-kilt",
+      "name": "Mithral + Armored Kilt",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 229,
+        "range": "A229:I229",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.steel",
+      "name": "Steel",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 231,
+        "range": "A231:I231",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.material.wood",
+      "name": "Wood",
+      "variants": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 232,
+        "range": "A232:I232",
+        "system": "PF1e",
+        "category": "Armor and shield materials"
+      }
+    }
+  ],
   "experienceRows": [
     {
       "id": "pf1e.autosheet.experience-slow",
@@ -6083,6 +6376,15 @@
       "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
     },
     {
+      "kind": "published-class-skill-supplement",
+      "progressionId": "pf1e.paizo.mystery-cultist",
+      "source": {
+        "document": "Chronicle of the Righteous",
+        "sheet": "Mystery Cultist class skills"
+      },
+      "message": "Added the published Paizo class-skill list: diplomacy, heal, intimidate, knowledge-planes, knowledge-religion, sense-motive, spellcraft."
+    },
+    {
       "kind": "explicit-prestige-chart",
       "progressionId": "pf1e.paizo.mystery-cultist",
       "source": {
@@ -6201,6 +6503,15 @@
         "range": "D151:L151"
       },
       "message": "Expanded Prestige Good/Poor schedules into 10 explicit cumulative levels."
+    },
+    {
+      "kind": "published-class-skill-supplement",
+      "progressionId": "pf1e.paizo.sentinel",
+      "source": {
+        "document": "Inner Sea Gods",
+        "sheet": "Sentinel class skills"
+      },
+      "message": "Added the published Paizo class-skill list: climb, craft, handle-animal, intimidate, knowledge-religion, perception, profession, ride, survival, swim."
     },
     {
       "kind": "explicit-prestige-chart",
@@ -6564,7 +6875,7 @@
         "sheet": "Formula References",
         "range": "A149:I206"
       },
-      "message": "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains zero). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata only. Column I is weight category, not pounds, and is never imported as weight. Item-specific maneuvers, proficiency and material combinations require contextual rules."
+      "message": "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains a cap). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata. Column I is weight category, not pounds. Material compatibility labels are retained on each armor and shield chassis."
     },
     {
       "kind": "xp-level-one-normalization",
@@ -6583,6 +6894,14 @@
       "message": "Imports only the workbook's explicit ability adjustments, not racial age thresholds or the separate Young Creature template. Entries in the same age group do not stack; choose one age category."
     },
     {
+      "kind": "condition-action-scope",
+      "source": {
+        "sheet": "Formula References",
+        "range": "A237:U268"
+      },
+      "message": "Imported numeric condition modifiers and movement multipliers. Text-only action restrictions remain descriptive notes because the workbook encodes no executable action-state formula."
+    },
+    {
       "kind": "attack-profile-normalization",
       "source": {
         "sheet": "Formula References",
@@ -6592,28 +6911,6 @@
     }
   ],
   "unsupportedRows": [
-    {
-      "kind": "missing-class-skills",
-      "progressionId": "pf1e.paizo.mystery-cultist",
-      "name": "Mystery Cultist",
-      "source": {
-        "sheet": "Class Charts",
-        "row": 140,
-        "range": "A140:H140"
-      },
-      "reason": "No scoped Class Skills row exists in PRESTIGE CLASSES; chassis was retained without classSkills."
-    },
-    {
-      "kind": "missing-class-skills",
-      "progressionId": "pf1e.paizo.sentinel",
-      "name": "Sentinel",
-      "source": {
-        "sheet": "Class Charts",
-        "row": 152,
-        "range": "A152:H152"
-      },
-      "reason": "No scoped Class Skills row exists in PRESTIGE CLASSES; chassis was retained without classSkills."
-    },
     {
       "kind": "non-equipment-armor-row",
       "name": "Mage Armor (Spell)",
@@ -6649,14 +6946,6 @@
         "row": 205
       },
       "reason": "Shield is a spell effect, not a physical shield."
-    },
-    {
-      "kind": "contextual-equipment-materials",
-      "source": {
-        "sheet": "Formula References",
-        "range": "A208:I232"
-      },
-      "reason": "Material/attachment combinations require item-specific eligibility and interaction rules; raw modifiers are not applied globally. Custom items can author their final numeric chassis."
     },
     {
       "kind": "contextual-attack-profiles",

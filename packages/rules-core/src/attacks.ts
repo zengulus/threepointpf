@@ -319,8 +319,15 @@ export function evaluateDamage(
       }];
     }),
   ];
+  const typedFlat = damageResult.contributions.filter((item) => item.damageType);
+  const typedFlatTotal = typedFlat.reduce((total, item) => total + item.value, 0);
+  const formulaTerms = terms.map((term) => {
+    const flat = typedFlat.filter((item) => item.damageType === term.damageType).reduce((total, item) => total + item.value, 0);
+    return `${term.dice.count}d${term.dice.sides}${flat ? `${flat > 0 ? "+" : ""}${flat}` : ""}${term.damageType ? ` ${term.damageType}` : ""}`;
+  });
+  const untypedModifier = modifier - typedFlatTotal;
   return {
-    formula: `${terms.map((term) => `${term.dice.count}d${term.dice.sides}${term.damageType ? ` ${term.damageType}` : ""}`).join(" + ")}${modifier === 0 ? "" : modifier > 0 ? ` + ${modifier}` : ` - ${Math.abs(modifier)}`}`,
+    formula: `${formulaTerms.join(" + ")}${untypedModifier === 0 ? "" : untypedModifier > 0 ? ` + ${untypedModifier}` : ` - ${Math.abs(untypedModifier)}`}`,
     dice: definition.baseDamage,
     modifier,
     criticalMultiplier: attackCriticalMultiplier(runtime, definition),
@@ -377,6 +384,10 @@ function damagePlanFrom(
   // The multiplier is authored on the weapon or its profile; nothing here
   // hardcodes a doubling.
   const times = criticalDamage ? evaluation.criticalMultiplier : 1;
+  const nonMultipliedTypedFlat = evaluation.contributions
+    .filter((item) => item.damageType && evaluation.terms.some((term) => term.damageType === item.damageType && term.criticalBehavior === "notMultiplied"))
+    .reduce((total, item) => total + item.value, 0);
+  const multipliedModifier = evaluation.modifier - nonMultipliedTypedFlat;
   return {
     id: `damage:${runtime.character.id}:${definition.id}${suffix}${criticalDamage ? ":critical" : ""}`,
     characterId: runtime.character.id,
@@ -386,7 +397,7 @@ function damagePlanFrom(
       count: term.dice.count *
         (criticalDamage && term.criticalBehavior === "normal" ? times : 1),
     })),
-    modifier: evaluation.modifier * times,
+    modifier: multipliedModifier * times + nonMultipliedTypedFlat,
     context,
     outcomePolicy: runtime.outcomePolicies.plain,
     provenance: {
@@ -397,7 +408,7 @@ function damagePlanFrom(
             ...evaluation.contributions,
             sourceContribution(
               target,
-              evaluation.modifier * (times - 1),
+            multipliedModifier * (times - 1),
               "damage.critical",
               `Critical hit ×${times}`,
               undefined,

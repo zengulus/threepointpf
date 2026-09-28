@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import { abilityCatalog } from "@threepointpf/rules-data";
+import { abilityCatalog, spellCatalog } from "@threepointpf/rules-data";
 import {
   cloneAbilityDefinition,
   commitAbilityActivation,
@@ -220,6 +220,10 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [activation, setActivation] = useState<AbilityActivationType>("toggleable");
+  const [spellLike, setSpellLike] = useState(false);
+  const [spellLikeFrequency, setSpellLikeFrequency] = useState<NonNullable<AbilityInstance["spellLikeFrequency"]>>("atWill");
+  const [spellId, setSpellId] = useState("");
+  const [usesPerDay, setUsesPerDay] = useState("");
   const [effects, setEffects] = useState<Effect[]>([]);
   const [costs, setCosts] = useState<NonNullable<AbilityInstance["costs"]>>([]);
   const [effectKind, setEffectKind] = useState<EffectKind>("modifier");
@@ -246,10 +250,10 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
   const [costTimingValue, setCostTimingValue] = useState<ResourceCostTiming>("onActivate");
 
   const reset = () => {
-    setEditingId(null); setDraftId(null); setName(""); setDescription(""); setActivation("toggleable"); setEffects([]); setCosts([]); setCostTimingValue("onActivate");
+    setEditingId(null); setDraftId(null); setName(""); setDescription(""); setActivation("toggleable"); setEffects([]); setCosts([]); setCostTimingValue("onActivate"); setSpellLike(false); setSpellLikeFrequency("atWill"); setSpellId(""); setUsesPerDay("");
   };
   const load = (ability: AbilityInstance) => {
-    setEditingId(ability.id); setDraftId(ability.id); setName(ability.name); setDescription(ability.description ?? ""); setActivation(ability.activation); setEffects(clone(ability.effects)); setCosts(clone(ability.costs ?? []));
+    setEditingId(ability.id); setDraftId(ability.id); setName(ability.name); setDescription(ability.description ?? ""); setActivation(ability.activation); setEffects(clone(ability.effects)); setCosts(clone(ability.costs ?? [])); setSpellLike(ability.spellLike ?? false); setSpellLikeFrequency(ability.spellLikeFrequency ?? (ability.activation === "passive" ? "constant" : ability.usesPerDay === 1 ? "onePerDay" : ability.usesPerDay === 3 ? "threePerDay" : ability.usesPerDay !== undefined ? "custom" : "atWill")); setSpellId(ability.spellId ?? ""); setUsesPerDay(ability.usesPerDay === undefined ? "" : String(ability.usesPerDay));
   };
   const applicability = (): EffectApplicability | undefined => {
     const value = {
@@ -300,7 +304,11 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     if (!name.trim()) { sheet.fail("An ability needs a name."); return; }
     const id = editingId ?? draftId ?? nextId(`ability-${slug(name) || "custom"}`, (sheet.character.abilities ?? []).map((item) => item.id));
     const prior = sheet.character.abilities?.find((item) => item.id === id);
-    const ability: AbilityInstance = { id, name: name.trim(), ...(description.trim() ? { description: description.trim() } : {}), activation, ...(activation === "toggleable" ? { active: prior?.active ?? false } : {}), effects, ...(activation !== "passive" && costs.length ? { costs } : {}) };
+    const daily = !spellLike ? undefined : spellLikeFrequency === "onePerDay" ? 1 : spellLikeFrequency === "threePerDay" ? 3 : spellLikeFrequency === "custom" && usesPerDay.trim() ? Number(usesPerDay) : undefined;
+    if (spellLike && spellLikeFrequency === "custom" && !usesPerDay.trim()) { sheet.fail("Enter the custom daily use limit."); return; }
+    if (daily !== undefined && (!Number.isInteger(daily) || daily < 1)) { sheet.fail("Daily uses must be a positive whole number, or blank for unlimited uses."); return; }
+    const effectiveActivation = spellLike && spellLikeFrequency === "constant" ? "passive" : activation;
+    const ability: AbilityInstance = { id, name: name.trim(), ...(description.trim() ? { description: description.trim() } : {}), activation: effectiveActivation, ...(effectiveActivation === "toggleable" ? { active: prior?.active ?? false } : {}), effects, ...(effectiveActivation !== "passive" && costs.length ? { costs } : {}), ...(spellLike ? { spellLike: true, spellLikeFrequency, ...(spellId ? { spellId } : {}) } : {}), ...(daily !== undefined ? { usesPerDay: daily, usesSpent: Math.min(prior?.usesSpent ?? 0, daily) } : {}) };
     const abilities = editingId ? (sheet.character.abilities ?? []).map((item) => item.id === editingId ? ability : item) : [...(sheet.character.abilities ?? []), ability];
     if (sheet.update({ abilities }, `${editingId ? "Updated" : "Added"} ${ability.name}`)) reset();
   };
@@ -339,6 +347,10 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     for (const plan of result.execution.rollPlans.filter((item) => item.id.startsWith("ability:")))
       await sheet.rollPlan(plan);
   };
+  const refreshDailyUses = (ability: AbilityInstance) => {
+    const abilities = (sheet.character.abilities ?? []).map((item) => item.id === ability.id ? { ...item, usesSpent: 0 } : item);
+    sheet.update({ abilities }, `Refreshed daily uses for ${ability.name}`);
+  };
 
   return <section className="editor-subsection ability-resource-section" aria-label="Abilities">
     <h3>Abilities</h3>
@@ -347,24 +359,34 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
       <button className="button quiet" disabled={!catalogId} onClick={() => addCatalog(false)}>+ Add catalog ability</button>
       <button className="button quiet" disabled={!catalogId} onClick={() => addCatalog(true)}>Clone → local edit</button>
     </div>
-    {(sheet.character.abilities ?? []).map((ability) => <div className={`feature-row ${ability.activation === "passive" || ability.active ? "enabled" : ""}`} key={ability.id}>
-      <button className="toggle" aria-label={`${ability.activation === "activated" ? "Use" : "Toggle"} ability ${ability.name}`} aria-pressed={ability.active ?? false} disabled={ability.activation === "passive"} onClick={() => void activate(ability)}><span /></button>
-      <div><b>{ability.name}</b><small>{ability.activation} · {(ability.effects.length ? ability.effects : ability.definitionId ? abilityCatalog[ability.definitionId]?.effects ?? [] : []).map(describeEffect).join(" · ") || "Descriptive ability"}{ability.costs?.length ? ` · costs ${ability.costs.map((cost) => `${cost.amount} ${sheet.character.resources?.find((item) => item.id === cost.resourceId)?.name ?? cost.resourceId} ${cost.timing ?? (ability.activation === "activated" ? "onUse" : "onActivate")}`).join(" + ")}` : ""}</small></div>
+    {(sheet.character.abilities ?? []).map((ability) => {
+      const exhausted = ability.activation === "activated" && ability.usesPerDay !== undefined && (ability.usesSpent ?? 0) >= ability.usesPerDay;
+      const linkedSpell = ability.spellId ? spellCatalog[ability.spellId] : undefined;
+      return <div className={`feature-row ${ability.activation === "passive" || ability.active ? "enabled" : ""}`} key={ability.id}>
+      <button className="toggle" aria-label={`${ability.activation === "activated" ? "Use" : "Toggle"} ability ${ability.name}`} aria-pressed={ability.active ?? false} disabled={ability.activation === "passive" || exhausted} onClick={() => void activate(ability)}><span /></button>
+      <div><b>{ability.name}</b><small>{ability.spellLike ? `Spell-like${linkedSpell ? ` · ${linkedSpell.name}` : ""} · ${ability.spellLikeFrequency === "constant" ? "constant" : ability.spellLikeFrequency === "atWill" || ability.usesPerDay === undefined ? "at-will" : `${Math.max(0, ability.usesPerDay - (ability.usesSpent ?? 0))}/${ability.usesPerDay} uses today`} · ` : ""}{ability.activation} · {(ability.effects.length ? ability.effects : ability.definitionId ? abilityCatalog[ability.definitionId]?.effects ?? [] : []).map(describeEffect).join(" · ") || "Descriptive ability"}{ability.costs?.length ? ` · costs ${ability.costs.map((cost) => `${cost.amount} ${sheet.character.resources?.find((item) => item.id === cost.resourceId)?.name ?? cost.resourceId} ${cost.timing ?? (ability.activation === "activated" ? "onUse" : "onActivate")}`).join(" + ")}` : ""}</small></div>
       <i>{ability.activation === "passive" ? "PASSIVE" : ability.activation === "activated" ? "USE" : ability.active ? "ON" : "OFF"}</i>
+      {ability.usesPerDay !== undefined && <button className="table-action" aria-label={`Refresh daily uses for ${ability.name}`} onClick={() => refreshDailyUses(ability)}>Refresh</button>}
       {!ability.definitionId && <button className="table-action" aria-label={`Edit ability ${ability.name}`} onClick={() => load(ability)}>Edit</button>}
       <button className="table-action" aria-label={`Remove ability ${ability.name}`} onClick={() => sheet.update({ abilities: (sheet.character.abilities ?? []).filter((item) => item.id !== ability.id) })}>×</button>
-    </div>)}
+    </div>; })}
     <div className="feature-form ability-builder">
       <input aria-label="Ability name" placeholder="Ability name" value={name} onChange={(event) => setName(event.target.value)} />
       <input aria-label="Ability description" placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
       <select aria-label="Ability activation" value={activation} onChange={(event) => { const next = event.target.value as AbilityActivationType; setActivation(next); setCostTimingValue(next === "activated" ? "onUse" : "onActivate"); }}><option value="passive">Passive</option><option value="toggleable">Toggleable</option><option value="activated">Activated / one-shot</option></select>
+      <label className="inline-check"><input type="checkbox" checked={spellLike} onChange={(event) => setSpellLike(event.target.checked)} /> Spell-like ability</label>
+      {spellLike && <>
+        <label>Spell-like frequency<select aria-label="Spell-like frequency" value={spellLikeFrequency} onChange={(event) => { const next = event.target.value as typeof spellLikeFrequency; setSpellLikeFrequency(next); if (next === "constant") setActivation("passive"); else if (activation === "passive") setActivation("activated"); }}>{[["onePerDay", "1/day"], ["threePerDay", "3/day"], ["atWill", "At will"], ["constant", "Constant"], ["custom", "Custom daily uses"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <select aria-label="Linked spell reference" value={spellId} onChange={(event) => setSpellId(event.target.value)}><option value="">No linked spell reference</option>{catalogValues(spellCatalog).map((spell) => <option key={spell.id} value={spell.id}>{spell.name}</option>)}</select>
+        {spellLikeFrequency === "custom" && <label>Uses per day<input aria-label="Spell-like ability uses per day" type="number" min="1" value={usesPerDay} onChange={(event) => setUsesPerDay(event.target.value)} /></label>}
+      </>}
       <h4>Effects</h4>
       {effects.map((effect, index) => <div className="chip" key={index}><span>{describeEffect(effect)}</span><button aria-label={`Move effect ${index + 1} up`} onClick={() => move(index, -1)}>↑</button><button aria-label={`Move effect ${index + 1} down`} onClick={() => move(index, 1)}>↓</button><button aria-label={`Remove effect ${index + 1}`} onClick={() => setEffects((current) => current.filter((_, item) => item !== index))}>×</button></div>)}
       <select aria-label="Ability effect kind" value={effectKind} onChange={(event) => setEffectKind(event.target.value as EffectKind)}><option value="modifier">Numeric modifier</option><option value="replaceBase">Replace baseline</option><option value="multiply">Multiply</option><option value="minimum">Minimum</option><option value="maximum">Maximum</option><option value="grant">Grant</option><option value="criticalRange">Critical range</option><option value="damageDice">Additional damage dice</option></select>
       <select aria-label="Ability effect target" value={target} onChange={(event) => setTarget(event.target.value as EffectTargetId)}>{effectTargets.map((item) => <option key={item} value={item}>{item}</option>)}</select>
       {effectKind === "damageDice" ? <><input aria-label="Ability damage dice" value={dice} onChange={(event) => setDice(event.target.value)} /><input aria-label="Ability damage type" placeholder="fire / precision / label" value={damageType} onChange={(event) => setDamageType(event.target.value)} /><select aria-label="Ability damage critical behavior" value={criticalBehavior} onChange={(event) => setCriticalBehavior(event.target.value as typeof criticalBehavior)}><option value="normal">Multiply on critical</option><option value="notMultiplied">Not multiplied</option></select></> : <>{effectKind === "criticalRange" && <select aria-label="Critical range operation" value={criticalOperation} onChange={(event) => setCriticalOperation(event.target.value as typeof criticalOperation)}><option value="widen">Widen by N</option><option value="double">Double base threat range</option></select>}{!(effectKind === "criticalRange" && criticalOperation === "double") && <input aria-label="Ability effect value" type="number" value={value} onChange={(event) => setValue(event.target.value)} />}{effectKind === "modifier" && <select aria-label="Ability effect bonus type" value={bonus} onChange={(event) => setBonus(event.target.value as BonusType)}>{bonusTypes.map((item) => <option key={item}>{item}</option>)}</select>}{effectKind === "grant" && <input aria-label="Ability granted capability" placeholder="Capability label" value={damageType} onChange={(event) => setDamageType(event.target.value)} />}</>}
       {effectKind === "modifier" && target === "ac" && <label>AC contexts<select multiple aria-label="AC applicability contexts" value={acContexts} onChange={(event) => setAcContexts(selectedValues(event) as typeof acContexts)}><option value="normal">Normal</option><option value="touch">Touch</option><option value="flatFooted">Flat-footed</option></select></label>}
-      <label>Roll kinds<select multiple aria-label="Ability effect roll kinds" value={kinds} onChange={(event) => setKinds(selectedValues(event) as typeof kinds)}>{["attack", "damage", "maneuver", "save", "skill", "initiative"].map((item) => <option key={item}>{item}</option>)}</select></label>
+      <label>Roll kinds<select multiple aria-label="Ability effect roll kinds" value={kinds} onChange={(event) => setKinds(selectedValues(event) as typeof kinds)}>{["attack", "damage", "healing", "maneuver", "save", "skill", "initiative"].map((item) => <option key={item}>{item}</option>)}</select></label>
       <label>Attack modes<select multiple aria-label="Ability effect modes" value={modes} onChange={(event) => setModes(selectedValues(event) as typeof modes)}><option value="melee">Melee</option><option value="ranged">Ranged</option></select></label>
       <select aria-label="Ability effect touch applicability" value={touch} onChange={(event) => setTouch(event.target.value as typeof touch)}><option value="any">Touch or non-touch</option><option value="touch">Touch only</option><option value="nonTouch">Non-touch only</option></select>
       <select aria-label="Ability effect action applicability" value={fullAttack} onChange={(event) => setFullAttack(event.target.value as typeof fullAttack)}><option value="any">Standard or full attack</option><option value="standard">Standard attack only</option><option value="full">Full attack only</option></select>

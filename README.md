@@ -4,11 +4,11 @@ A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-t
 
 ## ▶️ [Live demo](https://zengulus.github.io/threepointpf/)
 
-**[https://zengulus.github.io/threepointpf/](https://zengulus.github.io/threepointpf/)** — no install, no sign-in, no database. It opens on a level 1 fighter and rolls with 3D dice.
+**[https://zengulus.github.io/threepointpf/](https://zengulus.github.io/threepointpf/)** — no install required. The first visit creates a local Dungeon Master account; the site then opens on a level 1 fighter and rolls with 3D dice.
 
 ## Try the demo
 
-The sheet is published as a static demo on GitHub Pages at **[zengulus.github.io/threepointpf](https://zengulus.github.io/threepointpf/)** (`.github/workflows/pages.yml`), and **demo mode is the default presentation**: it needs no server, no sign-in and no configuration. The Pages build explicitly selects browser mode; unrelated environment variables cannot turn it into a server client.
+The site is published as a static app on GitHub Pages at **[zengulus.github.io/threepointpf](https://zengulus.github.io/threepointpf/)** (`.github/workflows/pages.yml`). On first use, create a Dungeon Master account; DMs can add accounts, assign DM or player roles, and switch into a player view. Accounts and sign-ins are local to that browser profile and do not sync between devices. Passwords are hashed in the browser, but this static deployment does not provide server-backed account security. The Pages build explicitly selects browser mode; unrelated environment variables cannot turn it into a server client.
 
 Opening it lands on a **level 1 fighter sample** — elite array, Power Attack and Weapon Focus with a greatsword, Toughness, a chain shirt, one level of the fighter progression — and a second sample holds the multi-level showcase sheet. Everything is authored state: the engine recomputes every number, saves stay in that browser's storage, and switching samples is a fresh start.
 
@@ -69,6 +69,7 @@ Export downloads a readable `*.threepointpf.json` envelope with format `threepoi
 
 Spellcasting now has a deliberately small foundation described below; it is not a complete Pathfinder spell engine. Nonlethal damage, campaign profile storage, point-buy, feat legality automation, death/stabilization policy, and multiplayer remain deferred.
 - Start from a sample character (the panel at the top of the sheet). Samples are ordinary authored state, so every derived number is recomputed; **Reset sample** reloads the pristine version, and the browser remembers which sample you were on. Invalid edits retain the last valid character and show an error.
+- **Charlie** is a level 3 Rajah/Stalker gestalt adaptation of the supplied Autosheet character. His Intelligence-based nodachi has an 18–20 threat range, bleed damage, and a separate Soulburn roll. The workbook's non-modeled veil, maneuver, and other third-party rules remain character notes rather than invented automation.
 - Open **Workspace** to put that same sheet in a draggable/resizable window, or return to the full-page sheet at any time. The active tab, workspace mode, window visibility/minimized state, and window geometry are temporary UI state; they do not change or save the character.
 - Optionally select an XP track. XP reports eligibility; advancing classes remains an explicit edit. Age-category adjustments are optional catalog features, not inferred from a character's race.
 - **Save character** persists the sheet across reloads: to the authenticated same-origin Character API in hosted mode, and to this browser's storage in browser mode. Invalid edits retain the last valid character and show an error.

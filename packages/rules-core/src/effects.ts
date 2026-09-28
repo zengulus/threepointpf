@@ -316,6 +316,7 @@ export function effectContribution(
       effect.bonusType,
       {
         appliesTo: "appliesTo" in effect ? effect.appliesTo : undefined,
+        ...( "damageType" in effect && effect.damageType ? { damageType: effect.damageType } : {}),
         ...(isAbilityPenalty(effect, target) ? { abilityPenalty: true } : {}),
       },
     ),

@@ -1,6 +1,7 @@
 import type { RollPlan } from "@threepointpf/dice";
 import { d20CheckDie, type CharacterInput, type EvaluationResult, type RollOutcomePolicy, type SpellCatalog, type SpellcastingSource, type TargetId } from "@threepointpf/rules-schema";
 import { sourceContribution, sum } from "./contributions.js";
+import { babContribution } from "./defenses.js";
 import type { RulesRuntime } from "./runtime.js";
 
 export interface DerivedSpellcastingSource {
@@ -10,7 +11,7 @@ export interface DerivedSpellcastingSource {
   maximumSpellLevelResult: EvaluationResult;
   casterLevel: EvaluationResult;
   concentration: EvaluationResult;
-  slots: Array<{ level: number; capacity: number; spent: number; remaining: number; provenance: EvaluationResult }>;
+  slots: Array<{ level: number; capacity: number; spent: number; remaining: number; unlimited: boolean; provenance: EvaluationResult }>;
   spellsKnown: Array<{ level: number; capacity: number }>;
   spellLevel(spellId: string, catalog: SpellCatalog): number | undefined;
   saveDc(spellLevel: number): EvaluationResult;
@@ -46,7 +47,11 @@ export function deriveSpellcastingSource(runtime: RulesRuntime, source: Spellcas
     ...(advancementEvidence.length ? { children: advancementEvidence.map((item) => sourceContribution(casterTarget, item.levels, `advancement.slot.${item.slotId}.track.${item.trackId}.spellcasting.${item.progressionId}`, `${item.progressionId} advances ${source.name} by ${item.levels}`)) } : {}),
     note: `Progression row ${row?.level ?? 0}: caster level ${row?.casterLevel ?? 0}`,
   };
-  const casterParts = [casterBaseline, ...runtime.directModifiers(casterTarget).applied];
+  const casterParts = [
+    casterBaseline,
+    ...runtime.directModifiers(casterTarget).applied,
+    ...runtime.directModifiers("casterLevel").applied,
+  ];
   const casterLevel = evaluation(runtime, casterTarget, casterParts);
   const concentrationTarget = `spellcasting.${source.id}.concentration` as TargetId;
   const concentrationBase = {
@@ -57,14 +62,24 @@ export function deriveSpellcastingSource(runtime: RulesRuntime, source: Spellcas
   const concentration = evaluation(runtime, concentrationTarget, concentrationParts);
   const maximumSpellLevelTarget = `spellcasting.${source.id}.maximumSpellLevel` as TargetId;
   const maximumSpellLevelResult = evaluation(runtime, maximumSpellLevelTarget, [runtime.replacement(maximumSpellLevelTarget, row?.maximumSpellLevel ?? 0, `spellcasting.${source.id}.progression.${row?.level ?? 0}.maximumSpellLevel`, "Maximum spell level"), ...runtime.directModifiers(maximumSpellLevelTarget).applied]);
-  const levels = [...new Set([...Object.keys(row?.slots ?? {}).map(Number), ...Object.keys(row?.spellsKnown ?? {}).map(Number)])].sort((a, b) => a - b);
+  const levels = [...new Set([...Object.keys(row?.slots ?? {}).map(Number), ...Object.keys(row?.spellsKnown ?? {}).map(Number), ...(row?.unlimitedSpellLevels ?? [])])].sort((a, b) => a - b);
   const slots = levels.map((level) => {
     const target = `spellcasting.${source.id}.slot.${level}` as TargetId;
     const baseCapacity = row?.slots[String(level)] ?? 0;
     const spent = stateSpent(runtime.character, slotResourceId(source.id, level));
+    const unlimited = row?.unlimitedSpellLevels?.includes(level) ?? false;
+    if (unlimited) {
+      const capacityEvaluation = evaluation(runtime, target, [runtime.replacement(target, 0, `spellcasting.${source.id}.progression.${row?.level ?? 0}.slot.${level}`, `Level ${level} unlimited spells`)]);
+      return { level, capacity: 0, spent: 0, remaining: 0, unlimited: true, provenance: capacityEvaluation };
+    }
     const capacityEvaluation = evaluation(runtime, target, [runtime.replacement(target, baseCapacity, `spellcasting.${source.id}.progression.${row?.level ?? 0}.slot.${level}`, `Level ${level} base slots`), ...runtime.directModifiers(target).applied]);
-    const capacity = Math.max(0, Math.floor(capacityEvaluation.value));
-    return { level, capacity, spent, remaining: Math.max(0, capacity - spent), provenance: capacity === capacityEvaluation.value ? capacityEvaluation : evaluation(runtime, target, [...capacityEvaluation.contributions, sourceContribution(target, capacity - capacityEvaluation.value, `spellcasting.${source.id}.slot.floor`, "Non-negative whole slot capacity")]) };
+    const bonusSlots = source.bonusSlots === "standard" && level > 0 && level <= (row?.maximumSpellLevel ?? 0)
+      ? Math.max(0, Math.floor((runtime.abilityScore(source.castingAbility).value - 10 - level) / 4) + 1)
+      : 0;
+    const bonusContribution = bonusSlots ? sourceContribution(target, bonusSlots, `spellcasting.${source.id}.bonusSlots.${source.castingAbility}.${level}`, `${source.castingAbility.toUpperCase()} bonus level ${level} slots`) : undefined;
+    const completeEvaluation = bonusContribution ? evaluation(runtime, target, [...capacityEvaluation.contributions, bonusContribution]) : capacityEvaluation;
+    const capacity = Math.max(0, Math.floor(completeEvaluation.value));
+    return { level, capacity, spent, remaining: Math.max(0, capacity - spent), unlimited: false, provenance: capacity === completeEvaluation.value ? completeEvaluation : evaluation(runtime, target, [...completeEvaluation.contributions, sourceContribution(target, capacity - completeEvaluation.value, `spellcasting.${source.id}.slot.floor`, "Non-negative whole slot capacity")]) };
   });
   const spellsKnown = Object.entries(row?.spellsKnown ?? {}).map(([level, capacity]) => ({ level: Number(level), capacity: Number(capacity) })).sort((a, b) => a.level - b.level);
   return {
@@ -90,7 +105,7 @@ export function concentrationRollPlan(runtime: RulesRuntime, sourceId: string, d
   };
 }
 
-export interface SpellCastRequest { sourceId: string; spellId: string; preparedAllocationId?: string }
+export interface SpellCastRequest { sourceId: string; spellId: string; preparedAllocationId?: string; targetTouchAc?: number; targetName?: string }
 export interface SpellValidationIssue { code: string; message: string }
 export type SpellCastResult = { accepted: true; character: CharacterInput; spell: SpellCatalog[string]; execution: { sourceId: string; spellLevel: number; casterLevel: number; saveDc: number; rollPlans: RollPlan[] } } | { accepted: false; character: CharacterInput; issues: SpellValidationIssue[] };
 
@@ -125,26 +140,50 @@ export function castSpell(runtime: RulesRuntime, request: SpellCastRequest, spel
   if (spellLevel !== undefined && spellLevel > derived.maximumSpellLevel) issues.push({ code: "level-unavailable", message: `${source.name} cannot cast level ${spellLevel} spells` });
   const resourceId = slotResourceId(source.id, spellLevel ?? 0);
   const slot = derived.slots.find((item) => item.level === spellLevel);
-  if (spellLevel !== undefined && (!slot || slot.remaining <= 0)) issues.push({ code: "no-slot", message: `No level ${spellLevel} slot remains for ${source.name}` });
+  if (spellLevel !== undefined && (!slot || (!slot.unlimited && slot.remaining <= 0))) issues.push({ code: "no-slot", message: `No level ${spellLevel} slot remains for ${source.name}` });
   if (issues.length || spellLevel === undefined) return { accepted: false, character, issues };
   const dc = derived.saveDc(spellLevel);
   const rollPlans: RollPlan[] = [];
   const damage = spell.execution?.damage;
+  const spellAttack = spell.execution?.attack;
+  if (spellAttack) {
+    const mode: "melee" | "ranged" = spellAttack === "meleeTouch" ? "melee" : "ranged";
+    const target = `attack.${mode}` as TargetId;
+    const context = { kind: "attack" as const, actorCharacterId: character.id, action: { kind: "standardAttack" as const }, spellId: spell.id, mode, touch: true, flags: runtime.enabledContextFlags(), ...(request.targetTouchAc === undefined ? {} : { target: { name: request.targetName, defense: { kind: "ac" as const, value: request.targetTouchAc, context: "touch" as const } } }) };
+    const modifiers = runtime.directModifiers(target, { context, reportExclusions: true });
+    const attack = runtime.result(target, [
+      runtime.replacement(target, 0, `${target}.base`, `${mode} touch attack`),
+      babContribution(runtime, target),
+      runtime.abilityContribution(mode === "melee" ? "str" : "dex", target),
+      runtime.sizeAdjustment(target, -2, "Size modifier"),
+      ...modifiers.applied,
+    ], { rollContext: context, excluded: modifiers.excluded });
+    rollPlans.push({ id: `spell:${character.id}:${source.id}:${spell.id}:attack`, characterId: character.id, label: `${spell.name} ${mode} touch attack`, dice: [{ sides: 20, count: 1 }], modifier: attack.value, context, outcomePolicy: runtime.outcomePolicies.attack, primaryCheckDie: d20CheckDie, provenance: { modifier: attack.contributions, excluded: attack.excluded ?? [] } });
+  }
   if (damage) {
     const count = damage.perCasterLevel ? Math.min(derived.casterLevel.value, damage.casterLevelCap ?? Infinity) * damage.dice.count : damage.dice.count;
     rollPlans.push({ id: `spell:${character.id}:${source.id}:${spell.id}:damage`, characterId: character.id, label: `${spell.name} (${damage.damageType})`, dice: [{ sides: damage.dice.sides, count: Math.max(1, count) }], modifier: 0, context: { kind: "damage", actorCharacterId: character.id, action: { kind: "other" }, spellId: spell.id }, outcomePolicy: plainPolicy(), provenance: { modifier: [], excluded: [], damageTerms: [{ kind: "dice", dice: { count: Math.max(1, count), sides: damage.dice.sides }, label: spell.name, damageType: damage.damageType, criticalBehavior: "notMultiplied", multiplier: 1, source: { id: `spell.${spell.id}`, label: spell.name } }] } });
   }
   const resourceStates = [...(character.resourceStates ?? [])];
-  const old = resourceStates.find((item) => item.resourceId === resourceId);
-  if (old) old.spent += 1;
-  else resourceStates.push({ resourceId, spent: 1 });
+  if (!slot?.unlimited) {
+    const old = resourceStates.find((item) => item.resourceId === resourceId);
+    if (old) old.spent += 1;
+    else resourceStates.push({ resourceId, spent: 1 });
+  }
+  const healing = spell.execution?.healing;
+  if (healing) {
+    const count = healing.perCasterLevel ? Math.min(derived.casterLevel.value, healing.casterLevelCap ?? Infinity) * healing.dice.count : healing.dice.count;
+    const casterLevelBonus = healing.bonusPerCasterLevel ? Math.min(derived.casterLevel.value, healing.casterLevelBonusCap ?? Infinity) : 0;
+    const modifier = (healing.flatBonus ?? 0) + casterLevelBonus;
+    rollPlans.push({ id: `spell:${character.id}:${source.id}:${spell.id}:healing`, characterId: character.id, label: `${spell.name} healing`, dice: [{ sides: healing.dice.sides, count: Math.max(1, count) }], modifier, context: { kind: "healing", actorCharacterId: character.id, action: { kind: "other" }, spellId: spell.id }, outcomePolicy: plainPolicy(), provenance: { modifier: [ ...(healing.flatBonus ? [sourceContribution("hp", healing.flatBonus, `spell.${spell.id}.healing.flatBonus`, `${spell.name} healing bonus`)] : []), ...(casterLevelBonus ? [sourceContribution("hp", casterLevelBonus, `spell.${spell.id}.healing.casterLevel`, `Caster level healing bonus (maximum ${healing.casterLevelBonusCap ?? "uncapped"})`)] : []) ], excluded: [] } });
+  }
   const spellcastingSources = (character.spellcastingSources ?? []).map((item) => item.id !== source.id || source.mode !== "prepared" ? item : {
     ...item, preparedSpells: item.preparedSpells?.map((allocation) => allocation.id === request.preparedAllocationId ? { ...allocation, expended: true } : allocation),
   });
   return { accepted: true, character: { ...character, resourceStates, spellcastingSources }, spell, execution: { sourceId: source.id, spellLevel, casterLevel: derived.casterLevel.value, saveDc: dc.value, rollPlans } };
 }
 
-export function prepareSpells(character: CharacterInput, sourceId: string, allocations: SpellcastingSource["preparedSpells"], effectiveLevel?: number): CharacterInput {
+export function prepareSpells(character: CharacterInput, sourceId: string, allocations: SpellcastingSource["preparedSpells"], effectiveLevel?: number, slotCapacities?: Record<string, number>): CharacterInput {
   const sources = character.spellcastingSources ?? [];
   const source = sources.find((item) => item.id === sourceId);
   if (!source || source.mode !== "prepared") throw new Error(`Unknown prepared spellcasting source ${sourceId}`);
@@ -153,7 +192,8 @@ export function prepareSpells(character: CharacterInput, sourceId: string, alloc
   const counts = new Map<number, number>();
   for (const allocation of allocations ?? []) counts.set(allocation.spellLevel, (counts.get(allocation.spellLevel) ?? 0) + 1);
   for (const [spellLevel, count] of counts) {
-    const capacity = row?.slots[String(spellLevel)] ?? 0;
+    if (row?.unlimitedSpellLevels?.includes(spellLevel)) continue;
+    const capacity = slotCapacities?.[String(spellLevel)] ?? row?.slots[String(spellLevel)] ?? 0;
     if (count > capacity) throw new Error(`Cannot prepare ${count} level ${spellLevel} spells; ${source.name} has ${capacity} slots at that level`);
   }
   return { ...character, spellcastingSources: sources.map((item) => item.id === sourceId ? { ...item, preparedSpells: (allocations ?? []).map((spell) => ({ ...spell, expended: false })) } : item) };

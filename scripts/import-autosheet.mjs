@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Deterministically imports the non-spellcasting chassis and class-skill
- * facts in the supplied Pathfinder Autosheet.  The workbook is development
+ * Deterministically imports class chassis, standard class spell progressions,
+ * and class-skill facts in the supplied Pathfinder Autosheet. The workbook is development
  * input only: this script emits static rules-data source files and never runs
  * in the browser or rules engine.
  *
@@ -34,6 +34,7 @@ const equipmentOutputPath = path.join(
   generatedDirectory,
   "autosheet-equipment.ts",
 );
+const equipmentMaterialOutputPath = path.join(generatedDirectory, "autosheet-equipment-materials.ts");
 const reportOutputPath = path.join(
   generatedDirectory,
   "autosheet-import-report.json",
@@ -85,11 +86,25 @@ const expectedClassSkillsSections = new Set([
   "HOMEBREW AND SHIT",
 ]);
 
+// These two Paizo progressions have a class-skills list in their published
+// rules, but no matching scoped row in this workbook's Class Skills sheet.
+// Keep the supplement closed and explicitly sourced; never infer by name.
+const publishedClassSkillSupplements = {
+  "pf1e.paizo.mystery-cultist": {
+    ids: ["diplomacy", "heal", "intimidate", "knowledge-planes", "knowledge-religion", "sense-motive", "spellcraft"],
+    source: { document: "Chronicle of the Righteous", sheet: "Mystery Cultist class skills", system: "PF1e", publisher: "Paizo", category: "Paizo Prestige" },
+  },
+  "pf1e.paizo.sentinel": {
+    ids: ["climb", "craft", "handle-animal", "intimidate", "knowledge-religion", "perception", "profession", "ride", "survival", "swim"],
+    source: { document: "Inner Sea Gods", sheet: "Sentinel class skills", system: "PF1e", publisher: "Paizo", category: "Paizo Prestige" },
+  },
+};
+
 /**
  * Keep the import boundary visible in the generated report.  This importer is
  * deliberately narrow: the workbook also contains character-instance data,
- * spellcasting material, and spreadsheet formula references that are not a
- * stable progression catalog.
+ * specialized magic systems and spreadsheet formula references which need
+ * separate explicit mappings.
  */
 const workbookSheetUsage = {
   "Welcome Page": {
@@ -107,15 +122,15 @@ const workbookSheetUsage = {
       "Character inventory layout, not an authoritative equipment corpus.",
   },
   "Spells, Spheres and other stuff": {
-    importStatus: "excluded",
+    importStatus: "partial",
     reason:
-      "Spellcasting and sphere material is outside this advancement import scope.",
+      "Class-linked Psionics and FFd20 progressions are imported into character-owned system sources; specialized entry corpora and remaining system mechanics still need explicit mappings.",
   },
   "Class Charts": {
     importStatus: "imported",
     reason:
-      "Non-spellcasting class chassis rows are imported from the bounded semantic region.",
-    semanticRows: "3:295",
+      "Class chassis, recognized prepared/spontaneous PF1e spell tables, Psionics charts, and FFd20 MP/spells-known tables are imported with provenance.",
+    semanticRows: "3:295,312:492,518:538,541:632",
   },
   "Class Skills": {
     importStatus: "imported",
@@ -126,8 +141,8 @@ const workbookSheetUsage = {
   "Formula References": {
     importStatus: "partial",
     reason:
-      "Age adjustments, XP thresholds, ability-based attack profiles and armor/shield chassis are generated. Quick toggles, straightforward conditions and explicit PRD equipment supplements are reviewed declarative content in src/content.ts. Contextual material combinations and remaining spreadsheet formulas are not executed.",
-    semanticRows: "28:34,45:61,114:134,149:206",
+      "Age adjustments, XP thresholds, ability-based attack profiles, armor/shield chassis and compatible material adjustments, and numeric condition modifiers are generated. Main Sheet quick toggles and additional PRD equipment supplements are reviewed declarative content in src/content.ts. Context-dependent special material notes and remaining spreadsheet formulas are not executed.",
+    semanticRows: "28:34,45:61,114:134,149:232,237:268",
   },
   Changelog: {
     importStatus: "excluded",
@@ -302,20 +317,15 @@ const contextualClassSkillColumns = {
   "3PP PATH OF WAR": { AN: "knowledge-martial" },
 };
 
-const alternateConsolidatedColumns = new Set([
-  "AS",
-  "AT",
-  "AU",
-  "AV",
-  "AW",
-  "AX",
-  "AY",
-  "AZ",
-  "BA",
-  "BB",
-  "BC",
-  "BD",
-]);
+const consolidatedSkillColumns = {
+  AS: "consolidated-acrobatics", AT: "consolidated-athletics",
+  AU: "consolidated-finesse", AV: "consolidated-influence",
+  AW: "consolidated-nature", AX: "consolidated-perception",
+  AY: "consolidated-performance", AZ: "consolidated-religion",
+  BA: "consolidated-society", BB: "consolidated-spellcraft",
+  BC: "consolidated-stealth", BD: "consolidated-survival",
+};
+const alternateConsolidatedColumns = new Set(Object.keys(consolidatedSkillColumns));
 const intentionallyCustomColumns = new Set(["AN", "AO"]);
 
 const skillDefinitions = [
@@ -476,6 +486,122 @@ function sourceMetadata({ sheet, category, row, range, sourceInfo }) {
   };
 }
 
+const spellSlotColumns = ["B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
+const spellKnownColumns = ["O", "P", "Q", "R", "S", "T", "U", "V", "W", "X"];
+
+function chartAnchor(reference) {
+  const match = /^\$?([A-Z]{1,2})\$?(\d+)$/i.exec(asText(reference) ?? "");
+  return match ? { column: match[1].toUpperCase(), row: Number(match[2]) } : undefined;
+}
+
+function tableCount(value, description) {
+  const text = asText(value);
+  if (!text || text === "—" || text === "-") return 0;
+  if (text === "∞") return "unlimited";
+  return asInteger(value, description);
+}
+
+function spellcastingTemplateForRow(sheet, record) {
+  const ability = asText(cellValue(sheet, "I", record.row))?.toLowerCase();
+  const slotAnchor = chartAnchor(cellValue(sheet, "J", record.row));
+  const knownValue = asText(cellValue(sheet, "K", record.row));
+  if (!ability || !["int", "wis", "cha"].includes(ability) || !slotAnchor || slotAnchor.column !== "A") return undefined;
+  const slotRow = slotAnchor.row;
+  if (!asText(cellValue(sheet, slotAnchor.column, slotRow))?.toLowerCase().includes("level (character")) return undefined;
+
+  const knownAnchor = chartAnchor(knownValue);
+  const knownStartColumn = knownAnchor ? XLSX.utils.decode_col(knownAnchor.column) : undefined;
+  const knownLevelColumn = knownStartColumn === undefined ? undefined : XLSX.utils.encode_col(knownStartColumn - 1);
+  const spellbookClasses = new Set(["alchemist", "arcanist", "investigator", "magus", "witch", "wizard"]);
+  const isSpellbookClass = spellbookClasses.has(record.name.toLocaleLowerCase("en-US"));
+  const spellListAccess = knownValue === "Spellbook" || isSpellbookClass ? "spellbook" : "list";
+  const mode = spellListAccess === "spellbook" || knownValue === "Divine" ? "prepared" : "spontaneous";
+  const knownRow = mode === "spontaneous" ? knownAnchor?.row : undefined;
+  if (knownValue === "Special" || (!knownRow && knownValue !== "Spellbook" && knownValue !== "Divine" && !isSpellbookClass)) return undefined;
+  const divineNames = new Set(["oracle", "inquisitor"]);
+  const spellListId = knownValue === "Divine" || divineNames.has(record.name.toLocaleLowerCase("en-US")) ? "divine" : "arcane";
+  const sourceId = `${record.id}.spellcasting`;
+  const progressionId = `${record.id}.spellcasting-table`;
+  const progression = [];
+  for (let offset = 1; offset <= 20; offset += 1) {
+    const level = asInteger(cellValue(sheet, "A", slotRow + offset), `Class Charts A${slotRow + offset}`);
+    if (level < 1 || level > 20) continue;
+    const slots = {};
+    const unlimitedSpellLevels = [];
+    for (let spellLevel = 0; spellLevel < spellSlotColumns.length; spellLevel += 1) {
+      const value = tableCount(cellValue(sheet, spellSlotColumns[spellLevel], slotRow + offset), `Class Charts ${spellSlotColumns[spellLevel]}${slotRow + offset}`);
+      if (value === "unlimited") unlimitedSpellLevels.push(spellLevel);
+      else if (value > 0) slots[String(spellLevel)] = value;
+    }
+    const spellsKnown = {};
+    if (knownRow && knownStartColumn !== undefined && knownLevelColumn) {
+      const knownLevel = asInteger(cellValue(sheet, knownLevelColumn, knownRow + offset), `Class Charts ${knownLevelColumn}${knownRow + offset}`);
+      if (knownLevel !== level) throw new Error(`Class Charts known-spell level mismatch for ${record.name} at level ${level}`);
+      for (let spellLevel = 0; spellLevel < spellKnownColumns.length; spellLevel += 1) {
+        const column = XLSX.utils.encode_col(knownStartColumn + spellLevel);
+        const value = tableCount(cellValue(sheet, column, knownRow + offset), `Class Charts ${column}${knownRow + offset}`);
+        if (typeof value === "number" && value > 0) spellsKnown[String(spellLevel)] = value;
+      }
+    }
+    slots["0"] ??= 0;
+    const maximumSpellLevel = Math.max(0, ...Object.entries(slots).filter(([spellLevel, count]) => Number(spellLevel) > 0 && count > 0).map(([spellLevel]) => Number(spellLevel)), ...Object.entries(spellsKnown).filter(([spellLevel, count]) => Number(spellLevel) > 0 && count > 0).map(([spellLevel]) => Number(spellLevel)));
+    progression.push({ level, casterLevel: level, maximumSpellLevel, slots, ...(Object.keys(spellsKnown).length ? { spellsKnown } : {}), ...(unlimitedSpellLevels.length ? { unlimitedSpellLevels } : {}) });
+  }
+  if (!progression.length) return undefined;
+  const tableRange = knownRow && knownLevelColumn ? `; ${knownLevelColumn}${knownRow}:X${knownRow + 20}` : "";
+  const metadata = sourceMetadata({ sheet: classChartsSheetName, category: record.category, row: record.row, range: `I${record.row}:K${record.row}; A${slotRow}:K${slotRow + 20}${tableRange}`, sourceInfo: record.sourceInfo });
+  return { sourceId, progressionId, name: record.name, mode, castingAbility: ability, spellListId, spellListAccess, bonusSlots: "standard", progression, source: metadata };
+}
+
+function characterSystemTemplatesForRow(sheet, record) {
+  const ability = asText(cellValue(sheet, "I", record.row))?.toLowerCase();
+  const poolAnchor = chartAnchor(cellValue(sheet, "J", record.row));
+  const knownAnchor = chartAnchor(cellValue(sheet, "K", record.row));
+  const tierAnchor = chartAnchor(cellValue(sheet, "L", record.row));
+  if (record.category === "FFd20" && ability && ["int", "wis", "cha"].includes(ability) && poolAnchor?.row === 541 && knownAnchor && [546, 568, 590, 612].includes(knownAnchor.row)) {
+    const poolRow = ({ B: 543, C: 542, D: 544 })[poolAnchor.column];
+    if (!poolRow) return [];
+    const levels = [];
+    const knownStart = XLSX.utils.decode_col(knownAnchor.column);
+    for (let level = 1; level <= 20; level += 1) {
+      const resourceColumn = XLSX.utils.encode_col(level);
+      const resourceMaximum = tableCount(cellValue(sheet, resourceColumn, poolRow), `Class Charts ${resourceColumn}${poolRow}`);
+      if (typeof resourceMaximum !== "number") throw new Error(`Invalid FFd20 magic-point progression for ${record.name} at level ${level}`);
+      const knownByTier = {};
+      for (let tier = 0; tier <= 9; tier += 1) {
+        const column = XLSX.utils.encode_col(knownStart + tier);
+        const value = tableCount(cellValue(sheet, column, knownAnchor.row + level), `Class Charts ${column}${knownAnchor.row + level}`);
+        if (typeof value !== "number") throw new Error(`Invalid FFd20 spells-known progression for ${record.name} at tier ${tier}, level ${level}`);
+        if (value > 0) knownByTier[String(tier)] = value;
+      }
+      const maximumTier = Math.max(0, ...Object.keys(knownByTier).map(Number));
+      levels.push({ level, casterLevel: level, maximumTier, resourceMaximum, knownCount: Object.values(knownByTier).reduce((sum, value) => sum + value, 0), ...(Object.keys(knownByTier).length ? { knownByTier } : {}) });
+    }
+    const source = sourceMetadata({ sheet: classChartsSheetName, category: record.category, row: record.row, range: `I${record.row}:K${record.row}; A541:U544; ${knownAnchor.column}${knownAnchor.row}:K${knownAnchor.row + 20}`, sourceInfo: record.sourceInfo });
+    return [{ id: `${record.id}.ffd20`, kind: "ffd20", name: record.name, progressionId: record.id, keyAbility: ability, resourceName: "Magic points", progression: levels, source }];
+  }
+  if (!ability || !["int", "wis", "cha"].includes(ability) || !poolAnchor || !knownAnchor || !tierAnchor) return [];
+  if (poolAnchor.row !== 518 || knownAnchor.row !== 518 || tierAnchor.row !== 518) return [];
+  const levels = [];
+  for (let level = 1; level <= 20; level += 1) {
+    const pool = tableCount(cellValue(sheet, poolAnchor.column, poolAnchor.row + level), `Class Charts ${poolAnchor.column}${poolAnchor.row + level}`);
+    const known = tableCount(cellValue(sheet, knownAnchor.column, knownAnchor.row + level), `Class Charts ${knownAnchor.column}${knownAnchor.row + level}`);
+    const tierValue = asText(cellValue(sheet, tierAnchor.column, tierAnchor.row + level));
+    const maximumTier = tierValue && tierValue !== "—" ? Number(/^\d+/.exec(tierValue)?.[0] ?? tierValue) : 0;
+    if (typeof pool !== "number" || typeof known !== "number" || !Number.isInteger(maximumTier) || maximumTier < 0) throw new Error(`Invalid psionic chart values for ${record.name} at level ${level}`);
+    const resourceBonusByAbility = {};
+    for (let modifier = 0; modifier <= 15; modifier += 1) {
+      const column = XLSX.utils.encode_col(23 + level);
+      const bonus = tableCount(cellValue(sheet, column, 519 + modifier), `Class Charts ${column}${519 + modifier}`);
+      if (typeof bonus !== "number") throw new Error(`Invalid Psionics bonus power point chart at modifier ${modifier}, level ${level}`);
+      resourceBonusByAbility[String(modifier)] = bonus;
+    }
+    levels.push({ level, casterLevel: level, maximumTier, resourceMaximum: pool, resourceBonusByAbility, knownCount: known });
+  }
+  const source = sourceMetadata({ sheet: classChartsSheetName, category: record.category, row: record.row, range: `I${record.row}:L${record.row}; B518:L538; G518:K538; O518:R538`, sourceInfo: record.sourceInfo });
+  return [{ id: `${record.id}.psionics`, kind: "psionics", name: record.name, progressionId: record.id, keyAbility: ability, resourceName: "Power points", progression: levels, source }];
+}
+
 function parseClassCharts(sheet) {
   const rows = [];
   const failures = [];
@@ -517,7 +643,7 @@ function parseClassCharts(sheet) {
       if (maximumLevel !== undefined && maximumLevel <= 0)
         throw new Error("prestige maximum level must be positive");
       const id = `${sourceInfo.namespace}.${slug(name)}`;
-      rows.push({
+      const record = {
         row,
         category,
         name,
@@ -528,7 +654,10 @@ function parseClassCharts(sheet) {
         babProgression,
         saveProgressions,
         maximumLevel,
-      });
+      };
+      const spellcastingTemplate = spellcastingTemplateForRow(sheet, record);
+      const characterSystemTemplates = characterSystemTemplatesForRow(sheet, record);
+      rows.push({ ...record, ...(spellcastingTemplate ? { spellcastingTemplate } : {}), ...(characterSystemTemplates.length ? { characterSystemTemplates } : {}) });
     } catch (error) {
       failures.push({
         row,
@@ -572,6 +701,7 @@ function classSkillIdsForRow(sheet, entry) {
   const ids = new Set();
   const unsupportedColumns = [];
   const alternateMarkers = [];
+  const consolidatedIds = [];
   const contextual = contextualClassSkillColumns[entry.section] ?? {};
   for (const column of Object.keys(classSkillColumns)) {
     if (asText(cellValue(sheet, column, entry.row)) === "X")
@@ -582,7 +712,7 @@ function classSkillIdsForRow(sheet, entry) {
   }
   for (const column of alternateConsolidatedColumns) {
     if (asText(cellValue(sheet, column, entry.row)) === "X")
-      alternateMarkers.push(column);
+      { alternateMarkers.push(column); consolidatedIds.push(consolidatedSkillColumns[column]); }
   }
   for (const column of intentionallyCustomColumns) {
     if (
@@ -605,6 +735,7 @@ function classSkillIdsForRow(sheet, entry) {
 
   return {
     ids: [...ids].sort(),
+    consolidatedIds: consolidatedIds.sort(),
     unsupportedColumns,
     alternateMarkers,
     proseSupplements,
@@ -638,7 +769,7 @@ function buildSkillCatalog(sheet, warnings) {
     row: 1,
     range: "B1:BH4",
   };
-  return Object.fromEntries(
+  const catalog = Object.fromEntries(
     skillDefinitions.map(
       ([id, name, fallbackAbility, fallbackTrained, fallbackArmor]) => {
         const column = Object.keys(classSkillColumns).find(
@@ -702,6 +833,23 @@ function buildSkillCatalog(sheet, warnings) {
       },
     ),
   );
+  for (const [column, id] of Object.entries(consolidatedSkillColumns)) {
+    const name = asText(cellValue(sheet, column, 1));
+    const governingAbility = asText(cellValue(sheet, column, 3))?.toLowerCase();
+    if (!name || !["str", "dex", "con", "int", "wis", "cha"].includes(governingAbility))
+      throw new Error(`Invalid consolidated skill metadata at ${column}1:${column}3`);
+    const trainedMarker = asText(cellValue(sheet, column, 2));
+    const armorMarker = asText(cellValue(sheet, column, 4));
+    if (trainedMarker && trainedMarker !== "Trained Only") throw new Error(`Unknown trained-only marker at ${column}2`);
+    if (armorMarker && armorMarker !== "Armor Penalty") throw new Error(`Unknown armor-penalty marker at ${column}4`);
+    catalog[id] = {
+      id, name, governingAbility, system: "consolidated",
+      ...(trainedMarker ? { trainedOnly: true } : {}),
+      ...(armorMarker ? { armorCheckPenalty: true } : {}),
+      source: { ...source, category: "Consolidated skill metadata", range: `${column}1:${column}4` },
+    };
+  }
+  return catalog;
 }
 
 function buildEquipmentCatalog(sheet, warnings, unsupported) {
@@ -765,6 +913,7 @@ function buildEquipmentCatalog(sheet, warnings, unsupported) {
       armorCheckPenalty: -penalty,
       reduceLandSpeed: ["Medium", "Heavy"].includes(category),
       arcaneSpellFailureChance: Math.round(failure * 1000) / 1000,
+      ...(asText(cellValue(sheet, "H", row)) ? { materialType: asText(cellValue(sheet, "H", row)) } : {}),
       source: {
         document: documentName,
         sheet: "Formula References",
@@ -779,7 +928,7 @@ function buildEquipmentCatalog(sheet, warnings, unsupported) {
     kind: "armor-table-normalization",
     source: { sheet: "Formula References", range: "A149:I206" },
     message:
-      "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains zero). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata only. Column I is weight category, not pounds, and is never imported as weight. Item-specific maneuvers, proficiency and material combinations require contextual rules.",
+      "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains a cap). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata. Column I is weight category, not pounds. Material compatibility labels are retained on each armor and shield chassis.",
   });
   for (const [row, reason] of [
     [151, "Mage Armor is a spell effect, not worn equipment."],
@@ -796,16 +945,37 @@ function buildEquipmentCatalog(sheet, warnings, unsupported) {
       source: { sheet: "Formula References", row },
       reason,
     });
-  unsupported.push({
-    kind: "contextual-equipment-materials",
-    source: { sheet: "Formula References", range: "A208:I232" },
-    reason:
-      "Material/attachment combinations require item-specific eligibility and interaction rules; raw modifiers are not applied globally. Custom items can author their final numeric chassis.",
-  });
   if (Object.keys(catalog).length !== 45)
     throw new Error(
       `Expected 45 physical armor/shield rows, found ${Object.keys(catalog).length}`,
     );
+  return catalog;
+}
+
+function buildEquipmentMaterialCatalog(sheet) {
+  if (cellValue(sheet, "A", 208) !== "Armor Materials" || cellValue(sheet, "B", 208) !== "AC Bonus")
+    throw new Error("Unexpected Formula References material table headers");
+  const catalog = {};
+  for (let row = 209; row <= 232; row += 1) {
+    const name = asText(cellValue(sheet, "A", row));
+    if (!name) continue;
+    const materialType = asText(cellValue(sheet, "F", row));
+    if (!materialType) throw new Error(`Missing material compatibility type at row ${row}`);
+    const numeric = { B: "armorClassAdjustment", C: "maxDexterityAdjustment", D: "armorCheckPenaltyAdjustment", E: "arcaneSpellFailureAdjustment", I: "weightCategoryAdjustment" };
+    const values = {};
+    for (const [column, key] of Object.entries(numeric)) {
+      const value = cellValue(sheet, column, row);
+      if (value !== undefined && value !== null && value !== "") {
+        if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`Invalid material value at ${column}${row}`);
+        values[key] = value;
+      }
+    }
+    const id = `pf1e.autosheet.material.${slug(name)}`;
+    const source = { document: documentName, sheet: "Formula References", row, range: `A${row}:I${row}`, system: "PF1e", category: "Armor and shield materials" };
+    const variant = { materialType, ...(cellValue(sheet, "H", row) === "Shield" ? { shield: true } : {}), ...values, ...(asText(cellValue(sheet, "G", row)) ? { notes: asText(cellValue(sheet, "G", row)) } : {}), source };
+    if (!catalog[id]) catalog[id] = { id, name, variants: [], source };
+    catalog[id].variants.push(variant);
+  }
   return catalog;
 }
 
@@ -1022,6 +1192,42 @@ function buildAgeFeatures(sheet, warnings) {
   );
 }
 
+function buildConditionFeatures(sheet, warnings) {
+  const targets = [["B", "ac"], ["C", "ability.str"], ["D", "ability.dex"], ["E", "ability.con"], ["F", "ability.int"], ["G", "ability.wis"], ["H", "ability.cha"], ["I", "save.fortitude"], ["J", "save.reflex"], ["K", "save.will"], ["L", "attack.melee"], ["M", "damage.melee"], ["N", "attack.ranged"], ["O", "damage.ranged"], ["P", "skill.all"], ["Q", "casterLevel"]];
+  const result = {};
+  for (let row = 237; row <= 268; row += 1) {
+    const name = asText(cellValue(sheet, "A", row));
+    if (!name) continue;
+    const effects = [];
+    for (const [column, target] of targets) {
+      const value = cellValue(sheet, column, row);
+      if (!Number.isFinite(value) || value === 0) continue;
+      effects.push(target === "ac"
+        ? { kind: "modifier", target, value, bonusType: "penalty", appliesTo: ["normal", "touch", "flatFooted"] }
+        : { kind: "modifier", target, value, bonusType: "penalty" });
+    }
+    const rawMovement = cellValue(sheet, "R", row);
+    const movementMatch = typeof rawMovement === "number" ? rawMovement : /^x\s*([0-9]+(?:\.[0-9]+)?)$/i.exec(asText(rawMovement) ?? "")?.[1];
+    const movementFactor = movementMatch === undefined ? undefined : Number(movementMatch);
+    if (movementFactor !== undefined && Number.isFinite(movementFactor) && movementFactor > 0 && movementFactor !== 1) {
+      for (const mode of ["land", "fly", "swim", "climb", "burrow"]) effects.push({ kind: "multiply", target: `speed.${mode}`, factor: movementFactor });
+    }
+    const extraMovement = ["S", "T"].flatMap((column) => {
+      const value = cellValue(sheet, column, row);
+      if (!Number.isFinite(value) || value === 1) return [];
+      const action = column === "S" ? "charge" : "run";
+      return [value === 0 ? `cannot ${action}` : `${action} speed ×${value}`];
+    });
+    const description = [asText(cellValue(sheet, "U", row)), ...extraMovement].filter(Boolean).join("; ");
+    if (!effects.length && !description) continue;
+    const id = `pf1e.paizo.${slug(name)}`;
+    if (result[id]) throw new Error(`Duplicate condition in Formula References at row ${row}: ${name}`);
+    result[id] = { id, name, effects, ...(description ? { description } : {}), source: { document: documentName, sheet: "Formula References", row, range: `A${row}:U${row}`, system: "PF1e", category: "Conditions" } };
+  }
+  warnings.push({ kind: "condition-action-scope", source: { sheet: "Formula References", range: "A237:U268" }, message: "Imported numeric condition modifiers and movement multipliers. Text-only action restrictions remain descriptive notes because the workbook encodes no executable action-state formula." });
+  return result;
+}
+
 function checkWorkbookShape(workbook) {
   const classCharts = workbook.Sheets[classChartsSheetName];
   const classSkills = workbook.Sheets[classSkillsSheetName];
@@ -1123,6 +1329,7 @@ async function generate() {
   for (const record of chartRows) {
     const classSkillKey = `${record.sourceInfo.classSkillsSection}\u0000${normalizeName(record.name)}`;
     const classSkillsEntry = classSkillRows.get(classSkillKey);
+    const publishedClassSkillSupplement = publishedClassSkillSupplements[record.id];
     const classSkillResult = classSkillsEntry
       ? classSkillIdsForRow(classSkillsSheet, classSkillsEntry)
       : undefined;
@@ -1139,7 +1346,7 @@ async function generate() {
         reason: `The source marks custom columns without a named skill: ${classSkillResult.unsupportedColumns.join(", ")}`,
       });
     }
-    if (!classSkillsEntry) {
+    if (!classSkillsEntry && !publishedClassSkillSupplement) {
       unsupportedRows.push({
         kind: "missing-class-skills",
         progressionId: record.id,
@@ -1152,8 +1359,17 @@ async function generate() {
         reason: `No scoped Class Skills row exists in ${record.sourceInfo.classSkillsSection}; chassis was retained without classSkills.`,
       });
     }
+    if (!classSkillsEntry && publishedClassSkillSupplement) {
+      normalizedOrWarnedRows.push({
+        kind: "published-class-skill-supplement",
+        progressionId: record.id,
+        source: { document: publishedClassSkillSupplement.source.document, sheet: publishedClassSkillSupplement.source.sheet },
+        message: `Added the published Paizo class-skill list: ${publishedClassSkillSupplement.ids.join(", ")}.`,
+      });
+    }
 
     const chart = makeProgressionChart(record);
+    const spellcastingTemplate = record.spellcastingTemplate;
     if (chart) {
       normalizedOrWarnedRows.push({
         kind: "explicit-prestige-chart",
@@ -1232,7 +1448,12 @@ async function generate() {
       babProgression: record.babProgression,
       saveProgressions: record.saveProgressions,
       skillPointsPerLevel: record.skillPointsPerLevel,
-      ...(classSkillsEntry ? { classSkills: classSkillResult.ids } : {}),
+      ...(classSkillsEntry ? { classSkills: classSkillResult.ids, consolidatedClassSkills: classSkillResult.consolidatedIds } : publishedClassSkillSupplement ? { classSkills: publishedClassSkillSupplement.ids } : {}),
+      ...(spellcastingTemplate ? {
+        spellcastingTemplates: [spellcastingTemplate],
+        spellcastingAdvancement: [{ sourceId: spellcastingTemplate.sourceId, progressionId: spellcastingTemplate.progressionId, levels: 1 }],
+      } : {}),
+      ...(record.characterSystemTemplates ? { characterSystemTemplates: record.characterSystemTemplates } : {}),
       ...(chart ? { chart } : {}),
       ...(["fighter", "rogue", "wizard"].includes(
         record.name.toLocaleLowerCase("en-US"),
@@ -1258,10 +1479,10 @@ async function generate() {
               sourceInfo: record.sourceInfo,
             }),
           }
-        : {}),
+        : publishedClassSkillSupplement ? { classSkillsSource: publishedClassSkillSupplement.source } : {}),
     };
     progressionCatalog[record.id] = progression;
-    for (const skillId of classSkillResult?.ids ?? [])
+    for (const skillId of [...(classSkillResult?.ids ?? []), ...(classSkillResult?.consolidatedIds ?? []), ...(publishedClassSkillSupplement?.ids ?? [])])
       usedSkillIds.add(skillId);
     successfulRows.push({
       progressionId: record.id,
@@ -1282,7 +1503,7 @@ async function generate() {
               range: `A${classSkillsEntry.row}:BH${classSkillsEntry.row}`,
             },
           }
-        : {}),
+        : publishedClassSkillSupplement ? { classSkillsSource: publishedClassSkillSupplement.source } : {}),
     });
   }
 
@@ -1295,6 +1516,7 @@ async function generate() {
     normalizedOrWarnedRows,
     unsupportedRows,
   );
+  const equipmentMaterialCatalog = buildEquipmentMaterialCatalog(workbook.Sheets["Formula References"]);
   const missingSkillDefinitions = [...usedSkillIds].filter(
     (id) => !skillCatalog[id],
   );
@@ -1322,6 +1544,10 @@ async function generate() {
     workbook.Sheets["Formula References"],
     normalizedOrWarnedRows,
   );
+  const conditionFeatureCatalog = buildConditionFeatures(
+    workbook.Sheets["Formula References"],
+    normalizedOrWarnedRows,
+  );
   const attackProfileCatalog = buildAttackProfiles(
     workbook.Sheets["Formula References"],
     normalizedOrWarnedRows,
@@ -1340,10 +1566,14 @@ async function generate() {
     summary: {
       safelyParseableClassChartRows: chartRows.length,
       generatedProgressions: Object.keys(progressionCatalog).length,
+      progressionsWithSpellcastingTemplates: chartRows.filter((record) => record.spellcastingTemplate).length,
+      progressionsWithCharacterSystemTemplates: chartRows.filter((record) => record.characterSystemTemplates?.length).length,
       generatedSkillDefinitions: Object.keys(skillCatalog).length,
       generatedEquipmentDefinitions: Object.keys(equipmentCatalog).length,
+      generatedEquipmentMaterials: Object.keys(equipmentMaterialCatalog).length,
       generatedExperienceTracks: Object.keys(experienceCatalog).length,
       generatedAgeFeatures: Object.keys(ageFeatureCatalog).length,
+      generatedConditionFeatures: Object.keys(conditionFeatureCatalog).length,
       generatedAttackProfiles: Object.keys(attackProfileCatalog).length,
       progressionsWithClassSkills: successfulRows.filter(
         (row) => row.classSkillsSource,
@@ -1357,7 +1587,7 @@ async function generate() {
         rowsBySection: classSkillRowsBySection,
         classicColumns: classSkillColumns,
         contextualColumns: contextualClassSkillColumns,
-        ignoredAlternateConsolidatedColumns: alternateMetadata,
+        consolidatedColumns: alternateMetadata,
       },
       aliases,
     },
@@ -1365,6 +1595,7 @@ async function generate() {
     equipmentRows: Object.values(equipmentCatalog).map(
       ({ id, name, source }) => ({ equipmentId: id, name, source }),
     ),
+    equipmentMaterialRows: Object.values(equipmentMaterialCatalog).map(({ id, name, source, variants }) => ({ id, name, variants: variants.length, source })),
     experienceRows: Object.values(experienceCatalog).map(
       ({ id, name, source }) => ({ id, name, source }),
     ),
@@ -1385,8 +1616,10 @@ async function generate() {
     progressionCatalog: schemas.parseProgressionCatalog(progressionCatalog),
     skillCatalog: schemas.parseSkillCatalog(skillCatalog),
     equipmentCatalog: schemas.equipmentCatalogSchema.parse(equipmentCatalog),
+    equipmentMaterialCatalog: schemas.equipmentMaterialCatalogSchema.parse(equipmentMaterialCatalog),
     experienceCatalog: schemas.experienceCatalogSchema.parse(experienceCatalog),
     ageFeatureCatalog: schemas.featureCatalogSchema.parse(ageFeatureCatalog),
+    conditionFeatureCatalog: schemas.featureCatalogSchema.parse(conditionFeatureCatalog),
     attackProfileCatalog:
       schemas.attackProfileCatalogSchema.parse(attackProfileCatalog),
     report,
@@ -1411,8 +1644,10 @@ async function expectedOutputs() {
     progressionCatalog,
     skillCatalog,
     equipmentCatalog,
+    equipmentMaterialCatalog,
     experienceCatalog,
     ageFeatureCatalog,
+    conditionFeatureCatalog,
     attackProfileCatalog,
     report,
   } = await generate();
@@ -1458,6 +1693,15 @@ async function expectedOutputs() {
         ageFeatureCatalog,
       ),
     ],
+    [equipmentMaterialOutputPath, generatedTypeScript("generatedAutosheetEquipmentMaterialCatalog", "EquipmentMaterialCatalog", equipmentMaterialCatalog)],
+    [
+      path.join(generatedDirectory, "autosheet-conditions.ts"),
+      generatedTypeScript(
+        "generatedAutosheetConditionCatalog",
+        "FeatureCatalog",
+        conditionFeatureCatalog,
+      ),
+    ],
     [
       path.join(generatedDirectory, "autosheet-attacks.ts"),
       generatedTypeScript(
@@ -1475,6 +1719,10 @@ async function expectedOutputs() {
       '// Generated source-only Deno bridge.\nexport * from "./autosheet-age.ts";\n',
     ],
     [
+      path.join(generatedDirectory, "autosheet-conditions.js"),
+      '// Generated source-only Deno bridge.\nexport * from "./autosheet-conditions.ts";\n',
+    ],
+    [
       path.join(generatedDirectory, "autosheet-attacks.js"),
       '// Generated source-only Deno bridge.\nexport * from "./autosheet-attacks.ts";\n',
     ],
@@ -1490,6 +1738,7 @@ async function expectedOutputs() {
       path.join(generatedDirectory, "autosheet-equipment.js"),
       '// Generated source-only Deno bridge.\nexport * from "./autosheet-equipment.ts";\n',
     ],
+    [path.join(generatedDirectory, "autosheet-equipment-materials.js"), '// Generated source-only Deno bridge.\nexport * from "./autosheet-equipment-materials.ts";\n'],
   ]);
 }
 
@@ -1538,7 +1787,7 @@ async function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   main().catch((error) => {
     process.stderr.write(
       `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,

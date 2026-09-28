@@ -22,6 +22,8 @@ import type { ThemePreferenceController } from "../hooks/useThemePreference";
 import { characterFilename, exportCharacterSnapshot } from "../lib/character-portability";
 import { LifecycleWizard } from "./lifecycle-wizard";
 import { SpellcastingPanel } from "./spellcasting-panel";
+import { CharacterNotesPanel } from "./character-record";
+import { WorkbookSystemsPanel } from "./workbook-systems-panel";
 
 const sheetTabs = [
   { id: "summary", label: "Summary" },
@@ -333,6 +335,7 @@ export function CharacterSheetView({
           hidden={activeTab !== "spells"}
         >
           <SpellcastingPanel sheet={sheet} />
+          <WorkbookSystemsPanel sheet={sheet} />
         </section>
         <section
           className="sheet-tab-panel"
@@ -439,6 +442,7 @@ export function CharacterSheetView({
               </p>
             </div>
           </section>
+          <CharacterNotesPanel character={character} update={sheet.update} />
         </section>
         <section
           className="sheet-tab-panel settings-tab-panel"

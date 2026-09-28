@@ -87,7 +87,11 @@ export function classSkillStatus(
   const sources: Contribution[] = [];
   for (const progression of runtime.advancementProgressionLevels()) {
     const definition = runtime.progressionDefinition(progression.id);
-    if (!definition?.classSkills?.includes(id)) continue;
+    if (!definition) continue;
+    const classSkills = runtime.character.workbookOptions?.skillMode === "consolidated"
+      ? definition.consolidatedClassSkills
+      : definition.classSkills;
+    if (!classSkills?.includes(id)) continue;
     sources.push(
       sourceContribution(
         target,

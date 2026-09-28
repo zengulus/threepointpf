@@ -452,6 +452,8 @@ function automaticHpAmount(
   sides: number,
 ): number | undefined {
   if (rule.kind === "maximum") return sides;
+  if (rule.kind === "averageDown") return Math.floor((sides + 1) / 2);
+  if (rule.kind === "averageUp") return Math.floor(sides / 2 + 1);
   if (rule.kind === "fixed") return rule.amount;
   return undefined;
 }
@@ -864,6 +866,7 @@ function withSkillBudgets(
   evaluation: AdvancementEvaluation | undefined,
   profile: CampaignCharacterProfile,
   baseAbilities: CharacterInput["baseAbilities"],
+  workbookOptions?: CharacterInput["workbookOptions"],
 ): SkillRankAllocation[] {
   return allocations.map((allocation) => {
     const level = expected.find((item) => item.slotId === allocation.slotId)?.level;
@@ -872,7 +875,7 @@ function withSkillBudgets(
     );
     const budget = level === undefined
       ? undefined
-      : skillBudget(profile, baseAbilities, source, level);
+      : skillBudget(profile, baseAbilities, source, level, workbookOptions);
     return budget === undefined ? allocation : { ...allocation, budget };
   });
 }
@@ -1117,6 +1120,7 @@ function creationCandidate(
     evaluated.evaluation,
     proposal.profile,
     baseAbilities,
+    proposal.character.workbookOptions,
   );
   const provisional: CharacterInput = {
     ...withoutLifecycleManagedFields(proposal.character),
@@ -1232,6 +1236,7 @@ function advancementCandidate(
     evaluated.evaluation,
     proposal.profile,
     proposal.character.baseAbilities,
+    proposal.character.workbookOptions,
   );
   const baseLifecycle = proposal.character.lifecycle ?? {};
   const acquisitions = upsertBy(
@@ -1491,23 +1496,46 @@ function intelligenceModifier(
   return Math.floor((baseAbilities.int - 10) / 2);
 }
 
+const autosheetBackgroundSkillIds = new Set([
+  "appraise", "handle-animal", "knowledge-engineering", "knowledge-geography",
+  "knowledge-history", "knowledge-nobility", "linguistics", "sleight-of-hand", "perform",
+]);
+
+function isAutosheetBackgroundSkill(id: string): boolean {
+  const normalized = id.trim().toLowerCase();
+  return autosheetBackgroundSkillIds.has(normalized) || normalized.startsWith("perform:");
+}
+
+function workbookSkillMode(options: CharacterInput["workbookOptions"]): "background" | "classic" | "consolidated" {
+  const mode = options?.skillMode;
+  if (mode === "ultimate-psionics-background") return "background";
+  return mode ?? (options?.backgroundSkills === false ? "classic" : "background");
+}
+
 function skillBudget(
   profile: CampaignCharacterProfile,
   baseAbilities: CharacterInput["baseAbilities"],
   source: SlotSkillPointSource | undefined,
   level: number,
+  workbookOptions?: CharacterInput["workbookOptions"],
 ): number | undefined {
   const policy = profile.skillAllocationPolicy;
-  if (policy.kind !== "calculated") return undefined;
   const chassis = source?.skillPoints ?? 0;
-  const ability = policy.includeIntelligenceModifier
+  const skillMode = workbookSkillMode(workbookOptions);
+  if (skillMode === "consolidated")
+    return Math.max(1, Math.floor((chassis + intelligenceModifier(baseAbilities)) / 2));
+  if (policy.kind !== "calculated") return undefined;
+  const minimumFourPlusIntSkillRanks = workbookOptions?.minimumFourPlusIntSkillRanks ?? false;
+  const adjustedChassis = minimumFourPlusIntSkillRanks ? Math.max(4, chassis) : chassis;
+  const ability = policy.includeIntelligenceModifier || minimumFourPlusIntSkillRanks
     ? intelligenceModifier(baseAbilities)
     : 0;
   const multiplier = level === 1 ? policy.firstLevelMultiplier ?? 1 : 1;
-  return Math.max(
+  const ordinaryBudget = Math.max(
     policy.minimumPerLevel ?? 0,
-    Math.max(0, chassis + ability) * multiplier,
+    Math.max(0, adjustedChassis + ability) * multiplier,
   );
+  return ordinaryBudget + (skillMode === "background" ? 2 : 0);
 }
 
 function rankCap(
@@ -1550,11 +1578,13 @@ function skillPolicyIssues(
       (total, value) => total + value,
       0,
     );
+    const backgroundSkills = workbookSkillMode(inspection.character.workbookOptions) === "background";
     const available = skillBudget(
       profile,
       inspection.character.baseAbilities,
       source,
       item.level,
+      inspection.character.workbookOptions,
     );
     previews.push({
       level: item.level,
@@ -1573,11 +1603,16 @@ function skillPolicyIssues(
           scope,
         ),
       );
-    if (available !== undefined && allocated > available)
+    const backgroundAllocated = Object.entries(record.ranks)
+      .filter(([skillId]) => isAutosheetBackgroundSkill(skillId))
+      .reduce((total, [, ranks]) => total + ranks, 0);
+    const backgroundCredit = backgroundSkills ? Math.min(2, backgroundAllocated) : 0;
+    const ordinaryBudget = available === undefined ? undefined : available - (backgroundSkills ? 2 : 0);
+    if (ordinaryBudget !== undefined && allocated - backgroundCredit > ordinaryBudget)
       issues.push(
         policyIssue(
           "skill-allocation-exceeds-budget",
-          `Level ${item.level} allocates ${allocated} skill ranks from a budget of ${available}`,
+          `Level ${item.level} allocates ${allocated - backgroundCredit} ordinary skill ranks from a budget of ${ordinaryBudget}; up to 2 additional ranks are available for workbook background skills`,
           scope,
         ),
       );

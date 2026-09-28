@@ -581,5 +581,182 @@ export const generatedAutosheetSkillCatalog = {
       "row": 1,
       "range": "AR5:AR278"
     }
+  },
+  "consolidated-acrobatics": {
+    "id": "consolidated-acrobatics",
+    "name": "C. Acrobatics",
+    "governingAbility": "dex",
+    "armorCheckPenalty": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AS1:AS4"
+    }
+  },
+  "consolidated-athletics": {
+    "id": "consolidated-athletics",
+    "name": "C. Athletics",
+    "governingAbility": "str",
+    "armorCheckPenalty": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AT1:AT4"
+    }
+  },
+  "consolidated-finesse": {
+    "id": "consolidated-finesse",
+    "name": "C. Finesse",
+    "governingAbility": "dex",
+    "trainedOnly": true,
+    "armorCheckPenalty": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AU1:AU4"
+    }
+  },
+  "consolidated-influence": {
+    "id": "consolidated-influence",
+    "name": "C. Influence",
+    "governingAbility": "cha",
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AV1:AV4"
+    }
+  },
+  "consolidated-nature": {
+    "id": "consolidated-nature",
+    "name": "C. Nature",
+    "governingAbility": "int",
+    "trainedOnly": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AW1:AW4"
+    }
+  },
+  "consolidated-perception": {
+    "id": "consolidated-perception",
+    "name": "C. Perception",
+    "governingAbility": "wis",
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AX1:AX4"
+    }
+  },
+  "consolidated-performance": {
+    "id": "consolidated-performance",
+    "name": "C. Performance",
+    "governingAbility": "cha",
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AY1:AY4"
+    }
+  },
+  "consolidated-religion": {
+    "id": "consolidated-religion",
+    "name": "C. Religion",
+    "governingAbility": "int",
+    "trainedOnly": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "AZ1:AZ4"
+    }
+  },
+  "consolidated-society": {
+    "id": "consolidated-society",
+    "name": "C. Society",
+    "governingAbility": "int",
+    "trainedOnly": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "BA1:BA4"
+    }
+  },
+  "consolidated-spellcraft": {
+    "id": "consolidated-spellcraft",
+    "name": "C. Spellcraft",
+    "governingAbility": "int",
+    "trainedOnly": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "BB1:BB4"
+    }
+  },
+  "consolidated-stealth": {
+    "id": "consolidated-stealth",
+    "name": "C. Stealth",
+    "governingAbility": "dex",
+    "armorCheckPenalty": true,
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "BC1:BC4"
+    }
+  },
+  "consolidated-survival": {
+    "id": "consolidated-survival",
+    "name": "C. Survival",
+    "governingAbility": "wis",
+    "system": "consolidated",
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Class Skills",
+      "system": "PF1e",
+      "category": "Consolidated skill metadata",
+      "row": 1,
+      "range": "BD1:BD4"
+    }
   }
 } satisfies SkillCatalog;

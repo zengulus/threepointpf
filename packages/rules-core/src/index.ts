@@ -55,7 +55,8 @@ export {
 } from "./skills.js";
 export type { InitiativeRollOptions } from "./skills.js";
 export { evaluateMovement, computeSizeResult, sizeAdjustment } from "./size.js";
-export { resolveEquipment, collectEquipmentEffects } from "./equipment.js";
+export { resolveEquipment, collectEquipmentEffects, calculateCarryLoad, heavyCarryCapacity } from "./equipment.js";
+export type { CarryLoad, CarryLoadBand } from "./equipment.js";
 export {
   actionExclusions,
   actionPlanId,
@@ -93,7 +94,10 @@ export {
 export { experienceResult } from "./experience.js";
 export { castSpell, concentrationRollPlan, deriveSpellcastingSource, prepareSpells, refreshSpellcasting, slotResourceId } from "./spellcasting.js";
 export type { DerivedSpellcastingSource, SpellCastRequest, SpellCastResult, SpellValidationIssue } from "./spellcasting.js";
-export { applyDamage, applyHealing, setTemporaryHp, clearTemporaryHp } from "./health.js";
+export { applyDamage, applyHealing, setTemporaryHp, clearTemporaryHp, mitigateDamage, unchainedWoundPenalty } from "./health.js";
+export type { DamageMitigation } from "./health.js";
+export { deriveCharacterSystems } from "./sheet-systems.js";
+export type { DerivedCharacterSystem } from "./sheet-systems.js";
 export type { RulesRuntime, EquipmentEntry, ResultOptions } from "./runtime.js";
 export {
   acceptLifecycleWarning,

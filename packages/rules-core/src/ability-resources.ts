@@ -505,6 +505,8 @@ export function prepareAbilityExecution(
   }
   if (ability.activation === "passive")
     return { accepted: false, issues: [{ code: "passive-ability", message: `${ability.name} is passive and cannot be activated`, abilityId: ability.id }] };
+  if (ability.activation === "activated" && ability.usesPerDay !== undefined && (ability.usesSpent ?? 0) >= ability.usesPerDay)
+    return { accepted: false, issues: [{ code: "daily-uses-exhausted", message: `${ability.name} has no daily uses remaining`, abilityId: ability.id }] };
   const invalidTiming = (ability.costs ?? []).find((cost) => {
     const timing = costTiming(cost, ability.activation);
     return ability.activation === "activated"
@@ -622,6 +624,13 @@ export function commitAbilityActivation(
     character = replaceState(character, state);
     spent.push(state);
   }
+  if (ability.activation === "activated" && original.usesPerDay !== undefined)
+    character = parseCharacterInput({
+      ...character,
+      abilities: character.abilities!.map((item) => item.id === original.id
+        ? { ...item, usesSpent: (item.usesSpent ?? 0) + 1 }
+        : item),
+    });
   if (ability.activation === "toggleable")
     character = parseCharacterInput({
       ...character,

@@ -2,7 +2,7 @@ import { formatModifier } from "@threepointpf/dice";
 import { useState } from "react";
 import { abilities, abilityLabels } from "../lib/options";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
-import { RollTargetField, WeaponActionControls } from "./roll-actions";
+import { damageText, RollTargetField, WeaponActionControls } from "./roll-actions";
 
 /**
  * The first thing a player should see is the character's playable state, not
@@ -19,6 +19,8 @@ export function SummarySheet({
 }) {
   const { character, derived } = sheet;
   const [damageAmount, setDamageAmount] = useState("1");
+  const [damageType, setDamageType] = useState("untyped");
+  const [damageBypass, setDamageBypass] = useState("");
   const [healingAmount, setHealingAmount] = useState("1");
   const [temporaryAmount, setTemporaryAmount] = useState(String(character.temporaryHp));
   const level =
@@ -109,7 +111,9 @@ export function SummarySheet({
         <div className="health-management" aria-label="Hit point management">
           <div><b>Damage taken</b><span>{character.damageTaken}</span><b>Temporary HP</b><span>{character.temporaryHp}</span></div>
           <label>Damage amount<input aria-label="Damage amount" type="number" min="0" step="1" value={damageAmount} onChange={(event) => setDamageAmount(event.target.value)} /></label>
-          <button type="button" onClick={() => sheet.takeDamage(Number(damageAmount))}>Apply damage</button>
+          <label>Damage type<select aria-label="Damage type" value={damageType} onChange={(event) => setDamageType(event.target.value)}>{["untyped", "bludgeoning", "piercing", "slashing", "acid", "cold", "electricity", "fire", "sonic"].map((type) => <option key={type}>{type}</option>)}</select></label>
+          {["bludgeoning", "piercing", "slashing"].includes(damageType) && <label>DR bypass (if any)<input aria-label="Damage reduction bypass" value={damageBypass} onChange={(event) => setDamageBypass(event.target.value)} placeholder="magic, silver, adamantine…" /></label>}
+          <button type="button" onClick={() => sheet.takeDamage(Number(damageAmount), damageType, damageBypass)}>Apply damage</button>
           <label>Healing amount<input aria-label="Healing amount" type="number" min="0" step="1" value={healingAmount} onChange={(event) => setHealingAmount(event.target.value)} /></label>
           <button type="button" onClick={() => sheet.heal(Number(healingAmount))}>Apply healing</button>
           <label>Set temporary HP<input aria-label="Set temporary HP" type="number" min="0" step="1" value={temporaryAmount} onChange={(event) => setTemporaryAmount(event.target.value)} /></label>
@@ -208,9 +212,7 @@ export function SummarySheet({
                     <span>{attack.definition.name}</span>
                     <small>
                       Standard damage {standardDamage
-                        ? standardDamage.dice
-                            .map((die) => die.count + "d" + die.sides)
-                            .join("+") + formatModifier(standardDamage.modifier)
+                        ? damageText(standardDamage)
                         : attack.damage.formula}
                     </small>
                   </button>

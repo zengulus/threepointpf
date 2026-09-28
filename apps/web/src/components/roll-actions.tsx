@@ -8,6 +8,21 @@ function diceText(plan: RollPlan): string {
   return plan.dice.map((die) => `${die.count}d${die.sides}`).join("+");
 }
 
+/** Keep typed bonus dice visible beside the weapon dice and flat modifier. */
+export function damageText(plan: RollPlan): string {
+  const terms = plan.provenance?.damageTerms;
+  if (!terms?.length) return `${diceText(plan)}${formatModifier(plan.modifier)}`;
+  const typed = plan.provenance?.modifier.filter((item) => item.damageType) ?? [];
+  const typedTotal = typed.reduce((sum, item) => sum + item.value, 0);
+  const dice = terms.map((term) => {
+    const flat = typed.filter((item) => item.damageType === term.damageType).reduce((sum, item) => sum + item.value, 0);
+    const flatText = flat ? `${flat > 0 ? "+" : ""}${flat}` : "";
+    return `${term.dice.count}d${term.dice.sides}${flatText}${term.damageType ? ` ${term.damageType}` : ""}`;
+  }).join(" + ");
+  const untypedModifier = plan.modifier - typedTotal;
+  return `${dice}${formatModifier(untypedModifier)}`;
+}
+
 /** A labelled target input shared by Summary and the detailed combat surface. */
 export function RollTargetField({
   label,
@@ -104,9 +119,7 @@ export function WeaponActionControls({
                   title={`Roll ${damage.label}`}
                   onClick={() => void sheet.rollPlan(damage)}
                 >
-                  {compact
-                    ? `DMG ${diceText(damage)}${formatModifier(damage.modifier)}`
-                    : `DMG ${diceText(damage)}${formatModifier(damage.modifier)}`}
+                  {`DMG ${damageText(damage)}`}
                 </button>
                 {sheet.canRollCriticalDamage(step.roll) && (
                   <button

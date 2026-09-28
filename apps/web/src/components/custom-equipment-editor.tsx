@@ -22,6 +22,8 @@ export function CustomEquipmentEditor({
   const [maxDex, setMaxDex] = useState("");
   const [checkPenalty, setCheckPenalty] = useState("0");
   const [slow, setSlow] = useState(false);
+  const [materialType, setMaterialType] = useState("Plate/Chain");
+  const [spellFailure, setSpellFailure] = useState("0");
   const submit = () => {
     if (!name.trim()) return;
     const effect: Effect =
@@ -45,8 +47,10 @@ export function CustomEquipmentEditor({
     if (
       add({
         name: name.trim(),
+        kind,
         equipped: true,
         effects: [effect],
+        ...(kind !== "other" ? { materialType, arcaneSpellFailureChance: Math.min(1, Math.max(0, Number(spellFailure) / 100)) } : {}),
         ...(kind !== "other"
           ? {
               armorCheckPenalty: Number(checkPenalty),
@@ -110,6 +114,7 @@ export function CustomEquipmentEditor({
           </>
         ) : (
           <>
+            <label className="field"><span>Material compatibility</span><select aria-label="Custom armor material compatibility" value={materialType} onChange={(event) => setMaterialType(event.target.value)}><option value="Plate/Chain">Plate / chain</option><option value="Leather">Leather</option><option value="Wood">Wood</option><option value="-">Any material type</option></select></label>
             <Field
               label="Maximum Dexterity (blank = no limit)"
               value={maxDex}
@@ -120,6 +125,7 @@ export function CustomEquipmentEditor({
               value={checkPenalty}
               onChange={setCheckPenalty}
             />
+            <Field label="Arcane spell failure (%)" type="number" value={spellFailure} onChange={setSpellFailure} />
             <label>
               <input
                 type="checkbox"

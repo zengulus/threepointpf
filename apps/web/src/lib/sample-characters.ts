@@ -1,4 +1,5 @@
 import type { CharacterInput } from "@threepointpf/rules-schema";
+import { charlieCharacter } from "./charlie-character";
 import { demoCharacter } from "./demo-character";
 
 /**
@@ -121,6 +122,13 @@ export interface SampleCharacter {
 }
 
 export const sampleCharacters: SampleCharacter[] = [
+  {
+    id: "charlie",
+    label: "Charlie · Runecarved Human",
+    description:
+      "Level 3 Rajah / Stalker gestalt with an Intelligence-based nodachi, 18–20 critical range, bleed, and a Soulburn attack option.",
+    character: charlieCharacter,
+  },
   {
     id: "level-1-fighter",
     label: "Level 1 fighter",
