@@ -2,6 +2,8 @@
 
 A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics — including the domain-only character lifecycle — live in `rules-core`; imported and authored content is injected by callers.
 
+For the staged player access, hosted saving, Co-DM roles, and campaign-wide Discord roll workflow, see the [agent implementation plan](docs/PLAYER-DISCORD-IMPLEMENTATION-PLAN.md). Its progress log distinguishes deployed work from remaining launch requirements.
+
 ## ▶️ [Live demo](https://zengulus.github.io/threepointpf/)
 
 **[https://zengulus.github.io/threepointpf/](https://zengulus.github.io/threepointpf/)** — no install required. The first visit creates a local Dungeon Master account; the site then opens on a level 1 fighter and rolls with 3D dice.
