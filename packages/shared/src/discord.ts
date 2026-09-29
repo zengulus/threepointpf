@@ -42,10 +42,10 @@ export function formatDiscordRollMessage(
     : `Natural d20 ${resolved.naturalFace}${resolved.faces.length > 1 ? ` · Dice ${shownFaces}${omittedFaces}` : ""}`;
   const details = `${dice} · Modifier ${formatModifier(resolved.modifier)}${plan.context.criticalDamage ? " · Critical damage" : ""}`;
   const lines = [
-    `**${safeLabel(plan.label, 180)}** — ${safeLabel(characterName || "Unnamed character", 120)}`,
+    `**${safeLabel(plan.label, 180)}**`,
     `${marker} **${total}**`,
     details,
-    ...(reference ? [`Ref ${safeLabel(reference, 64)}`] : []),
+    `${safeLabel(characterName || "Unnamed character", 120)}${reference ? ` · Ref ${safeLabel(reference, 64)}` : ""}`,
   ];
   return lines.join("\n").slice(0, 2_000);
 }

@@ -195,6 +195,14 @@ Site version 290 deployed from source commit
 initiative correction. The specific rule test and Site build passed, and
 production deployment succeeded. No live Discord message was sent.
 
+Site version 291 deployed from source commit
+`c1d235d10bc38d72860c17e1403a850217764fb3`. Discord messages now put
+only the roll type on the first line, the green/red total-versus-defense
+outcome directly beneath it, and dice details plus character/reference below.
+The focused formatter tests and Site build passed. The previously authorized
+single live test message was not repeated; existing Discord messages do not
+change when the formatter changes.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user

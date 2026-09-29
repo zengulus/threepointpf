@@ -134,10 +134,10 @@ describe("Discord roll payloads", () => {
     const success = formatDiscordRollMessage("Captain Hook", plan, resolveRollPlan(plan, [13]), "abc123");
     const failure = formatDiscordRollMessage("Captain Hook", plan, resolveRollPlan(plan, [12]), "abc124");
     expect(success.split("\n")).toEqual([
-      "**Fortitude save** — Captain Hook",
+      "**Fortitude save**",
       "🟢 **Total 17 vs DC 17 · Success**",
       "Natural d20 13 · Modifier +4",
-      "Ref abc123",
+      "Captain Hook · Ref abc123",
     ]);
     expect(failure.split("\n")[1]).toBe("🔴 **Total 16 vs DC 17 · Failure**");
   });
