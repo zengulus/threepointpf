@@ -99,6 +99,21 @@ campaigns, characters, rolls, or Discord connection. No live authenticated
 player or Co-DM session has been exercised against production, and the hosted
 sheet still uses browser rolls, so this is not a trusted-play launch.
 
+Progress log (later on 2026-09-30): Site version 283 deployed from source
+commit `cbe64091c3301d2c8fe23a48ae03f4d76b25831d`. The hosted sheet now
+sends ordinary save, skill, maneuver, attack, damage, and initiative actions to
+the authoritative roll route after saving. It displays the stored plan/faces,
+roll reference, and delivery state; pending delivery is polled while open and
+retry is separate from rolling again. Ambiguous delivery requires explicit
+duplicate-risk confirmation. Synthetic or unsupported plans fail visibly in
+hosted mode. Focused client tests, the Worker build, migration rehearsal, and
+fake-Discord delivery tests passed. Player selection is remembered per account.
+The Site has no connected Discord channel, so no live message was sent. Spell,
+ability, recharge, bonus-dice, and other contextual actions still need typed
+server intents; resource spending is not yet atomic with rolls. A live player
+journey and mobile/accessibility QA remain outstanding. Continue to treat this
+as a limited-access testing release, not a trusted-play launch.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
@@ -140,15 +155,17 @@ Inspected locally on the date above:
 | Hosted backend | `work/site-source/app/api/`, `work/site-source/lib/accounts.ts`, `work/site-source/db/schema.ts` | Separate nested Git checkout with cookie sessions and D1 storage. |
 | Hosted shell/build | `work/site-source/app/page.tsx`, `work/site-source/scripts/build-app.mjs` | Shell embeds `/campaign/index.html`; build packages the hosted-mode sheet and Worker. |
 
-The inspected hosted character handlers require a session but do not filter
-characters by ownership or campaign membership. The characters table has
+At initial inspection, the hosted character handlers required a session but did
+not filter characters by ownership or campaign membership. Version 282 added
+server-enforced campaign membership and Co-DM session modes. The characters table has
 `updated_by`, which is last editor metadata, not ownership. These are local source
 findings, not proof of the deployed version's behavior.
 
 Sites metadata was read in the preceding investigation: existing project ID
 `appgprj_6ab608a3a18881918d5013cb366a584b`, public Site audience, live URL
 `https://threepointpf-character-sheet.nathmcdm.chatgpt.site`, latest version 275 at
-that time. Re-read current metadata before implementation or deployment.
+that time. The progress log above records subsequent versions. Re-read current
+metadata before implementation or deployment.
 Public Site access does not authorize access to campaign data.
 
 Important source mismatch: root `.openai/hosting.json` declares static `dist`,
