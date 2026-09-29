@@ -124,6 +124,23 @@ roll concurrency and revision checks. The Site build and deployment passed.
 Older-history pagination and the remaining roll families/resource atomicity
 are still open. No real Discord channel is connected.
 
+Progress log (later on 2026-09-30): one user-approved Discord test roll was
+performed against the local Worker/D1 test campaign using an approved webhook.
+The Worker recorded a Fortitude save totaling 18 against DC 17; Discord
+confirmed one message ID and the outbox reached `sent`. The local test
+connection was then removed. This exercised the real Discord transport but
+not a production campaign login. The test exposed that the Worker runtime
+rejects `redirect: "error"` on an outbound request even for a direct 200.
+Site version 286 deployed from source commit
+`72dd243e7d2162d7e03bdc3cfc741574b3da99e0` with manual redirect handling
+(which does not follow redirects) for channel inspection and delivery. The
+shared Discord formatter now puts roll type first, a green/red total-versus-
+defense result second, then dice, modifier, and reference below. Formatter,
+connection, fake-delivery tests and the Worker build passed. No second live
+Discord message was sent to verify the new layout. The production Site still
+has no campaign, character, or connected channel; a full production player
+journey and remaining roll families are open.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
