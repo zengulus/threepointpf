@@ -13,6 +13,7 @@ import {
   type EffectTargetId,
   type EquipmentDefinition,
   type FeatureDefinition,
+  type FeatureActionRestriction,
   type ProgressionSourceMetadata,
 } from "@threepointpf/rules-schema";
 import { generatedAutosheetEquipmentCatalog } from "./generated/autosheet-equipment.js";
@@ -67,6 +68,11 @@ const halfSpeed: Effect[] = movementModes.map((mode) => ({
   target: `speed.${mode}`,
   factor: 0.5,
 }));
+const coreConditionSource = (id: string, label: string) => ({
+  id,
+  label,
+  content: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Conditions", system: "PF1e", publisher: "Paizo", range: "https://legacy.aonprd.com/coreRuleBook/glossary.html" },
+});
 const babStep = { kind: "babStep", every: 4, base: 1 } as const;
 const scaled = (effect: Effect): Effect =>
   effect.kind === "modifier" ? { ...effect, scaling: babStep } : effect;
@@ -107,10 +113,12 @@ const feature = (
   row: number,
   description: string,
   sheet = "Formula References",
+  stacking?: "additive",
 ): FeatureDefinition => ({
   id: `pf1e.paizo.${slug}`,
   name,
   effects,
+  ...(stacking ? { stacking } : {}),
   description,
   source: workbook(
     sheet,
@@ -196,9 +204,10 @@ const features: FeatureDefinition[] = [
       ...attacks(2, "morale"),
       ...saves(2, "morale"),
       modifier("skill.all", 2, "morale"),
+      modifier("initiative", 2, "morale"),
     ],
     104,
-    "+2 morale to attack rolls, saves, and skill checks.",
+    "+2 morale to attack rolls, saves, skill checks, and initiative.",
     "Main Sheet",
   ),
   feature(
@@ -387,11 +396,29 @@ const features: FeatureDefinition[] = [
     115,
     "One negative level: −1 on attacks, combat maneuvers, saves, skill checks, and caster level; −5 maximum hit points. Ability checks are not separately represented in the workbook formulas.",
     "Main Sheet",
+    "additive",
   ),
 ];
 const contextFlagCatalog: Record<string, string[]> = {
   "pf1e.paizo.combat-expertise": ["combat-expertise"],
 };
+const conditionActionRestrictions: Record<string, FeatureActionRestriction[]> = {
+  "pf1e.paizo.dazed": ["noActions"],
+  "pf1e.paizo.fascinated": ["noActions"],
+  "pf1e.paizo.nauseated": ["moveOnly"],
+  "pf1e.paizo.panicked": ["fleeOnly"],
+  "pf1e.paizo.paralyzed": ["noPhysicalActions"],
+  "pf1e.paizo.staggered": ["oneStandardOrMove"],
+  "pf1e.paizo.stunned": ["noActions"],
+  "pf1e.paizo.cowering": ["noActions"],
+  "pf1e.paizo.grappled": ["noTwoHandedActions"],
+};
+const conditionDefenseRestrictions = {
+  "pf1e.paizo.stunned": ["denyDexterityBonus"],
+  "pf1e.paizo.blinded": ["denyDexterityBonus"],
+  "pf1e.paizo.cowering": ["denyDexterityBonus", "denyDodgeBonus"],
+  "pf1e.paizo.pinned": ["denyDexterityBonus"],
+} as const;
 const severity: Record<string, { exclusiveGroup: string; priority: number }> = {
   "pf1e.paizo.fatigued": {
     exclusiveGroup: "pf1e.condition.fatigue",
@@ -410,6 +437,45 @@ const severity: Record<string, { exclusiveGroup: string; priority: number }> = {
 export const featureCatalog = featureCatalogSchema.parse({
   ...generatedAutosheetConditionCatalog,
   ...generatedAutosheetAgeCatalog,
+  ...Object.fromEntries(Object.entries(conditionActionRestrictions).map(([id, actionRestrictions]) => [id, { ...(generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)[id], actionRestrictions }])),
+  ...Object.fromEntries(Object.entries(conditionDefenseRestrictions).map(([id, defenseRestrictions]) => [id, { ...(generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)[id], ...(conditionActionRestrictions[id] ? { actionRestrictions: conditionActionRestrictions[id] } : {}), defenseRestrictions }])),
+  "pf1e.paizo.fascinated": {
+    ...(generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)["pf1e.paizo.fascinated"],
+    actionRestrictions: conditionActionRestrictions["pf1e.paizo.fascinated"],
+    description: "Takes no actions other than paying attention; potential or obvious threats can end the effect. Reaction-based skill checks take −4.",
+    effects: [
+      {
+        ...when(modifier("skill.all", -4, "penalty"), { kinds: ["skill"], requiredFlags: ["reaction-check"] }),
+        source: {
+          id: "pf1e.paizo.condition.fascinated.reaction-check",
+          label: "Fascinated reaction check penalty",
+          content: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Conditions", system: "PF1e", publisher: "Paizo", range: "https://legacy.aonprd.com/coreRuleBook/glossary.html" },
+        },
+      },
+    ],
+  },
+  "pf1e.paizo.panicked": {
+    ...(generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)["pf1e.paizo.panicked"],
+    actionRestrictions: conditionActionRestrictions["pf1e.paizo.panicked"],
+    description: "Must flee from danger and cannot take other actions. Spells and spell-like abilities can be marked as fleeing uses in the spell panel. If prevented from fleeing, activate Cowering as appropriate. Drop held items when this condition is activated.",
+    dropHeldItemsOnActivation: true,
+  },
+  "pf1e.paizo.grappled": {
+    ...(generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)["pf1e.paizo.grappled"],
+    actionRestrictions: conditionActionRestrictions["pf1e.paizo.grappled"],
+    description: "Cannot move or take actions that require two hands. Takes −2 on attacks and combat maneuver checks other than grapple or escape-grapple checks. Cannot make attacks of opportunity. Casting a spell or using a spell-like ability requires concentration at DC 10 + grappler's CMB + spell level.",
+    effects: [
+      ...((generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)["pf1e.paizo.grappled"]?.effects ?? []),
+      { ...modifier("attack.melee", -2, "penalty"), source: coreConditionSource("pf1e.paizo.condition.grappled.attack-melee", "Grappled melee attack penalty") },
+      { ...modifier("attack.ranged", -2, "penalty"), source: coreConditionSource("pf1e.paizo.condition.grappled.attack-ranged", "Grappled ranged attack penalty") },
+      {
+        ...when(modifier("cmb", -2, "penalty"), { kinds: ["maneuver"], excludedManeuvers: ["grapple", "escape-grapple"] }),
+        source: coreConditionSource("pf1e.paizo.condition.grappled.cmb-penalty", "Grappled CMB penalty"),
+      },
+      ...movementModes.map((mode) => ({ kind: "multiply" as const, target: `speed.${mode}` as EffectTargetId, factor: 0, source: coreConditionSource(`pf1e.paizo.condition.grappled.speed-${mode}`, `Grappled ${mode} speed restriction`) })),
+    ],
+  },
+  "pf1e.paizo.stunned": { ...(generatedAutosheetConditionCatalog as Record<string, FeatureDefinition>)["pf1e.paizo.stunned"], actionRestrictions: conditionActionRestrictions["pf1e.paizo.stunned"], defenseRestrictions: conditionDefenseRestrictions["pf1e.paizo.stunned"], dropHeldItemsOnActivation: true },
   ...Object.fromEntries(
     features.map((item) => [
       item.id,
@@ -539,39 +605,107 @@ export const autosheetEquipmentCatalog = equipmentCatalogSchema.parse(
   generatedAutosheetEquipmentCatalog,
 );
 export const equipmentMaterialCatalog = equipmentMaterialCatalogSchema.parse(generatedAutosheetEquipmentMaterialCatalog);
+
+/** Raw slot codes from Formula References!B38:L39, preserved as authored. */
+export const autosheetCompanionWondrousSlots = {
+  avian: { name: "Avian", slots: ["2", "3", "5", "6", "8", "9", "10", "12"] },
+  "biped-claws-paws": { name: "Biped (claws/paws)", slots: ["2", "3", "4", "5", "6", "8", "9", "10", "12"] },
+  "biped-hands": { name: "Biped (hands)", slots: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"] },
+  piscine: { name: "Piscine", slots: ["3", "6.1", "9"] },
+  "quadruped-claws-paws": { name: "Quadruped (claws/paws)", slots: ["2", "3", "4", "5", "6", "8", "9.1", "10"] },
+  "quadruped-hexapod-feet": { name: "Quadruped/Hexapod (feet)", slots: ["2", "3", "4", "5", "6", "8", "9.1", "10"] },
+  "quadruped-hooves": { name: "Quadruped (hooves)", slots: ["1", "2", "3", "4", "5", "6", "8", "9.1", "10", "13.2"] },
+  "quadruped-squat-body": { name: "Quadruped (squat-body)", slots: ["2", "3", "4", "5", "8", "10"] },
+  saurian: { name: "Saurian", slots: ["2", "3", "5", "6", "8", "9.1"] },
+  serpentine: { name: "Serpentine", slots: ["2", "3", "9"] },
+  verminous: { name: "Verminous", slots: ["3", "9"] },
+} as const;
+export const autosheetCompanionWondrousSlotsSource = {
+  document: "Pathfinder Autosheet v6.2.1",
+  sheet: "Formula References",
+  range: "B38:L39",
+  system: "PF1e",
+  category: "Companion creature wondrous item slots",
+} as const;
 const armorSupplementSource: ProgressionSourceMetadata = {
   ...equipmentSource,
   document: "Pathfinder Ultimate Equipment / PRD",
   range: "https://legacy.aonprd.com/ultimateEquipment/armsAndArmor/armor.html",
 };
 // Explicit supplements, not guesses made by the importer. Context-specific
-// jumping/cover/buckler-hand use remain notes until roll contexts exist.
+// jumping and cover use still need roll-context inputs.
 const armorSupplements: Record<
   string,
-  { effects?: Effect[]; description: string }
+  { effects?: Effect[]; description: string; containerWeightMultiplier?: number; containerWeightSource?: ProgressionSourceMetadata; source?: ProgressionSourceMetadata }
 > = {
+  "pf1e.autosheet.handy-haversack": {
+    containerWeightMultiplier: 0,
+    containerWeightSource: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Handy Haversack", system: "PF1e", publisher: "Paizo", category: "Fixed container weight" },
+    description: "Always weighs 5 lb, even when filled. Its contents do not add to carrying weight.",
+  },
+  "pf1e.autosheet.bag-of-holding-i": {
+    containerWeightMultiplier: 0,
+    containerWeightSource: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Bag of Holding", system: "PF1e", publisher: "Paizo", category: "Fixed container weight" },
+    description: "Weighs a fixed 15 lb regardless of contents. Contents count toward capacity, but not carrying weight.",
+  },
+  "pf1e.autosheet.bag-of-holding-ii": {
+    containerWeightMultiplier: 0,
+    containerWeightSource: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Bag of Holding", system: "PF1e", publisher: "Paizo", category: "Fixed container weight" },
+    description: "Weighs a fixed 25 lb regardless of contents. Contents count toward capacity, but not carrying weight.",
+  },
+  "pf1e.autosheet.bag-of-holding-iii": {
+    containerWeightMultiplier: 0,
+    containerWeightSource: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Bag of Holding", system: "PF1e", publisher: "Paizo", category: "Fixed container weight" },
+    description: "Weighs a fixed 35 lb regardless of contents. Contents count toward capacity, but not carrying weight.",
+  },
+  "pf1e.autosheet.bag-of-holding-iv": {
+    containerWeightMultiplier: 0,
+    containerWeightSource: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Bag of Holding", system: "PF1e", publisher: "Paizo", category: "Fixed container weight" },
+    description: "Weighs a fixed 60 lb regardless of contents. Contents count toward capacity, but not carrying weight.",
+  },
+  "pf1e.autosheet.portable-hole": {
+    containerWeightMultiplier: 0,
+    containerWeightSource: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Portable Hole", system: "PF1e", publisher: "Paizo", category: "Fixed container weight" },
+    description: "Its cloth does not accumulate weight when filled. Its contents count toward capacity, but not carrying weight.",
+  },
   "pf1e.autosheet.tower-shield": {
     effects: attacks(-2),
     description:
       "Includes the tower shield −2 attack penalty. Choosing total cover is not an automatic numeric bonus.",
   },
   "pf1e.autosheet.agile-breastplate": {
-    effects: [modifier("skill.climb", 3)],
+    effects: [
+      modifier("skill.climb", 3),
+      when(modifier("skill.acrobatics", 3), {
+        kinds: ["skill"],
+        requiredFlags: ["jump-check"],
+      }),
+    ],
     description:
-      "Climb uses −1 armor check penalty. Jump-only checks also use −1; apply that exception manually (other Acrobatics checks retain −4).",
+      "Climb and jump-only Acrobatics checks use −1 armor check penalty; other Acrobatics checks retain −4.",
   },
   "pf1e.autosheet.agile-half-plate": {
-    effects: [modifier("skill.climb", 3)],
+    effects: [
+      modifier("skill.climb", 3),
+      when(modifier("skill.acrobatics", 3), {
+        kinds: ["skill"],
+        requiredFlags: ["jump-check"],
+      }),
+    ],
     description:
-      "Climb uses −4 armor check penalty. Jump-only checks also use −4; apply that exception manually. Allows quadruple-speed running.",
+      "Climb and jump-only Acrobatics checks use −4 armor check penalty; other Acrobatics checks retain −7. Allows quadruple-speed running.",
   },
   "pf1e.autosheet.armored-kilt": {
     description:
-      "Standalone chassis. Attaching a kilt to other armor requires a custom combined item; do not equip both expecting attachment rules.",
+      "Can be attached to one light or medium armor item. The combined armor gains +1 armor bonus and moves up one weight category; attached kilts do not function with heavy armor.",
   },
   "pf1e.autosheet.buckler": {
-    description:
-      "Passive equipped shield bonus. Off-hand attacks, two-handed weapon use, and loss of the bonus require a contextual adjustment.",
+    effects: [
+      when(modifier("attack.melee", -1, "penalty"), { kinds: ["attack"], requiredFlags: ["buckler-arm-used"] }),
+      when(modifier("attack.ranged", -1, "penalty"), { kinds: ["attack"], requiredFlags: ["buckler-arm-used"] }),
+    ],
+    description: "Using the buckler arm to wield a weapon gives −1 on that attack and removes the buckler AC bonus until your next turn.",
+    source: { document: "Pathfinder Core Rulebook (PRD)", sheet: "Buckler", system: "PF1e", publisher: "Paizo", category: "Buckler hand use", range: "https://legacy.aonprd.com/coreRuleBook/equipment.html" },
   },
 };
 export const equipmentCatalog = equipmentCatalogSchema.parse({
@@ -582,7 +716,10 @@ export const equipmentCatalog = equipmentCatalogSchema.parse({
         item.id,
         {
           ...item,
+          ...(item.id === "pf1e.autosheet.armored-kilt" ? { weight: 10 } : {}),
           ...(supplement ? { description: supplement.description } : {}),
+          ...(supplement?.containerWeightMultiplier !== undefined ? { containerWeightMultiplier: supplement.containerWeightMultiplier } : {}),
+          ...(supplement?.containerWeightSource ? { containerWeightSource: supplement.containerWeightSource } : {}),
           effects: [
             ...item.effects,
             ...(supplement?.effects ?? []).map((effect) => ({
@@ -590,7 +727,7 @@ export const equipmentCatalog = equipmentCatalogSchema.parse({
               source: {
                 id: `equipment-rule.${item.id}`,
                 label: `${item.name} special rule`,
-                content: armorSupplementSource,
+                content: supplement?.source ?? armorSupplementSource,
               },
             })),
           ],

@@ -1,0 +1,1 @@
+ALTER TABLE `campaign_discord_connections` ADD `last_test_at` integer;

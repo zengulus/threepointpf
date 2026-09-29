@@ -9,5 +9,8 @@ playwright-report/
 .env
 .env.*
 !.env.example
+
+# Scratch databases, archives, and local browser checks.
 work/
-.openai/hosting.json
+.sites-runtime/
+.wrangler/

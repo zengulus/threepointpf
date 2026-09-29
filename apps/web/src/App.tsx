@@ -6,6 +6,7 @@ import "./styles.css";
 export interface ThreePointPfHost {
   characterRepository?: CharacterRepository;
   mode?: SheetMode;
+  playerView?: boolean;
   currentUser?: { id: string; displayName: string; role?: string };
   onAuthenticationRequired?: () => void;
 }

@@ -13,8 +13,8 @@ export const abilityPenaltyFloor = 1;
  * Ability scores consume ordinary additive modifiers, but a *negative modifier*
  * is a temporary ability penalty and may never take the score below 1. The
  * distinction is explicit: only contributions marked `abilityPenalty` are
- * floored, so replacement baselines (and future damage/drain or absent-ability
- * mechanisms) still reach 0 or lower and are only clamped by the structural
+ * floored, so replacement baselines and tracked ability damage/drain still
+ * reach 0 or lower and are only clamped by the structural
  * non-negative invariant.
  */
 export function evaluateAbilityScore(
@@ -22,6 +22,8 @@ export function evaluateAbilityScore(
   id: AbilityId,
 ): EvaluationResult {
   const target = `ability.${id}` as TargetId;
+  const damage = runtime.character.abilityDamage?.[id] ?? 0;
+  const drain = runtime.character.abilityDrain?.[id] ?? 0;
   const raw = runtime.result(target, [
     runtime.replacement(
       target,
@@ -30,6 +32,8 @@ export function evaluateAbilityScore(
       `Base ${id.toUpperCase()}`,
     ),
     ...runtime.directModifiers(target).applied,
+    ...(damage > 0 ? [sourceContribution(target, -damage, `ability-damage.${id}`, `${id.toUpperCase()} ability damage (${damage})`)] : []),
+    ...(drain > 0 ? [sourceContribution(target, -drain, `ability-drain.${id}`, `${id.toUpperCase()} ability drain (${drain})`)] : []),
   ]);
   const contributions = [...raw.contributions];
   const penalty = sum(

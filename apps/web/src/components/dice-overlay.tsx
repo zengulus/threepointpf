@@ -298,7 +298,8 @@ function DiceSequence({
                     data-revealed={revealedAt(phase, "values")}
                     aria-hidden="true"
                   >
-                    <em className="dice-op">+</em>
+                    <em className="dice-op">{token.addsToTotal ? "+" : "·"}</em>
+                    {!token.addsToTotal && <small className="dice-aux-label">miss chance</small>}
                   </span>
                 )}
                 <span
@@ -308,7 +309,7 @@ function DiceSequence({
                   data-revealed={revealedAt(phase, "values")}
                 >
                   <b>{token.value}</b>
-                  <i>d{token.sides}</i>
+                  <i>{token.purpose === "missChance" ? "d100" : "d" + token.sides}</i>
                 </span>
               </Fragment>
             ))}

@@ -37,6 +37,8 @@ export interface FaceToken {
   sides: number;
   /** True for the plan's declared check die, when it has one. */
   natural: boolean;
+  addsToTotal: boolean;
+  purpose?: "missChance";
 }
 
 /**
@@ -56,6 +58,8 @@ export function faceTokens(stage: SequenceStage): FaceToken[] {
         value: resolved.faces[index] ?? 0,
         sides: group.sides,
         natural: index === natural,
+        addsToTotal: group.addsToTotal !== false,
+        ...(group.purpose ? { purpose: group.purpose } : {}),
       });
     }
   }
@@ -64,7 +68,7 @@ export function faceTokens(stage: SequenceStage): FaceToken[] {
 
 /** The dice added together — the number a modifier is applied to. */
 export function diceSum(tokens: readonly FaceToken[]): number {
-  return tokens.reduce((total, token) => total + token.value, 0);
+  return tokens.reduce((total, token) => total + (token.addsToTotal ? token.value : 0), 0);
 }
 
 /**

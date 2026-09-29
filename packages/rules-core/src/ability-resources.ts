@@ -8,6 +8,7 @@ import {
   type DerivedResource,
   type DiceExpression,
   type Effect,
+  type FeatureActionRestriction,
   type RollPlan,
   type ResourceCost,
   type ResourceCostTiming,
@@ -18,6 +19,7 @@ import {
 } from "@threepointpf/rules-schema";
 import { sourceContribution } from "./contributions.js";
 import { plainOutcomePolicy } from "./outcomes.js";
+import { resolveTurnAction } from "./spellcasting.js";
 
 export interface ResourceFacts {
   abilityModifier(
@@ -37,6 +39,9 @@ export interface AbilityValidationIssue {
 export interface AbilityActivationProposal {
   character: CharacterInput;
   abilityId: string;
+  actionRestrictions?: FeatureActionRestriction[];
+  /** Marks a Panicked activation that the player is using specifically to flee. */
+  fleeing?: boolean;
   /** Required only when a recharge-roll resource begins recharging. */
   rollRecharge?: (dice: DiceExpression, resourceId: string) => number;
   /** Deterministically resolved totals keyed by recharge resource id. */
@@ -51,6 +56,7 @@ export interface AbilityExecutionPlan {
   grants: Extract<Effect, { kind: "grant" }>[];
   rollPlans: RollPlan[];
   costs: ResourceCost[];
+  turnActions?: CharacterInput["turnActions"];
 }
 
 export type AbilityActivationResult =
@@ -82,6 +88,7 @@ export function resolveAbility(
     contextFlags: ability.contextFlags ?? definition.contextFlags,
     exclusiveGroup: ability.exclusiveGroup ?? definition.exclusiveGroup,
     priority: ability.priority ?? definition.priority,
+    actionCost: ability.actionCost ?? definition.actionCost,
   };
 }
 
@@ -479,7 +486,7 @@ function damageEffectRollPlan(
         label: effect.label ?? effect.damageType ?? ability.name,
         source: effect.source ?? { id: `ability.${ability.id}`, label: ability.name },
         ...(effect.damageType ? { damageType: effect.damageType } : {}),
-        criticalBehavior: effect.criticalBehavior,
+        criticalBehavior: effect.criticalBehavior ?? (effect.damageType?.trim().toLowerCase() === "precision" ? "notMultiplied" : "normal"),
         multiplier: 1,
       }],
     },
@@ -516,6 +523,14 @@ export function prepareAbilityExecution(
   if (invalidTiming)
     return { accepted: false, issues: [{ code: "invalid-cost-timing", message: `${ability.name} cannot pay ${costTiming(invalidTiming, ability.activation)} costs through its ${ability.activation} lifecycle`, abilityId: ability.id, resourceId: invalidTiming.resourceId }] };
   const turningOff = ability.activation === "toggleable" && ability.active;
+  // Conditions such as Dazed and Nauseated still restrict an activation that
+  // the author marked as free. Resolve the turn action even without a cost so
+  // those restrictions apply; ordinary free activations leave the ledger intact.
+  const action = turningOff
+    ? undefined
+    : resolveTurnAction(proposal.character.turnActions, ability.actionCost, proposal.actionRestrictions ?? [], Boolean(proposal.fleeing));
+  if (action && "error" in action && action.error)
+    return { accepted: false, issues: [{ code: "action-unavailable", message: action.error, abilityId: ability.id }] };
   const dueTiming: ResourceCostTiming = ability.activation === "activated" ? "onUse" : "onActivate";
   const dueCosts = turningOff ? [] : (ability.costs ?? []).filter((cost) => costTiming(cost, ability.activation) === dueTiming);
   const upkeep = turningOff ? [] : (ability.costs ?? []).filter((cost) => costTiming(cost, ability.activation) === "perRound");
@@ -559,6 +574,7 @@ export function prepareAbilityExecution(
       grants: effects.filter((effect): effect is Extract<Effect, { kind: "grant" }> => effect.kind === "grant"),
       rollPlans,
       costs: ability.costs ?? [],
+      ...(action && "state" in action && ability.actionCost !== "free" ? { turnActions: action.state } : {}),
     },
   };
 }
@@ -601,6 +617,8 @@ export function commitAbilityActivation(
       return { accepted: false, character: proposal.character, issues: [{ code: "recharge-roll-required", message: `${definition.name} requires a valid resolved recharge roll`, abilityId: ability.id, resourceId: definition.id }] };
   }
   let character = proposal.character;
+  if (prepared.execution.turnActions)
+    character = parseCharacterInput({ ...character, turnActions: prepared.execution.turnActions });
   const spent: ResourceState[] = [];
   for (const cost of dueCosts) {
     const definition = character.resources!.find((item) => item.id === cost.resourceId)!;
@@ -645,6 +663,7 @@ export function cloneAbilityDefinition(definition: AbilityDefinition, id: string
     name: definition.name,
     ...(definition.description ? { description: definition.description } : {}),
     activation: definition.activation,
+    ...(definition.actionCost ? { actionCost: definition.actionCost } : {}),
     ...(definition.activation === "toggleable" ? { active: false } : {}),
     effects: structuredClone(definition.effects),
     ...(definition.costs ? { costs: structuredClone(definition.costs) } : {}),

@@ -19,7 +19,11 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 209,
           "range": "A209:I209"
-        }
+        },
+        "damageReduction": {
+          "amount": 1
+        },
+        "damageReductionByArmorWeightCategory": true
       }
     ],
     "source": {
@@ -260,6 +264,10 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 219,
           "range": "A219:I219"
+        },
+        "energyResistance": {
+          "damageType": "electricity",
+          "amount": 2
         }
       }
     ],
@@ -286,7 +294,15 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 220,
           "range": "A220:I220"
-        }
+        },
+        "damageReduction": {
+          "amount": 1,
+          "appliesAgainst": [
+            "animal",
+            "humanoid"
+          ]
+        },
+        "damageReductionByArmorWeightCategory": true
       }
     ],
     "source": {
@@ -312,6 +328,10 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 221,
           "range": "A221:I221"
+        },
+        "energyResistance": {
+          "damageType": "fire",
+          "amount": 2
         }
       }
     ],
@@ -338,6 +358,10 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 222,
           "range": "A222:I222"
+        },
+        "energyResistance": {
+          "damageType": "cold",
+          "amount": 2
         }
       }
     ],
@@ -391,7 +415,8 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 224,
           "range": "A224:I224"
-        }
+        },
+        "flyBonus": 2
       }
     ],
     "source": {
@@ -417,7 +442,9 @@ export const generatedAutosheetEquipmentMaterialCatalog = {
           "category": "Armor and shield materials",
           "row": 225,
           "range": "A225:I225"
-        }
+        },
+        "initiativeBonus": 1,
+        "initiativeBonusByArmorWeightCategory": true
       }
     ],
     "source": {

@@ -11,6 +11,7 @@ import {
   saveIds,
   type ActionKind,
   type CharacterInput,
+  type CoverLevel,
   type ProgressionCatalog,
   type RollDefense,
   type RollDefenseKind,
@@ -19,16 +20,21 @@ import {
 import type { ResolvedRoll, RollPlan } from "@threepointpf/dice";
 import {
   RulesEngine,
+  concentrationRollPlan,
+  spellLikeConcentrationRollPlan,
   type ActionPlan,
   type RollRequestOptions,
   type RulesEngineOptions,
 } from "@threepointpf/rules-core";
 import { z } from "zod";
+export { discordRollPayload, formatDiscordRollMessage } from "./discord.js";
 
 export interface CharacterRepository {
   save(character: CharacterInput): Promise<void>;
   load(id: string): Promise<CharacterInput | null>;
   list(): Promise<CharacterSummary[]>;
+  /** Hosted persistence revision; absent in browser mode. */
+  getRevision?(id: string): CharacterRevision | undefined;
 }
 
 export type CharacterRevision = string | number;
@@ -287,6 +293,10 @@ export class HttpCharacterRepository implements CharacterRepository {
   private readonly revisions = new Map<string, CharacterRevision>();
   private readonly apiBase: string;
 
+  getRevision(id: string): CharacterRevision | undefined {
+    return this.revisions.get(id);
+  }
+
   constructor(options: HttpCharacterRepositoryOptions = {}) {
     this.request = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.rules = baseRulesOptions(options.rules);
@@ -358,6 +368,7 @@ const initiativeInvalidFields = [
   "attackId",
   "attackIndex",
   "attackIds",
+  "offHandAttackCount",
   "action",
   "maneuver",
   "touch",
@@ -394,8 +405,10 @@ export interface TargetRequest {
  */
 export interface RollPlanRequest {
   characterId: string;
-  kind: "save" | "attack" | "maneuver" | "skill" | "damage" | "initiative";
+  kind: "save" | "attack" | "maneuver" | "skill" | "damage" | "initiative" | "concentration";
   saveId?: SaveId;
+  /** The roller's cover against a Reflex-save effect. */
+  cover?: CoverLevel;
   attackId?: string;
   /** Zero-based member of an attack's authoritative sequence. */
   attackIndex?: number;
@@ -405,8 +418,13 @@ export interface RollPlanRequest {
   action?: (typeof attackActionKinds)[number];
   /** Every weapon selected by a multi-weapon full attack, in order. */
   attackIds?: string[];
+  /** Autosheet Buff Table TWF value: number of off-hand attacks, 0–3. */
+  offHandAttackCount?: number;
   maneuver?: string;
   skillId?: string;
+  /** Exactly one saved casting source or spell-like ability for concentration. */
+  sourceId?: string;
+  abilityId?: string;
   flags?: string[];
   excludeFlags?: string[];
   touch?: boolean;
@@ -420,6 +438,7 @@ export interface ActionPlanRequest {
   characterId: string;
   action: ActionKind;
   attackIds?: string[];
+  offHandAttackCount?: number;
   maneuver?: string;
   flags?: string[];
   excludeFlags?: string[];
@@ -434,6 +453,40 @@ export interface ResolveRollRequest {
 }
 
 export interface ResolveRollResponse extends ResolvedRoll {}
+
+/** Browser requests an action, never a plan, face, modifier, or total. */
+export const hostedRollRequestSchema = z.object({
+  version: z.literal(1),
+  clientRequestId: z.string().uuid(),
+  characterId: z.string().min(1).max(128),
+  expectedRevision: z.number().int().positive(),
+  action: z.lazy(() => rollPlanRequestSchema),
+}).strict().superRefine((request, context) => {
+  if (request.action.characterId !== request.characterId)
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["action", "characterId"], message: "Action character must match the requested character" });
+});
+export type HostedRollRequest = z.infer<typeof hostedRollRequestSchema>;
+
+export type HostedRollDeliveryState =
+  | "not_configured" | "pending" | "sending" | "sent" | "retryable_failed"
+  | "permanent_failed" | "delivery_unknown" | "cancelled";
+export interface HostedRollResponse {
+  version: 1;
+  rollId: string;
+  clientRequestId: string;
+  characterId: string;
+  characterName: string;
+  characterRevision: number;
+  createdAt: string;
+  plan: RollPlan;
+  result: ResolvedRoll;
+  delivery: {
+    state: HostedRollDeliveryState;
+    messageId?: string | null;
+    nextAttemptAtMs?: number | null;
+    safeErrorCode?: string | null;
+  };
+}
 
 /**
  * Rejects a defense that cannot be what this roll is compared against. A save
@@ -487,30 +540,55 @@ function validateDefense(
 export const rollPlanRequestSchema = z
   .object({
     characterId: z.string().min(1),
-    kind: z.enum(["save", "attack", "maneuver", "skill", "damage", "initiative"]),
+    kind: z.enum(["save", "attack", "maneuver", "skill", "damage", "initiative", "concentration"]),
     saveId: z.enum(saveIds).optional(),
+    cover: z.enum(["partial", "standard", "soft", "improved", "total"]).optional(),
     attackId: z.string().min(1).optional(),
     attackIndex: z.number().int().nonnegative().optional(),
     criticalDamage: z.boolean().optional(),
     action: z.enum(attackActionKinds).optional(),
     attackIds: z.array(z.string().min(1)).min(1).optional(),
+    offHandAttackCount: z.number().int().min(0).max(3).optional(),
     maneuver: z
       .string()
       .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs")
       .optional(),
     skillId: z.string().min(1).optional(),
+    sourceId: z.string().min(1).max(128).optional(),
+    abilityId: z.string().min(1).max(128).optional(),
     flags: flagList.optional(),
     excludeFlags: flagList.optional(),
     touch: z.boolean().optional(),
     defense: defenseRequestSchema.optional(),
     target: targetRequestSchema.optional(),
   })
+  .strict()
   .superRefine((request, context) => {
     const attackFields = () => ({
       attackId: request.attackId,
       attackIndex: request.attackIndex,
     });
     validateDefense(request, context);
+    if (request.kind === "concentration") {
+      if (Number(request.sourceId !== undefined) + Number(request.abilityId !== undefined) !== 1)
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["sourceId"], message: "Choose one casting source or spell-like ability" });
+      if (request.flags || request.excludeFlags || request.target || request.cover || request.saveId || request.skillId ||
+        request.attackId || request.attackIndex !== undefined || request.attackIds || request.offHandAttackCount !== undefined ||
+        request.action || request.maneuver || request.touch !== undefined || request.criticalDamage !== undefined)
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["kind"], message: "Concentration takes only a source and optional DC" });
+      if (request.defense?.context !== undefined || request.defense?.cover !== undefined ||
+        request.defense?.missChance !== undefined || request.defense?.ignoreNonTotalCover !== undefined)
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["defense"], message: "Concentration takes a DC without attack modifiers" });
+      return;
+    }
+    if (request.sourceId !== undefined || request.abilityId !== undefined)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["sourceId"], message: "Casting source fields require concentration" });
+    if (request.cover && (request.kind !== "save" || request.saveId !== "reflex"))
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["cover"], message: "Roller cover only applies to Reflex saves" });
+    if (request.defense?.cover && request.defense.kind !== "ac")
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["defense", "cover"], message: "Target cover only applies to AC" });
+    if (request.kind !== "attack" && request.kind !== "damage" && request.offHandAttackCount !== undefined)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["offHandAttackCount"], message: "offHandAttackCount is only valid for attack and damage rolls" });
     // Rolling damage twice is a damage-roll fact, so no other family may
     // declare it.
     if (request.kind !== "damage" && request.criticalDamage !== undefined)
@@ -616,6 +694,7 @@ export const actionPlanRequestSchema = z
     characterId: z.string().min(1),
     action: z.enum(actionKinds),
     attackIds: z.array(z.string().min(1)).min(1).optional(),
+    offHandAttackCount: z.number().int().min(0).max(3).optional(),
     maneuver: z
       .string()
       .regex(/^[a-z][a-z0-9-]*$/, "Maneuvers use lowercase slugs")
@@ -641,6 +720,8 @@ export const actionPlanRequestSchema = z
         path: ["attackIds"],
         message: "A maneuver action selects no weapons",
       });
+    if (request.action === "maneuver" && request.offHandAttackCount !== undefined)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["offHandAttackCount"], message: "offHandAttackCount is only valid for weapon attacks" });
     if (request.action !== "maneuver" && request.maneuver !== undefined)
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -669,6 +750,8 @@ const rollPlanSchema = z.object({
       z.object({
         sides: z.number().int().positive(),
         count: z.number().int().positive(),
+        addsToTotal: z.boolean().optional(),
+        purpose: z.literal("missChance").optional(),
       }),
     )
     .min(1),
@@ -752,6 +835,7 @@ function rollRequestOptions(request: RollPlanRequest): RollRequestOptions {
     ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
     ...(request.defense ? { defense: request.defense } : {}),
     ...(request.target ? { target: request.target } : {}),
+    ...(request.cover ? { cover: request.cover } : {}),
   };
 }
 
@@ -779,11 +863,17 @@ export function createCharacterRollPlan(
       ...(request.flags ? { flags: request.flags } : {}),
       ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),
     });
+  if (request.kind === "concentration") {
+    const dc = request.defense?.value;
+    if (request.sourceId) return concentrationRollPlan(engine, request.sourceId, dc);
+    if (request.abilityId) return spellLikeConcentrationRollPlan(engine, request.abilityId, dc);
+  }
   if (request.kind === "damage" && request.attackId)
     return engine.createDamageRollPlan(request.attackId, {
       ...options,
       ...(request.action ? { action: request.action } : {}),
       ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+      ...(request.offHandAttackCount !== undefined ? { offHandAttackCount: request.offHandAttackCount } : {}),
       ...(request.attackIndex !== undefined
         ? { attackIndex: request.attackIndex }
         : {}),
@@ -797,6 +887,7 @@ export function createCharacterRollPlan(
       ...options,
       ...(request.action ? { action: request.action } : {}),
       ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+      ...(request.offHandAttackCount !== undefined ? { offHandAttackCount: request.offHandAttackCount } : {}),
       ...(request.touch !== undefined ? { touch: request.touch } : {}),
       ...(request.maneuver ? { maneuver: request.maneuver } : {}),
     });
@@ -823,6 +914,7 @@ export function createCharacterActionPlan(
   return engine.createActionPlan({
     action: request.action,
     ...(request.attackIds ? { attackIds: request.attackIds } : {}),
+    ...(request.offHandAttackCount !== undefined ? { offHandAttackCount: request.offHandAttackCount } : {}),
     ...(request.maneuver ? { maneuver: request.maneuver } : {}),
     ...(request.flags ? { flags: request.flags } : {}),
     ...(request.excludeFlags ? { excludeFlags: request.excludeFlags } : {}),

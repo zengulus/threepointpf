@@ -1,6 +1,10 @@
 import {
   parseProgressionCatalog,
   parseSkillCatalog,
+  autosheetSphereCatalogSchema,
+  autosheetBonusTypeReferenceSchema,
+  autosheetSizeAdjustmentCatalogSchema,
+  autosheetWornSlotReferenceSchema,
   experienceCatalogSchema,
   spellCatalogSchema,
   type ProgressionAliasMap,
@@ -8,12 +12,18 @@ import {
   type ProgressionDefinition,
   type SkillCatalog,
   type SkillDefinition,
+  type AutosheetSphereCatalog,
+  type AutosheetBonusTypeReference,
+  type AutosheetSizeAdjustmentCatalog,
+  type AutosheetWornSlotReference,
 } from "@threepointpf/rules-schema";
 import {
   abilityCatalog,
   attackFromProfile,
   attackProfileCatalog,
   autosheetEquipmentCatalog,
+  autosheetCompanionWondrousSlots,
+  autosheetCompanionWondrousSlotsSource,
   equipmentCatalog,
   equipmentMaterialCatalog,
   featureCatalog,
@@ -21,6 +31,10 @@ import {
 import { generatedAutosheetProgressionCatalog } from "./generated/autosheet-progressions.js";
 import { generatedAutosheetSkillCatalog } from "./generated/autosheet-skills.js";
 import { generatedAutosheetExperienceCatalog } from "./generated/autosheet-experience.js";
+import { generatedAutosheetSphereCategoryCatalog } from "./generated/autosheet-sphere-categories.js";
+import { generatedAutosheetBonusTypeReference } from "./generated/autosheet-bonus-types.js";
+import { generatedAutosheetSizeAdjustmentCatalog } from "./generated/autosheet-size-adjustments.js";
+import { generatedAutosheetWornSlotReference } from "./generated/autosheet-worn-slots.js";
 
 /**
  * Validated PF1e chassis data generated from the supplied Autosheet workbook.
@@ -51,6 +65,10 @@ export const skillCatalog = autosheetSkillCatalog;
 export const experienceCatalog = experienceCatalogSchema.parse(
   generatedAutosheetExperienceCatalog,
 );
+export const autosheetSphereCategoryCatalog: AutosheetSphereCatalog = autosheetSphereCatalogSchema.parse(generatedAutosheetSphereCategoryCatalog);
+export const autosheetBonusTypeReference: AutosheetBonusTypeReference = autosheetBonusTypeReferenceSchema.parse(generatedAutosheetBonusTypeReference);
+export const autosheetSizeAdjustmentCatalog: AutosheetSizeAdjustmentCatalog = autosheetSizeAdjustmentCatalogSchema.parse(generatedAutosheetSizeAdjustmentCatalog);
+export const autosheetWornSlotReference: AutosheetWornSlotReference = autosheetWornSlotReferenceSchema.parse(generatedAutosheetWornSlotReference);
 
 /** Small curated examples for the spellcasting foundation, not a full rules corpus. */
 export const spellCatalog = spellCatalogSchema.parse({
@@ -70,6 +88,8 @@ export const rulesCatalogs = {
   equipmentMaterialCatalog,
   attackProfileCatalog,
   experienceCatalog,
+  sizeAdjustmentCatalog: autosheetSizeAdjustmentCatalog,
+  autosheetSphereCategoryCatalog,
   spellCatalog,
 };
 
@@ -90,6 +110,8 @@ export {
   attackFromProfile,
   attackProfileCatalog,
   autosheetEquipmentCatalog,
+  autosheetCompanionWondrousSlots,
+  autosheetCompanionWondrousSlotsSource,
   equipmentCatalog,
   equipmentMaterialCatalog,
   featureCatalog,

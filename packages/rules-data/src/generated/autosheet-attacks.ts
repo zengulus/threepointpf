@@ -1351,5 +1351,848 @@ export const generatedAutosheetAttackProfileCatalog = {
       "row": 58,
       "range": "AA58"
     }
+  },
+  "pf1e.autosheet.alchemist-bomb": {
+    "id": "pf1e.autosheet.alchemist-bomb",
+    "name": "Alchemist Bomb: DEX / INT",
+    "description": "Alchemist Bomb (DEX to hit, INT to damage) (Single Attack)",
+    "attackAbility": "dex",
+    "damageAbility": "int",
+    "damageAbilityMultiplier": 1,
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 45,
+      "range": "AD45:AF45"
+    }
+  },
+  "pf1e.autosheet.alchemist-rapid-bomb": {
+    "id": "pf1e.autosheet.alchemist-rapid-bomb",
+    "name": "Alchemist Bomb: Rapid Bomb",
+    "description": "Alchemist Bomb (DEX to hit, INT to damage) (Rapid Bomb)",
+    "attackAbility": "dex",
+    "damageAbility": "int",
+    "damageAbilityMultiplier": 1,
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged",
+      "weapon.touch"
+    ],
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 46,
+      "range": "AD46:AF46"
+    }
+  },
+  "pf1e.autosheet.witch-prehensile-hair": {
+    "id": "pf1e.autosheet.witch-prehensile-hair",
+    "name": "Witch Prehensile Hair",
+    "description": "Witch Prehensile Hair (INT to hit / INT to damage)",
+    "attackAbility": "int",
+    "damageAbility": "int",
+    "damageAbilityMultiplier": 1,
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 48,
+      "range": "AD48:AF48"
+    }
+  },
+  "pf1e.autosheet.white-witch-hair-str": {
+    "id": "pf1e.autosheet.white-witch-hair-str",
+    "name": "White Witch Hair: STR / INT",
+    "description": "White Witch Hair (STR to hit / INT to damage)",
+    "attackAbility": "str",
+    "damageAbility": "int",
+    "damageAbilityMultiplier": 1,
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 49,
+      "range": "AD49:AF49"
+    }
+  },
+  "pf1e.autosheet.white-witch-hair-dex": {
+    "id": "pf1e.autosheet.white-witch-hair-dex",
+    "name": "White Witch Hair: DEX / INT",
+    "description": "White Witch Hair (DEX to hit / INT to damage)",
+    "attackAbility": "dex",
+    "damageAbility": "int",
+    "damageAbilityMultiplier": 1,
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 50,
+      "range": "AD50:AF50"
+    }
+  },
+  "pf1e.autosheet.kineticist-ranged-con": {
+    "id": "pf1e.autosheet.kineticist-ranged-con",
+    "name": "Kineticist Ranged: DEX / CON",
+    "description": "Kineticist Ranged (DEX to hit, CON to damage)",
+    "attackAbility": "dex",
+    "damageAbility": "con",
+    "damageAbilityMultiplier": 1,
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 53,
+      "range": "AD53:AF53"
+    }
+  },
+  "pf1e.autosheet.kineticist-ranged-half-con": {
+    "id": "pf1e.autosheet.kineticist-ranged-half-con",
+    "name": "Kineticist Ranged: DEX / ½ CON",
+    "description": "Kineticist Ranged (DEX to hit, CON*0.5 to damage)",
+    "attackAbility": "dex",
+    "damageAbility": "con",
+    "damageAbilityMultiplier": 0.5,
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 54,
+      "range": "AD54:AF54"
+    }
+  },
+  "pf1e.autosheet.kineticist-melee-dex-con": {
+    "id": "pf1e.autosheet.kineticist-melee-dex-con",
+    "name": "Kineticist Melee: DEX / CON",
+    "description": "Kineticist Melee (DEX to hit, CON to damage)",
+    "attackAbility": "dex",
+    "damageAbility": "con",
+    "damageAbilityMultiplier": 1,
+    "damageModifierMode": "ranged",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 55,
+      "range": "AD55:AF55"
+    }
+  },
+  "pf1e.autosheet.kineticist-melee-dex-half-con": {
+    "id": "pf1e.autosheet.kineticist-melee-dex-half-con",
+    "name": "Kineticist Melee: DEX / ½ CON",
+    "description": "Kineticist Melee (DEX to hit, CON*0.5 to damage)",
+    "attackAbility": "dex",
+    "damageAbility": "con",
+    "damageAbilityMultiplier": 0.5,
+    "damageModifierMode": "ranged",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 56,
+      "range": "AD56:AF56"
+    }
+  },
+  "pf1e.autosheet.kineticist-melee-str-con": {
+    "id": "pf1e.autosheet.kineticist-melee-str-con",
+    "name": "Kineticist Melee: STR / CON",
+    "description": "Kineticist Melee (STR to hit, CON to damage)",
+    "attackAbility": "str",
+    "damageAbility": "con",
+    "damageAbilityMultiplier": 1,
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 57,
+      "range": "AD57:AF57"
+    }
+  },
+  "pf1e.autosheet.kineticist-melee-str-half-con": {
+    "id": "pf1e.autosheet.kineticist-melee-str-half-con",
+    "name": "Kineticist Melee: STR / ½ CON",
+    "description": "Kineticist Melee (STR to hit, CON*0.5 to damage)",
+    "attackAbility": "str",
+    "damageAbility": "con",
+    "damageAbilityMultiplier": 0.5,
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee",
+      "weapon.touch"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Specialized attack profiles",
+      "row": 58,
+      "range": "AD58:AF58"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-str-str-1": {
+    "id": "pf1e.autosheet.monk-flurry-melee-str-str-1",
+    "name": "Melee Monk Flurry: STR / 1×STR",
+    "description": "STR/STR Monk Melee Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "str",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 45,
+      "range": "U45:W45"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-str-str-1-5": {
+    "id": "pf1e.autosheet.monk-flurry-melee-str-str-1-5",
+    "name": "Melee Monk Flurry: STR / 1.5×STR",
+    "description": "STR/STR*1.5 Monk Melee Flurry (Base Monk does not get *1.5 STR, but does get better Power Attack ratio; Unchained Monk gets both) (Uses Monk level as full BAB)",
+    "attackAbility": "str",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1.5,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 46,
+      "range": "U46:W46"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-dex-str-1": {
+    "id": "pf1e.autosheet.monk-flurry-melee-dex-str-1",
+    "name": "Melee Monk Flurry: DEX / 1×STR",
+    "description": "DEX/STR Monk Melee Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "dex",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 48,
+      "range": "U48:W48"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-dex-dex-1": {
+    "id": "pf1e.autosheet.monk-flurry-melee-dex-dex-1",
+    "name": "Melee Monk Flurry: DEX / 1×DEX",
+    "description": "DEX/DEX Monk Melee Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "dex",
+    "damageAbility": "dex",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 49,
+      "range": "U49:W49"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-wis-str-1": {
+    "id": "pf1e.autosheet.monk-flurry-melee-wis-str-1",
+    "name": "Melee Monk Flurry: WIS / 1×STR",
+    "description": "WIS/STR Monk Melee Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "wis",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 51,
+      "range": "U51:W51"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-wis-str-1-5": {
+    "id": "pf1e.autosheet.monk-flurry-melee-wis-str-1-5",
+    "name": "Melee Monk Flurry: WIS / 1.5×STR",
+    "description": "WIS/STR*1.5 Monk Melee Flurry (Monk does not get *1.5 STR, but does get better Power Attack ratio) (Uses Monk level as full BAB)",
+    "attackAbility": "wis",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1.5,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 52,
+      "range": "U52:W52"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-melee-wis-wis-1": {
+    "id": "pf1e.autosheet.monk-flurry-melee-wis-wis-1",
+    "name": "Melee Monk Flurry: WIS / 1×WIS",
+    "description": "WIS/WIS Monk Melee Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "wis",
+    "damageAbility": "wis",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "melee",
+    "attackTags": [
+      "weapon.melee"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 53,
+      "range": "U53:W53"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-ranged-dex-none-0": {
+    "id": "pf1e.autosheet.monk-flurry-ranged-dex-none-0",
+    "name": "Ranged Monk Flurry: DEX / no ability damage",
+    "description": "DEX/--- Monk Ranged Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "dex",
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 55,
+      "range": "U55:W55"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-ranged-dex-str-1": {
+    "id": "pf1e.autosheet.monk-flurry-ranged-dex-str-1",
+    "name": "Ranged Monk Flurry: DEX / 1×STR",
+    "description": "DEX/STR Monk Ranged Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "dex",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 56,
+      "range": "U56:W56"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-ranged-dex-dex-1": {
+    "id": "pf1e.autosheet.monk-flurry-ranged-dex-dex-1",
+    "name": "Ranged Monk Flurry: DEX / 1×DEX",
+    "description": "DEX/DEX Monk Ranged Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "dex",
+    "damageAbility": "dex",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 57,
+      "range": "U57:W57"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-ranged-str-str-1": {
+    "id": "pf1e.autosheet.monk-flurry-ranged-str-str-1",
+    "name": "Ranged Monk Flurry: STR / 1×STR",
+    "description": "STR/STR Monk Ranged Flurry (Belt of Mighty Hurling) (Uses Monk level as full BAB)",
+    "attackAbility": "str",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 58,
+      "range": "U58:W58"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-ranged-wis-str-1": {
+    "id": "pf1e.autosheet.monk-flurry-ranged-wis-str-1",
+    "name": "Ranged Monk Flurry: WIS / 1×STR",
+    "description": "WIS/STR Monk Ranged Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "wis",
+    "damageAbility": "str",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 59,
+      "range": "U59:W59"
+    }
+  },
+  "pf1e.autosheet.monk-flurry-ranged-wis-wis-1": {
+    "id": "pf1e.autosheet.monk-flurry-ranged-wis-wis-1",
+    "name": "Ranged Monk Flurry: WIS / 1×WIS",
+    "description": "WIS/WIS Monk Ranged Flurry (Uses Monk level as full BAB)",
+    "attackAbility": "wis",
+    "damageAbility": "wis",
+    "damageAbilityMultiplier": 1,
+    "babProgressionId": "pf1e.paizo.monk",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "bonusAttackProgression": {
+      "progressionId": "pf1e.paizo.monk",
+      "steps": [
+        {
+          "level": 1,
+          "count": 1
+        },
+        {
+          "level": 8,
+          "count": 2
+        },
+        {
+          "level": 15,
+          "count": 3
+        }
+      ]
+    },
+    "requiredEligibilityTags": [
+      "monk-flurry-weapon"
+    ],
+    "fullAttackOnly": true,
+    "iterative": true,
+    "extraAttackEligible": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Monk Flurry attack profiles",
+      "row": 60,
+      "range": "U60:W60"
+    }
+  },
+  "pf1e.autosheet.spell-based": {
+    "id": "pf1e.autosheet.spell-based",
+    "name": "Spell-Based Attack (Caster Level + Casting Ability)",
+    "description": "Uses one selected spellcasting source's caster level and key ability instead of BAB and an attack ability.",
+    "attackAbility": "int",
+    "attackBaseline": "casterLevel",
+    "mode": "ranged",
+    "attackTags": [
+      "weapon.ranged"
+    ],
+    "iterative": false,
+    "extraAttackEligible": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Spell-based attack profile",
+      "row": 53,
+      "range": "O53:Q53"
+    }
   }
 } satisfies AttackProfileCatalog;

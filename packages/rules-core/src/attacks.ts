@@ -5,6 +5,7 @@ import {
   type ActionKind,
   type ActionPlan,
   type ActionPlanStep,
+  type AbilityId,
   type AttackDefinition,
   type AttackMode,
   type Contribution,
@@ -32,6 +33,10 @@ import type { RulesRuntime } from "./runtime.js";
 
 export { attackModeOf };
 
+function damageDiceForSize(runtime: RulesRuntime, definition: AttackDefinition) {
+  return definition.damageBySize?.[runtime.sizeCategory()] ?? definition.baseDamage;
+}
+
 export interface AttackContextInput {
   kind: RollKind;
   /** Which action this roll belongs to. */
@@ -42,6 +47,8 @@ export interface AttackContextInput {
   sequenceIndex?: number;
   /** Weapons the action selects, in order. */
   attackIds?: string[];
+  /** Autosheet Buff Table TWF value: number of off-hand attacks, 0–3. */
+  offHandAttackCount?: number;
   touch?: boolean;
   maneuver?: ManeuverId;
   /** This roll is the critical consequence of the attack it follows. */
@@ -74,6 +81,30 @@ export function attackContext(
   input: AttackContextInput,
 ): RollContext {
   const attackTags = definition.attackTags ?? [];
+  const offHandAttack = attackTags.includes("weapon.off-hand");
+  const twoHandedAttack = attackTags.includes("weapon.two-handed");
+  const naturalAttack = attackTags.includes("natural.attack");
+  const authoredHandUse = definition.handUse;
+  const usesPrimaryHand = authoredHandUse
+    ? authoredHandUse === "primary" || authoredHandUse === "both"
+    : !naturalAttack && (!offHandAttack || twoHandedAttack);
+  const usesOffHand = authoredHandUse
+    ? authoredHandUse === "offHand" || authoredHandUse === "both"
+    : !naturalAttack && (offHandAttack || twoHandedAttack);
+  const buckler = runtime.equipment.find((item) =>
+    item.equipped
+    && item.kind === "shield"
+    && (item.definitionId === "pf1e.autosheet.buckler" || item.name?.trim().toLocaleLowerCase("en-US") === "buckler"),
+  );
+  const bucklerHand = buckler?.shieldHand ?? "offHand";
+  const usesBucklerArm = Boolean(buckler && input.kind === "attack" && (
+    bucklerHand === "offHand" ? usesOffHand : usesPrimaryHand
+  ));
+  const shieldBashItemId = definition.id.startsWith("equipment.") ? definition.id.slice("equipment.".length) : undefined;
+  const occupiedShield = runtime.equipment.find((item) => item.equipped && item.kind === "shield" && item.shieldOccupiesHand
+    && item.id !== shieldBashItemId
+    && ((item.shieldHand ?? "offHand") === "offHand" ? usesOffHand : usesPrimaryHand));
+  const shieldHandUnavailable = input.kind === "attack" && occupiedShield !== undefined;
   const target = targetContextOf(input);
   return {
     kind: input.kind,
@@ -85,6 +116,7 @@ export function attackContext(
         ? { sequenceIndex: input.sequenceIndex }
         : {}),
       ...(input.attackIds ? { attackIds: input.attackIds } : {}),
+      ...(input.offHandAttackCount !== undefined ? { offHandAttackCount: input.offHandAttackCount } : {}),
     },
     attackId: definition.id,
     attackTags,
@@ -94,7 +126,7 @@ export function attackContext(
     ...(input.criticalDamage ? { criticalDamage: true } : {}),
     flags: resolveContextFlags(
       runtime.enabledContextFlags(),
-      input.flags,
+      [...(input.flags ?? []), ...(usesBucklerArm ? ["buckler-arm-used"] : []), ...(shieldHandUnavailable ? ["shield-hand-unavailable"] : [])],
       input.excludeFlags,
     ),
     ...(input.excludeFlags?.length ? { excludeFlags: input.excludeFlags } : {}),
@@ -109,6 +141,11 @@ function profileSource(
   return definition.profileId
     ? lookup(runtime.attackProfileCatalog, definition.profileId)?.source
     : undefined;
+}
+
+function isManufacturedOffHand(definition: AttackDefinition): boolean {
+  return definition.attackTags?.includes("weapon.off-hand") === true
+    && definition.attackTags?.includes("natural.attack") !== true;
 }
 
 export function evaluateAttack(
@@ -139,19 +176,90 @@ export function evaluateAttack(
       ]
     : [
         runtime.replacement(target, 0, `${target}.base`, labelForTarget(target)),
-        babContribution(runtime, target),
+        attackBaselineContribution(runtime, definition, target),
       ];
   const modifiers = runtime.directModifiers(target, {
     attack: definition,
     context,
     reportExclusions: true,
   });
+  const actionWeapons = context.action.attackIds?.map((id) =>
+    runtime.attackDefinitions.find((attack) => attack.id === id),
+  ).filter((attack): attack is AttackDefinition => Boolean(attack)) ?? [];
+  const twoWeaponCandidates = actionWeapons.filter((attack) => !attack.attackTags?.includes("natural.attack"));
+  const offHandWeapons = twoWeaponCandidates.filter((attack) => attack.attackTags?.includes("weapon.off-hand"));
+  const primaryWeapons = twoWeaponCandidates.filter((attack) => !attack.attackTags?.includes("weapon.off-hand"));
+  const authoredWeapons = runtime.attackDefinitions.filter((attack) => !attack.attackTags?.includes("natural.attack"));
+  const authoredOffHandWeapons = authoredWeapons.filter((attack) => attack.attackTags?.includes("weapon.off-hand"));
+  const hasAuthoredOffHand = authoredOffHandWeapons.length > 0;
+  const hasAuthoredPrimaryHand = authoredWeapons.some((attack) => !attack.attackTags?.includes("weapon.off-hand"));
+  const isNaturalAttack = definition.attackTags?.includes("natural.attack") ?? false;
+  const isSecondaryNaturalAttack = isNaturalAttack && (
+    definition.naturalAttackRole === "secondary"
+    || (context.action.kind === "fullAttack"
+      && actionWeapons.some((attack) => attack.attackTags?.includes("natural.attack"))
+      && actionWeapons.some((attack) => !attack.attackTags?.includes("natural.attack")))
+  );
+  const naturalAttackPenalty: Contribution[] =
+    isSecondaryNaturalAttack
+      ? [sourceContribution(
+          target,
+          runtime.character.workbookOptions?.multiattackFeat ? -2 : -5,
+          "combat.natural.secondary",
+          "Secondary natural attack",
+          "penalty",
+          {
+            note: runtime.character.workbookOptions?.multiattackFeat
+              ? "Multiattack reduces the secondary natural attack penalty to −2"
+              : "Secondary natural attacks take a −5 penalty",
+            sourceMetadata: { document: "Pathfinder Core Rulebook", sheet: "Combat: Natural Attacks", system: "PF1e", publisher: "Paizo", category: "Paizo Combat Rules" },
+          },
+        )]
+      : [];
+  const isOffHand = definition.attackTags?.includes("weapon.off-hand") ?? false;
+  const twfEnabled = (context.action.offHandAttackCount ?? 0) > 0;
+  const fullAttackIncludesBothHands = context.action.kind === "fullAttack"
+    && offHandWeapons.length > 0
+    && primaryWeapons.length > 0;
+  const standardAttackWhileDualWielding = context.action.kind === "standardAttack"
+    && hasAuthoredOffHand
+    && hasAuthoredPrimaryHand;
+  const twfPenalty: Contribution[] = twfEnabled
+    && (fullAttackIncludesBothHands || standardAttackWhileDualWielding)
+    && !isNaturalAttack
+    ? (() => {
+        const offHandOptions = offHandWeapons.length > 0 ? offHandWeapons : authoredOffHandWeapons;
+        const lightOffHand = isOffHand
+          ? definition.attackTags?.includes("weapon.light") ?? false
+          : offHandOptions.every((attack) => attack.attackTags?.includes("weapon.light"));
+        const hasTwoWeaponFighting = runtime.character.workbookOptions?.twoWeaponFightingFeat ?? false;
+        const value = (isOffHand ? -10 : -6)
+          + (lightOffHand ? 2 : 0)
+          + (hasTwoWeaponFighting ? (isOffHand ? 6 : 2) : 0);
+        return [sourceContribution(
+          target,
+          value,
+          "combat.two-weapon-fighting",
+          `${isOffHand ? "Off-hand" : "Primary-hand"} two-weapon penalty`,
+          "penalty",
+          {
+            note: `${lightOffHand ? "Light off-hand weapon" : "Non-light off-hand weapon"}${hasTwoWeaponFighting ? "; Two-Weapon Fighting feat" : ""}`,
+            sourceMetadata: { document: "Pathfinder Core Rulebook", sheet: "Combat: Two-Weapon Fighting Penalties", system: "PF1e", publisher: "Paizo", category: "Paizo Combat Rules" },
+          },
+        )];
+      })()
+    : [];
   return runtime.result(
     target,
     [
       ...attackBaseline,
       {
-        ...runtime.abilityContribution(definition.attackAbility, target),
+        ...runtime.abilityContribution(
+          definition.attackBaseline === "casterLevel"
+            ? runtime.character.spellcastingSources?.find((source) => source.id === definition.casterLevelSourceId)?.castingAbility ?? definition.attackAbility
+            : definition.attackAbility,
+          target,
+        ),
         ...(source ? { sourceMetadata: source } : {}),
       },
       runtime.sizeAdjustment(target, -2, "Size modifier"),
@@ -179,7 +287,15 @@ export function evaluateAttack(
             ),
           ]
         : []),
+      ...(definition.proficient === false
+        ? [sourceContribution(target, -4, `attack.${definition.id}.proficiency`, "Weapon nonproficiency", "penalty", { ...(source ? { sourceMetadata: source } : {}) })]
+        : []),
       ...modifiers.applied,
+      ...(mode === "melee" && context.flags?.includes("target-unconscious")
+        ? [sourceContribution(target, 4, "condition.target.helpless", "Melee attack against helpless target", "circumstance", { note: "Helpless targets take a +4 bonus to melee attack rolls against them." })]
+        : []),
+      ...twfPenalty,
+      ...naturalAttackPenalty,
     ],
     { rollContext: context, excluded: modifiers.excluded },
   );
@@ -191,7 +307,7 @@ export function evaluateDamage(
   context: RollContext,
 ): DamageEvaluation {
   const mode = attackModeOf(definition);
-  const damageTarget = `damage.${mode}` as TargetId;
+  const damageTarget = `damage.${definition.damageModifierMode ?? mode}` as TargetId;
   const modifiers = runtime.directModifiers(damageTarget, {
     attack: definition,
     context,
@@ -200,11 +316,25 @@ export function evaluateDamage(
   const abilityValue = definition.damageAbility
     ? runtime.abilityModifierValue(definition.damageAbility)
     : 0;
+  const isOffHand = isManufacturedOffHand(definition);
+  const isSecondaryNaturalAttack = definition.attackTags?.includes("natural.attack") === true && (
+    definition.naturalAttackRole === "secondary"
+    || (context.action.kind === "fullAttack"
+      && (context.action.attackIds ?? []).some((id) => runtime.attackDefinitions.find((attack) => attack.id === id)?.attackTags?.includes("natural.attack"))
+      && (context.action.attackIds ?? []).some((id) => runtime.attackDefinitions.find((attack) => attack.id === id)?.attackTags?.includes("natural.attack") !== true))
+  );
+  const offHandStrengthMultiplier = isOffHand
+    ? runtime.character.workbookOptions?.doubleSliceFeat ? 1 : 0.5
+    : undefined;
   // A Strength penalty applies in full even to off-hand and two-handed attacks.
   const multiplier =
     abilityValue < 0 && definition.damageAbility === "str"
       ? 1
-      : (definition.damageAbilityMultiplier ?? 1);
+      : definition.damageAbility === "str" && isSecondaryNaturalAttack
+        ? 0.5
+      : definition.damageAbility === "str" && offHandStrengthMultiplier !== undefined
+        ? offHandStrengthMultiplier
+        : (definition.damageAbilityMultiplier ?? 1);
   const damageContributions: Contribution[] = definition.damageAbility
     ? [
         runtime.replacement(
@@ -292,10 +422,11 @@ export function evaluateDamage(
       rollContext: context,
     }];
   });
+  const baseDamage = damageDiceForSize(runtime, definition);
   const terms: DamageDiceTerm[] = [
     {
       kind: "dice",
-      dice: definition.baseDamage,
+      dice: baseDamage,
       label: definition.name,
       source: {
         id: `attack.${definition.id}.base-damage`,
@@ -314,7 +445,7 @@ export function evaluateDamage(
         label: effect.label ?? effect.source?.label ?? effect.damageType ?? "Additional damage",
         source: effect.source ?? { id: "effect", label: "Damage dice effect" },
         ...(effect.damageType ? { damageType: effect.damageType } : {}),
-        criticalBehavior: effect.criticalBehavior,
+        criticalBehavior: effect.criticalBehavior ?? (effect.damageType?.trim().toLowerCase() === "precision" ? "notMultiplied" : "normal"),
         multiplier: 1,
       }];
     }),
@@ -328,7 +459,7 @@ export function evaluateDamage(
   const untypedModifier = modifier - typedFlatTotal;
   return {
     formula: `${formulaTerms.join(" + ")}${untypedModifier === 0 ? "" : untypedModifier > 0 ? ` + ${untypedModifier}` : ` - ${Math.abs(untypedModifier)}`}`,
-    dice: definition.baseDamage,
+    dice: baseDamage,
     modifier,
     criticalMultiplier: attackCriticalMultiplier(runtime, definition),
     contributions: damageResult.contributions,
@@ -345,6 +476,8 @@ export interface DamageRollOptions {
   /** The sequence member whose damage this is. */
   attackIndex?: number;
   attackIds?: string[];
+  offHandAttackCount?: number;
+  maneuver?: ManeuverId;
   touch?: boolean;
   flags?: string[];
   excludeFlags?: string[];
@@ -384,12 +517,16 @@ function damagePlanFrom(
   // The multiplier is authored on the weapon or its profile; nothing here
   // hardcodes a doubling.
   const times = criticalDamage ? evaluation.criticalMultiplier : 1;
+  const actionScoped = (context.action.attackIds?.length ?? 0) > 1 || context.action.offHandAttackCount !== undefined;
+  const attackIdentity = actionScoped
+    ? `${context.action.sequenceId ?? "action"}:${definition.id}`
+    : definition.id;
   const nonMultipliedTypedFlat = evaluation.contributions
     .filter((item) => item.damageType && evaluation.terms.some((term) => term.damageType === item.damageType && term.criticalBehavior === "notMultiplied"))
     .reduce((total, item) => total + item.value, 0);
   const multipliedModifier = evaluation.modifier - nonMultipliedTypedFlat;
   return {
-    id: `damage:${runtime.character.id}:${definition.id}${suffix}${criticalDamage ? ":critical" : ""}`,
+    id: `damage:${runtime.character.id}:${attackIdentity}${suffix}${criticalDamage ? ":critical" : ""}`,
     characterId: runtime.character.id,
     label: `${definition.name} damage${standard || step === 0 ? "" : ` ${step + 1}`}${criticalDamage ? ` (critical ×${times})` : ""}`,
     dice: evaluation.terms.map((term) => ({
@@ -453,6 +590,8 @@ export function damageRollPlan(
   const plan = buildActionPlan(runtime, {
     action,
     attackIds,
+    offHandAttackCount: options.offHandAttackCount,
+    maneuver: options.maneuver,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
@@ -471,6 +610,7 @@ export function damageRollPlan(
     actionId: actionPlanId(runtime.character.id, action, attackIds),
     sequenceIndex: attackIndex,
     attackIds,
+    maneuver: options.maneuver,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
@@ -540,18 +680,59 @@ export function evaluateExtraAttacks(
 export function iterativeCount(
   runtime: RulesRuntime,
   definition: AttackDefinition,
+  offHandAttackCount = 0,
 ): number {
+  if (definition.attackTags?.includes("natural.attack")) return 1;
+  if (isManufacturedOffHand(definition))
+    return Math.max(0, Math.min(3, offHandAttackCount));
   return definition.iterative === false
     ? 1
-    : Math.min(4, Math.max(1, Math.ceil(runtime.bab().value / 5)));
+    : Math.min(4, Math.max(1, Math.ceil(attackBabValue(runtime, definition) / 5)));
+}
+
+function attackBabValue(runtime: RulesRuntime, definition: AttackDefinition): number {
+  const bab = runtime.bab().value;
+  if (!definition.babProgressionId) return bab;
+  const level = runtime.advancementProgressionLevels().find((entry) => entry.id === definition.babProgressionId)?.level ?? 0;
+  return Math.max(bab, level);
+}
+
+function attackBabContribution(runtime: RulesRuntime, definition: AttackDefinition, target: TargetId): Contribution {
+  if (!definition.babProgressionId) return babContribution(runtime, target);
+  const bab = runtime.bab();
+  const progression = runtime.advancementProgressionLevels().find((entry) => entry.id === definition.babProgressionId);
+  const level = progression?.level ?? 0;
+  const value = Math.max(bab.value, level);
+  return sourceContribution(target, value, `combat.bab.max.${definition.babProgressionId}`, `Higher of BAB or ${progression?.name ?? definition.babProgressionId} level`, undefined, {
+    children: [
+      sourceContribution("combat.bab", bab.value, "combat.bab", "Base Attack Bonus", undefined, { children: bab.contributions }),
+      sourceContribution(target, level, `progression.${definition.babProgressionId}.level`, `${progression?.name ?? definition.babProgressionId} level`),
+    ],
+  });
+}
+
+function attackBaselineContribution(runtime: RulesRuntime, definition: AttackDefinition, target: TargetId): Contribution {
+  if (definition.attackBaseline !== "casterLevel") return attackBabContribution(runtime, definition, target);
+  const source = runtime.character.spellcastingSources?.find((entry) => entry.id === definition.casterLevelSourceId);
+  if (!source) throw new Error(`Caster-level attack ${definition.name} requires a valid spellcasting source`);
+  const level = runtime.spellcastingLevel(source.id, source.progressionId, source.progressionLevel ?? 0);
+  return sourceContribution(target, level, `spellcasting.${source.id}.casterLevel`, `${source.name} caster level`, undefined, { note: `Uses progression ${source.progressionId ?? "manual level"}` });
 }
 
 function attackRole(
   definition: AttackDefinition,
   index: number,
+  actionWeapons: AttackDefinition[],
+  fullAttack: boolean,
 ): ActionAttackPlan["role"] {
+  if (definition.attackTags?.includes("natural.attack")) {
+    if (fullAttack && actionWeapons.some((attack) => !attack.attackTags?.includes("natural.attack")))
+      return "secondary";
+    if (definition.naturalAttackRole === "secondary") return "secondary";
+    return "primary";
+  }
   if (index === 0) return "primary";
-  return definition.attackTags?.includes("weapon.off-hand")
+  return isManufacturedOffHand(definition)
     ? "off-hand"
     : "secondary";
 }
@@ -559,11 +740,14 @@ function attackRole(
 export interface ActionRequest {
   action: ActionKind;
   attackIds?: string[];
+  offHandAttackCount?: number;
   flags?: string[];
   /** Situational flags withheld for this action, e.g. `combat-expertise`. */
   excludeFlags?: string[];
   touch?: boolean;
   maneuver?: ManeuverId;
+  maneuverAbilityOverride?: AbilityId;
+  maneuverBabProgressionId?: string;
   /** Known defense the action's rolls are compared against. */
   defense?: RollDefense;
   target?: TargetContext;
@@ -574,9 +758,10 @@ export function actionPlanId(
   characterId: string,
   action: ActionKind,
   attackIds: readonly string[],
+  offHandAttackCount?: number,
 ): string {
   if (action === "maneuver") return `action:${characterId}:maneuver`;
-  return `action:${characterId}:${action}:${attackIds.join("+")}`;
+  return `action:${characterId}:${action}:${attackIds.join("+")}${offHandAttackCount !== undefined ? `:offhand${offHandAttackCount}` : ""}`;
 }
 
 function attackRollId(
@@ -622,11 +807,18 @@ function attackRollFor(
       `Attack evaluation for ${definition.id} produced no roll context`,
     );
   const criticalRange = evaluateCriticalRange(runtime, definition, context);
+  const missChance = context.target?.defense?.missChance;
+  const id = (context.action.attackIds?.length ?? 0) > 1 || context.action.offHandAttackCount !== undefined
+    ? `attack:${runtime.character.id}:${context.action.sequenceId ?? "action"}:${definition.id}${options.index ? `:${options.index}` : ""}`
+    : attackRollId(runtime, definition, options.action, options.index);
   return {
-    id: attackRollId(runtime, definition, options.action, options.index),
+    id,
     characterId: runtime.character.id,
-    label: attackRollLabel(definition, options.action, options.index),
-    dice: [{ sides: 20, count: 1 }],
+    label: `${attackRollLabel(definition, options.action, options.index)}${missChance ? ` · ${missChance}% miss chance` : ""}`,
+    dice: [
+      { sides: 20, count: 1 },
+      ...(missChance ? [{ sides: 100, count: 1, addsToTotal: false, purpose: "missChance" as const }] : []),
+    ],
     modifier: evaluation.value,
     context,
     outcomePolicy: runtime.outcomePolicies.attack,
@@ -647,6 +839,7 @@ function evaluateSequence(
     action: ActionKind;
     actionId: string;
     attackIds: string[];
+    offHandAttackCount?: number;
     withExtras: boolean;
     /** A full-attack action has BAB iteratives; a standard attack does not. */
     withIteratives: boolean;
@@ -666,6 +859,7 @@ function evaluateSequence(
     actionKind: options.action,
     actionId: options.actionId,
     attackIds: options.attackIds,
+    offHandAttackCount: options.offHandAttackCount,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
     maneuver: options.maneuver,
@@ -679,8 +873,10 @@ function evaluateSequence(
     actionKind: options.action,
     actionId: options.actionId,
     attackIds: options.attackIds,
+    offHandAttackCount: options.offHandAttackCount,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
+    maneuver: options.maneuver,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
   } as const;
   const damageFor = (sequenceIndex: number) =>
@@ -698,6 +894,9 @@ function evaluateSequence(
     sequenceIndex: 0,
     ...contextInput,
   });
+  const isOffHandWeapon = isManufacturedOffHand(definition);
+  if (isOffHandWeapon && (options.offHandAttackCount ?? 0) === 0)
+    return { attackId: definition.id, name: definition.name, role: "primary", context: primaryContext, steps };
   const primary = evaluateAttack(runtime, definition, primaryContext);
   steps.push({
     index: 0,
@@ -711,6 +910,34 @@ function evaluateSequence(
     damage: damageFor(0),
   });
   let index = 1;
+  const naturalAttackCount = options.withIteratives && definition.attackTags?.includes("natural.attack")
+    ? Math.max(1, Math.min(256, definition.attackCount ?? 1))
+    : 1;
+  const babIterativeCount = options.withIteratives
+    ? iterativeCount(runtime, definition, options.offHandAttackCount)
+    : 1;
+  const baseSequenceAttackCount = naturalAttackCount > 1
+    ? naturalAttackCount
+    : babIterativeCount;
+  if (baseSequenceAttackCount > 256)
+    throw new Error(`Attack sequence exceeds the supported 256 rolls for ${definition.id}`);
+  for (let count = 1; count < naturalAttackCount; count++) {
+    const context = attackContext(runtime, definition, {
+      kind: "attack",
+      sequenceIndex: index,
+      ...contextInput,
+    });
+    const evaluation = evaluateAttack(runtime, definition, context);
+    steps.push({
+      index,
+      role: "primary",
+      modifier: evaluation.value,
+      evaluation,
+      roll: attackRollFor(runtime, definition, evaluation, { action: options.action, index }),
+      damage: damageFor(index),
+    });
+    index += 1;
+  }
   if (options.withExtras) {
     const extras =
       options.extraEvaluation ??
@@ -721,13 +948,43 @@ function evaluateSequence(
         actionId: options.actionId,
         attackIds: options.attackIds,
       });
+    const bonusProgression = definition.bonusAttackProgression;
+    const bonusLevel = bonusProgression
+      ? runtime.advancementProgressionLevels().find(
+          (entry) => entry.id === bonusProgression.progressionId,
+        )
+      : undefined;
+    const bonusAttacks = bonusProgression && bonusLevel
+      ? bonusProgression.steps
+          .filter((step) => step.level <= bonusLevel.level)
+          .reduce((highest, step) => step.level > highest.level ? step : highest, { level: 0, count: 0 }).count
+      : 0;
+    const bonusContributions = bonusAttacks > 0 && bonusProgression
+      ? [sourceContribution(
+          target,
+          bonusAttacks,
+          `attacks.profile.bonus.${bonusProgression.progressionId}`,
+          `${bonusLevel?.name ?? bonusProgression.progressionId} bonus attacks`,
+          undefined,
+          {
+            children: [sourceContribution(
+              target,
+              bonusLevel?.level ?? 0,
+              `progression.${bonusProgression.progressionId}.level`,
+              `${bonusLevel?.name ?? bonusProgression.progressionId} level`,
+            )],
+          },
+        )]
+      : [];
+    const extraAttackCount = extras.result.value + bonusAttacks;
     // Resource boundary, not a game-rule truncation: invalid huge authored
     // sequences fail explicitly before allocating or persisting them.
-    if (extras.result.value + iterativeCount(runtime, definition) > 256)
+    if (extraAttackCount + baseSequenceAttackCount > 256)
       throw new Error(
         `Attack sequence exceeds the supported 256 rolls for ${definition.id}`,
       );
-    for (let count = 0; count < extras.result.value; count++) {
+    for (let count = 0; count < extraAttackCount; count++) {
+      const isProfileBonus = count >= extras.result.value;
       const evaluation: EvaluationResult = {
         ...primary,
         contributions: [
@@ -735,10 +992,18 @@ function evaluateSequence(
           sourceContribution(
             target,
             0,
-            `attacks.extra.${mode}`,
-            "Additional attack at highest bonus",
+            isProfileBonus
+              ? `attacks.profile.bonus.${bonusProgression?.progressionId ?? "unknown"}`
+              : `attacks.extra.${mode}`,
+            isProfileBonus
+              ? "Profile bonus attack at highest bonus"
+              : "Additional attack at highest bonus",
             undefined,
-            { children: extras.result.contributions },
+            {
+              children: isProfileBonus
+                ? bonusContributions
+                : extras.result.contributions,
+            },
           ),
         ],
       };
@@ -759,7 +1024,7 @@ function evaluateSequence(
   // BAB iteratives belong to every selected weapon's own sequence, but only
   // inside a full-attack action.
   const iterations = options.withIteratives
-    ? iterativeCount(runtime, definition)
+    ? babIterativeCount
     : 1;
   for (let step = 1; step < iterations; step++) {
     const context = attackContext(runtime, definition, {
@@ -811,6 +1076,8 @@ function maneuverActionPlan(
   const characterId = runtime.character.id;
   const evaluation = evaluateCombatManeuver(runtime, "cmb", {
     maneuver: request.maneuver,
+    abilityOverride: request.maneuverAbilityOverride,
+    babProgressionId: request.maneuverBabProgressionId,
     flags: request.flags,
     excludeFlags: request.excludeFlags,
     ...(request.defense ? { defense: request.defense } : {}),
@@ -854,6 +1121,7 @@ function maneuverActionPlan(
 export function buildActionPlan(
   runtime: RulesRuntime,
   request: ActionRequest,
+  options: { skipEligibility?: boolean } = {},
 ): ActionPlan {
   const characterId = runtime.character.id;
   if (request.action === "maneuver") return maneuverActionPlan(runtime, request);
@@ -872,10 +1140,23 @@ export function buildActionPlan(
     if (!definition) throw new Error(`Unknown attack: ${id}`);
     return definition;
   });
+  if (!options.skipEligibility) {
+    for (const definition of definitions) {
+      if (definition.fullAttackOnly && request.action !== "fullAttack")
+        throw new Error(`${definition.name} can only be used in a full attack`);
+      const missing = (definition.requiredEligibilityTags ?? []).filter(
+        (tag) => !definition.eligibilityTags?.includes(tag),
+      );
+      if (missing.length)
+        throw new Error(`${definition.name} is not eligible: mark this attack as ${missing.join(", ")}`);
+    }
+  }
   if (request.action === "standardAttack" && definitions.length > 1)
     throw new Error("A standard attack action selects exactly one attack");
   const fullAttack = request.action === "fullAttack";
-  const actionId = actionPlanId(characterId, request.action, ids);
+  if (request.offHandAttackCount !== undefined && (!Number.isInteger(request.offHandAttackCount) || request.offHandAttackCount < 0 || request.offHandAttackCount > 3))
+    throw new Error("Off-hand attack count must be an integer from 0 to 3");
+  const actionId = actionPlanId(characterId, request.action, ids, request.offHandAttackCount);
   // Action-level extras are computed once, for the primary attack, before any
   // weapon's sequence is built.
   const primary = definitions[0]!;
@@ -893,6 +1174,7 @@ export function buildActionPlan(
       action: request.action,
       actionId,
       attackIds: ids,
+      offHandAttackCount: request.offHandAttackCount,
       withExtras: fullAttack && index === 0,
       withIteratives: fullAttack,
       ...(extraEvaluation ? { extraEvaluation } : {}),
@@ -902,10 +1184,11 @@ export function buildActionPlan(
       ...(request.maneuver ? { maneuver: request.maneuver } : {}),
       ...(request.defense ? { defense: request.defense } : {}),
       ...(request.target ? { target: request.target } : {}),
+      ...(request.offHandAttackCount !== undefined ? { offHandAttackCount: request.offHandAttackCount } : {}),
     });
     return {
       ...plan,
-      role: attackRole(definition, index),
+      role: attackRole(definition, index, definitions, fullAttack),
       name: definition.name,
     };
   });
@@ -944,7 +1227,7 @@ export function deriveAttack(
   const action = buildActionPlan(runtime, {
     action: "fullAttack",
     attackIds: [definition.id],
-  });
+  }, { skipEligibility: true });
   return {
     definition,
     attack: evaluateAttack(
@@ -964,6 +1247,7 @@ export function deriveAttack(
 export interface AttackRollOptions {
   action?: "standardAttack" | "fullAttack";
   attackIds?: string[];
+  offHandAttackCount?: number;
   flags?: string[];
   /** Situational flags withheld for this roll. */
   excludeFlags?: string[];
@@ -995,9 +1279,10 @@ export function attackRollPlan(
   const plan = buildActionPlan(runtime, {
     action,
     attackIds,
+    maneuver: options.maneuver,
+    offHandAttackCount: options.offHandAttackCount,
     flags: options.flags,
     excludeFlags: options.excludeFlags,
-    maneuver: options.maneuver,
     ...(options.touch !== undefined ? { touch: options.touch } : {}),
     ...(options.defense ? { defense: options.defense } : {}),
     ...(options.target ? { target: options.target } : {}),
@@ -1021,6 +1306,8 @@ export function maneuverRollPlan(
     excludeFlags?: string[];
     defense?: RollDefense;
     target?: TargetContext;
+    abilityOverride?: AbilityId;
+    babProgressionId?: string;
   } = {},
 ): RollPlan {
   return maneuverActionPlan(runtime, {

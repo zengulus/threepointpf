@@ -2,11 +2,13 @@ import type {
   AbilityId,
   AttackDefinition,
   AttackProfileCatalog,
+  AutosheetSizeAdjustmentCatalog,
   CharacterInput,
   ContextualModifiers,
   Contribution,
   DefenseContext,
   Effect,
+  FeatureActionRestriction,
   EquipmentInstance,
   EvaluationResult,
   ExcludedContribution,
@@ -28,7 +30,15 @@ export interface EquipmentEntry extends EquipmentInstance {
   effects?: Effect[];
   arcaneSpellFailureChance?: number;
   materialNotes?: string;
+  materialEnergyResistance?: { damageType: string; amount: number };
+  materialDamageReduction?: { amount: number; bypass?: string; appliesAgainst?: string[] };
+  wornArmor?: boolean;
+  requiresUnarmored?: boolean;
+  armorWeightCategory?: number;
+  unlimitedContainer?: boolean;
+  armorBonusProgression?: { base: number; incrementEveryBab: number };
   materialWarning?: string;
+  attachmentWarning?: string;
 }
 
 export interface DirectModifierOptions {
@@ -65,6 +75,7 @@ export interface RulesRuntime {
   readonly attackDefinitions: AttackDefinition[];
   readonly skillCatalog?: SkillCatalog;
   readonly attackProfileCatalog?: AttackProfileCatalog;
+  readonly sizeAdjustmentCatalog?: AutosheetSizeAdjustmentCatalog;
   /** Character-global progression levels from the advancement evaluation. */
   advancementProgressionLevels(): ProgressionLevelResult[];
   progressionDefinition(id: string): ProgressionDefinition | undefined;
@@ -74,6 +85,11 @@ export interface RulesRuntime {
   readonly progressionCatalog?: ProgressionCatalog;
   /** Situational flags contributed by enabled features. */
   enabledContextFlags(): string[];
+  /** Action economy constraints supplied by enabled conditions/features. */
+  actionRestrictions(): FeatureActionRestriction[];
+  defenseRestrictions(): import("@threepointpf/rules-schema").FeatureDefenseRestriction[];
+  /** Pathfinder nonlethal damage state relative to current (lethal-damage-adjusted) HP. */
+  nonlethalState(): "normal" | "staggered" | "unconscious";
   /** How raw faces are interpreted, per roll family. */
   readonly outcomePolicies: RollOutcomePolicySet;
   /** The first-class BAB fact, derived once and consumed everywhere. */
@@ -99,6 +115,7 @@ export interface RulesRuntime {
   ): EvaluationResult;
   abilityScore(id: AbilityId): EvaluationResult;
   abilityModifierValue(id: AbilityId): number;
+  characterLevel(): number;
   abilityContribution(id: AbilityId, target: TargetId): Contribution;
   sizeResult(): EvaluationResult;
   sizeCategory(): SizeCategory;

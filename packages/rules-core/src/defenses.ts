@@ -7,6 +7,7 @@ import {
   type EvaluationResult,
   type ExcludedContribution,
   type ManeuverId,
+  type AbilityId,
   type RollContext,
   type RollDefense,
   type TargetContext,
@@ -34,7 +35,7 @@ function appliesToDefense(
 
 export function evaluateArmorClass(
   runtime: RulesRuntime,
-  kind: "normal" | "touch" | "flat-footed",
+  kind: "normal" | "touch" | "flat-footed" | "denied-dexterity",
 ): EvaluationResult {
   const target = "ac" as TargetId;
   const contributions: Contribution[] = [
@@ -42,7 +43,16 @@ export function evaluateArmorClass(
     runtime.sizeAdjustment(target, -2, "Size modifier"),
   ];
   const dexterity = runtime.abilityContribution("dex", target);
-  if (kind !== "flat-footed" || dexterity.value < 0) {
+  const helpless = runtime.nonlethalState() === "unconscious";
+  const deniedDexterity = helpless || kind === "normal" && runtime.defenseRestrictions().includes("denyDexterityBonus");
+  const deniedDodge = helpless || kind === "normal" && runtime.defenseRestrictions().includes("denyDodgeBonus");
+  if (helpless) {
+    contributions.push(sourceContribution(target, -5, "ac.dexterity.helpless", "Dexterity while helpless", undefined, {
+      note: "A helpless character is treated as having Dexterity 0 (−5 modifier).",
+      children: [dexterity],
+      sourceMetadata: { document: "Pathfinder Core Rulebook", sheet: "Combat: Helpless Defenders", system: "PF1e", publisher: "Paizo", category: "Paizo Combat Rules" },
+    }));
+  } else if (((kind !== "flat-footed" && kind !== "denied-dexterity") && !deniedDexterity) || dexterity.value < 0) {
     const caps = runtime.equipment.filter(
       (item) => item.equipped && item.maxDexterity !== undefined,
     );
@@ -66,8 +76,19 @@ export function evaluateArmorClass(
           },
         ),
       );
+  } else if (deniedDexterity && dexterity.value > 0) {
+    contributions.push(sourceContribution(target, 0, "ac.dexterity.denied", "Positive Dexterity bonus denied", undefined, {
+      note: "This condition removes the positive Dexterity bonus from normal AC",
+      children: [dexterity],
+    }));
   }
-  const direct = runtime.directModifiers("ac").applied;
+  const direct = runtime.directModifiers("ac").applied.filter((item) => !(deniedDodge && item.bonusType === "dodge" && item.value > 0));
+  const unarmoredTraining = runtime.equipment.filter((item) => item.equipped && item.requiresUnarmored && !runtime.equipment.some((other) => other.equipped && other.wornArmor && !other.requiresUnarmored));
+  for (const item of unarmoredTraining) {
+    const bab = runtime.bab();
+    const progression = item.armorBonusProgression;
+    if (progression) direct.push(sourceContribution(target, Math.floor(Math.max(0, bab.value) / progression.incrementEveryBab), `equipment.${item.id}.bab-scaling`, `${item.name ?? item.id} BAB scaling`, "armor", { children: [sourceContribution("combat.bab", bab.value, "combat.bab", "Base Attack Bonus", undefined, { children: bab.contributions })], sourceMetadata: item.source }));
+  }
   const naturalResult = runtime.result("ac.natural", [
     runtime.replacement(
       "ac.natural",
@@ -93,7 +114,18 @@ export function evaluateArmorClass(
     );
   } else if (kind === "flat-footed") {
     contributions.push(
-      ...direct.filter((item) => appliesToDefense(item, "flatFooted")),
+      ...direct.filter((item) =>
+        appliesToDefense(item, "flatFooted") &&
+        !(item.bonusType === "dodge" && item.value > 0),
+      ),
+      ...natural,
+    );
+  } else if (kind === "denied-dexterity") {
+    contributions.push(
+      ...direct.filter((item) =>
+        (appliesToDefense(item, "normal") || appliesToDefense(item, "deniedDexterity")) &&
+        !(item.bonusType === "dodge" && item.value > 0),
+      ),
       ...natural,
     );
   } else {
@@ -103,7 +135,7 @@ export function evaluateArmorClass(
     );
   }
   return runtime.result(target, contributions, {
-    context: kind === "flat-footed" ? "flatFooted" : kind,
+    context: kind === "flat-footed" ? "flatFooted" : kind === "denied-dexterity" ? "deniedDexterity" : kind,
   });
 }
 
@@ -141,6 +173,8 @@ export function acModifiersForCmd(runtime: RulesRuntime): ContextualModifiers {
 
 export interface ManeuverOptions {
   maneuver?: ManeuverId;
+  abilityOverride?: AbilityId;
+  babProgressionId?: string;
   flags?: string[];
   /** Situational flags withheld for this roll. */
   excludeFlags?: string[];
@@ -168,6 +202,8 @@ function maneuverContext(
       sequenceId: `action:${runtime.character.id}:maneuver`,
     },
     ...(options.maneuver ? { maneuver: options.maneuver } : {}),
+    ...(options.abilityOverride ? { maneuverAbilityOverride: options.abilityOverride } : {}),
+    ...(options.babProgressionId ? { maneuverBabProgressionId: options.babProgressionId } : {}),
     flags: resolveContextFlags(
       runtime.enabledContextFlags(),
       options.flags,
@@ -191,6 +227,12 @@ export function evaluateCombatManeuver(
     reportExclusions: true,
   });
   const acDerived = target === "cmd" ? acModifiersForCmd(runtime) : EMPTY_MODIFIERS;
+  const bab = runtime.bab();
+  const babProgression = options.babProgressionId ? runtime.advancementProgressionLevels().find((entry) => entry.id === options.babProgressionId) : undefined;
+  const effectiveBab = babProgression ? Math.max(bab.value, babProgression.level) : bab.value;
+  const babFact = babProgression
+    ? sourceContribution(target, effectiveBab, `combat.bab.max.${options.babProgressionId}`, `Higher of BAB or ${babProgression.name} level`, undefined, { children: [babContribution(runtime, target), sourceContribution(target, babProgression.level, `progression.${options.babProgressionId}.level`, `${babProgression.name} level`)] })
+    : babContribution(runtime, target);
   const contributions: Contribution[] = [
     runtime.replacement(
       target,
@@ -198,11 +240,11 @@ export function evaluateCombatManeuver(
       `${target}.base`,
       target === "cmd" ? "Base CMD" : "Base CMB",
     ),
-    babContribution(runtime, target),
+    babFact,
     runtime.abilityContribution(
-      target === "cmb" && sizeCategories.indexOf(runtime.sizeCategory()) <= 2
+      options.abilityOverride ?? (target === "cmb" && sizeCategories.indexOf(runtime.sizeCategory()) <= 2
         ? "dex"
-        : "str",
+        : "str"),
       target,
     ),
     ...(target === "cmd"

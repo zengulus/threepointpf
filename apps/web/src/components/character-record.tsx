@@ -1,4 +1,5 @@
 import type { CharacterInput, CharacterRecord } from "@threepointpf/rules-schema";
+import { featureCatalog } from "@threepointpf/rules-data";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
 import { Field } from "./primitives";
 
@@ -23,16 +24,28 @@ export function CharacterIdentityPanel({ sheet }: { sheet: CharacterSheet }) {
   const workbookOptions = sheet.character.workbookOptions ?? {};
   const skillMode = workbookOptions.skillMode ?? (workbookOptions.backgroundSkills === false ? "classic" : "background");
   const set = (patch: Partial<CharacterRecord>) => sheet.update({ record: { ...record, ...patch } });
+  const ageDefinitions = Object.values(featureCatalog).filter((definition) => definition.exclusiveGroup === "pf1e.autosheet.age");
+  const ageDefinitionIds = new Set(ageDefinitions.map((definition) => definition.id));
+  const selectAgeCategory = (value: string) => {
+    const selected = ageDefinitions.find((definition) => definition.name.slice("Age: ".length).toLowerCase() === value.toLowerCase());
+    const features = sheet.character.features.filter((feature) => !feature.definitionId || !ageDefinitionIds.has(feature.definitionId));
+    if (selected) features.push({ id: selected.id, definitionId: selected.id, name: selected.name, enabled: true, effects: [] });
+    sheet.update({ record: { ...record, ageCategory: value || undefined }, features }, "Updated age category");
+  };
   return <section className="panel character-record-panel">
     <div className="panel-heading"><div><span className="eyebrow">MAIN SHEET · IDENTITY</span><h2>Character details</h2></div><span className="helper">Saved with this character</span></div>
     <div className="form-grid character-identity-grid">
-      {([["alignment", "Alignment"], ["race", "Race"], ["deity", "Deity"], ["age", "Age"], ["ageCategory", "Age category"], ["height", "Height"], ["weight", "Weight"], ["gender", "Gender"], ["homeland", "Homeland"]] as const).map(([key, label]) => <Field key={key} label={label} value={record[key] ?? ""} onChange={(value) => set({ [key]: value })} />)}
+      {([["alignment", "Alignment"], ["race", "Race"], ["deity", "Deity"], ["age", "Age"], ["height", "Height"], ["weight", "Weight"], ["gender", "Gender"], ["homeland", "Homeland"]] as const).map(([key, label]) => <Field key={key} label={label} value={record[key] ?? ""} onChange={(value) => set({ [key]: value })} />)}
+      <label className="field"><span>Age category</span><select aria-label="Age category" value={record.ageCategory ?? ""} onChange={(event) => selectAgeCategory(event.target.value)}><option value="">Not specified</option>{record.ageCategory && !ageDefinitions.some((definition) => definition.name.slice("Age: ".length).toLowerCase() === record.ageCategory?.toLowerCase()) && <option value={record.ageCategory}>{record.ageCategory} (custom)</option>}{ageDefinitions.map((definition) => <option key={definition.id} value={definition.name.slice("Age: ".length)}>{definition.name.slice("Age: ".length)}</option>)}</select><small>Age-category ability adjustments follow the Autosheet chart.</small></label>
     </div>
     <div className="form-grid character-record-lists">{listFields.map(([key, label]) => <TextBlock key={key} label={label + " (one per line)"} value={(record[key] ?? []).join("\n")} onChange={(value) => set({ [key]: value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) })} />)}</div>
     <div className="workbook-rule-options">
       <label className="field"><span>Skill variant</span><select aria-label="Skill variant" value={skillMode} onChange={(event) => { const value = event.target.value as NonNullable<NonNullable<CharacterInput["workbookOptions"]>["skillMode"]>; sheet.update({ workbookOptions: { ...workbookOptions, skillMode: value, backgroundSkills: value === "background" || value === "ultimate-psionics-background" } }); }}><option value="background">Background Skills</option><option value="ultimate-psionics-background">Ultimate Psionics + Background Skills</option><option value="consolidated">Consolidated Skills</option><option value="classic">Classic Skills</option></select><small>Consolidated Skills uses the workbook’s 12 skill groups and its half-rank-per-level budget.</small></label>
       <label className="checkbox-field"><input type="checkbox" checked={workbookOptions.woundThresholds ?? false} onChange={(event) => sheet.update({ workbookOptions: { ...workbookOptions, woundThresholds: event.target.checked } })} /><span><strong>Unchained wound thresholds</strong><small>Apply −1/−2/−3 to AC, saves, attacks, skills, and caster levels below 75%/50%/25% HP.</small></span></label>
       <label className="checkbox-field"><input type="checkbox" checked={workbookOptions.minimumFourPlusIntSkillRanks ?? false} onChange={(event) => sheet.update({ workbookOptions: { ...workbookOptions, minimumFourPlusIntSkillRanks: event.target.checked } })} /><span><strong>Minimum 4 + INT skill ranks</strong><small>Use at least 4 class skill points per level before adding the Intelligence modifier during character creation and level-up.</small></span></label>
+      <label className="checkbox-field"><input type="checkbox" checked={workbookOptions.twoWeaponFightingFeat ?? false} onChange={(event) => sheet.update({ workbookOptions: { ...workbookOptions, twoWeaponFightingFeat: event.target.checked } })} /><span><strong>Two-Weapon Fighting feat</strong><small>Reduces full-attack penalties for primary- and off-hand weapons. Keep this in sync with the character’s feats.</small></span></label>
+      <label className="checkbox-field"><input type="checkbox" checked={workbookOptions.doubleSliceFeat ?? false} onChange={(event) => sheet.update({ workbookOptions: { ...workbookOptions, doubleSliceFeat: event.target.checked } })} /><span><strong>Double Slice feat</strong><small>Add your full Strength bonus to off-hand weapon damage instead of half.</small></span></label>
+      <label className="checkbox-field"><input type="checkbox" checked={workbookOptions.multiattackFeat ?? false} onChange={(event) => sheet.update({ workbookOptions: { ...workbookOptions, multiattackFeat: event.target.checked } })} /><span><strong>Multiattack feat</strong><small>Reduce secondary natural attack penalties from −5 to −2.</small></span></label>
     </div>
   </section>;
 }

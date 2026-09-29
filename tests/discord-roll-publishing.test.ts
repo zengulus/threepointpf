@@ -129,6 +129,19 @@ describe("Discord roll payloads", () => {
     );
   });
 
+  it("puts roll type and success or failure ahead of dice details", () => {
+    const plan = new RulesEngine(character(), rulesCatalogs).createSaveRollPlan("fortitude", { defense: { kind: "dc", value: 17 } });
+    const success = formatDiscordRollMessage("Captain Hook", plan, resolveRollPlan(plan, [13]), "abc123");
+    const failure = formatDiscordRollMessage("Captain Hook", plan, resolveRollPlan(plan, [12]), "abc124");
+    expect(success.split("\n")).toEqual([
+      "**Fortitude save** — Captain Hook",
+      "🟢 **Total 17 vs DC 17 · Success**",
+      "Natural d20 13 · Modifier +4",
+      "Ref abc123",
+    ]);
+    expect(failure.split("\n")[1]).toBe("🔴 **Total 16 vs DC 17 · Failure**");
+  });
+
   it("posts compact JSON and exposes credential-safe failure messages", async () => {
     const fetcher = vi.fn(async () => new Response(null, { status: 204 }));
     await expect(

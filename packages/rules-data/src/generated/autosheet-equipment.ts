@@ -5,6 +5,66 @@
 import type { EquipmentCatalog } from "@threepointpf/rules-schema";
 
 export const generatedAutosheetEquipmentCatalog = {
+  "pf1e.autosheet.mage-armor-spell": {
+    "id": "pf1e.autosheet.mage-armor-spell",
+    "name": "Mage Armor (Spell)",
+    "kind": "armor",
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "ac",
+        "value": 4,
+        "bonusType": "armor",
+        "appliesTo": [
+          "normal",
+          "flatFooted"
+        ]
+      }
+    ],
+    "armorCheckPenalty": 0,
+    "reduceLandSpeed": false,
+    "arcaneSpellFailureChance": 0,
+    "wornArmor": false,
+    "armorWeightCategory": 0,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Unarmored / Special",
+      "row": 151,
+      "range": "A151:I151"
+    }
+  },
+  "pf1e.autosheet.bracers-of-armor-wondrous-item": {
+    "id": "pf1e.autosheet.bracers-of-armor-wondrous-item",
+    "name": "Bracers of Armor (Wondrous Item)",
+    "kind": "wondrous",
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "ac",
+        "value": 0,
+        "bonusType": "armor",
+        "appliesTo": [
+          "normal",
+          "flatFooted"
+        ]
+      }
+    ],
+    "armorCheckPenalty": 0,
+    "reduceLandSpeed": false,
+    "arcaneSpellFailureChance": 0,
+    "wornArmor": false,
+    "armorWeightCategory": 0,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Unarmored / Special",
+      "row": 152,
+      "range": "A152:I152"
+    }
+  },
   "pf1e.autosheet.clothing": {
     "id": "pf1e.autosheet.clothing",
     "name": "Clothing",
@@ -24,6 +84,8 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "wornArmor": false,
+    "armorWeightCategory": 0,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -31,6 +93,40 @@ export const generatedAutosheetEquipmentCatalog = {
       "category": "Unarmored / Standard",
       "row": 153,
       "range": "A153:I153"
+    }
+  },
+  "pf1e.autosheet.unarmored-training": {
+    "id": "pf1e.autosheet.unarmored-training",
+    "name": "Unarmored Training",
+    "kind": "armor",
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "ac",
+        "value": 3,
+        "bonusType": "armor",
+        "appliesTo": [
+          "normal",
+          "flatFooted"
+        ]
+      }
+    ],
+    "armorCheckPenalty": 0,
+    "reduceLandSpeed": false,
+    "arcaneSpellFailureChance": 0,
+    "wornArmor": false,
+    "requiresUnarmored": true,
+    "armorBonusProgression": {
+      "base": 3,
+      "incrementEveryBab": 3
+    },
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Special / Special",
+      "row": 154,
+      "range": "A154:I154"
     }
   },
   "pf1e.autosheet.armored-kilt": {
@@ -53,7 +149,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -82,7 +180,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -112,7 +212,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -142,7 +244,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.1,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -171,7 +275,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -201,7 +307,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -231,7 +339,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.1,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -261,7 +371,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.1,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -291,7 +403,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -321,7 +435,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": 0,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -351,7 +467,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -381,7 +499,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -411,7 +531,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.15,
+    "wornArmor": true,
     "materialType": "Wood",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -441,7 +563,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.2,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -471,7 +595,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.2,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 1,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -501,7 +627,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.2,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -531,7 +659,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -3,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.2,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -561,7 +691,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -591,7 +723,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "wornArmor": true,
     "materialType": "Leather",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -621,7 +755,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -3,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.2,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -651,7 +787,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -681,7 +819,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -711,7 +851,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -741,7 +883,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.3,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -771,7 +915,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.3,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -801,7 +947,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -4,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.3,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -831,7 +979,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.25,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 2,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -861,7 +1011,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -891,7 +1043,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -5,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -921,7 +1075,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -951,7 +1107,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -981,7 +1139,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1011,7 +1171,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1041,7 +1203,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1071,7 +1235,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1101,7 +1267,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1131,7 +1299,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -7,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.4,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1161,7 +1331,9 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -6,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.35,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
+    "armorWeightCategory": 3,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -1190,6 +1362,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "wornArmor": false,
     "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1219,6 +1392,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1248,6 +1422,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1277,6 +1452,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -1,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.05,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1306,6 +1482,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -2,
     "reduceLandSpeed": true,
     "arcaneSpellFailureChance": 0.15,
+    "wornArmor": true,
     "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1314,6 +1491,35 @@ export const generatedAutosheetEquipmentCatalog = {
       "category": "Heavy / Shield",
       "row": 204,
       "range": "A204:I204"
+    }
+  },
+  "pf1e.autosheet.spell-shield": {
+    "id": "pf1e.autosheet.spell-shield",
+    "name": "(Spell) Shield",
+    "kind": "shield",
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "ac",
+        "value": 4,
+        "bonusType": "shield",
+        "appliesTo": [
+          "normal",
+          "flatFooted"
+        ]
+      }
+    ],
+    "armorCheckPenalty": 0,
+    "reduceLandSpeed": false,
+    "arcaneSpellFailureChance": 0,
+    "wornArmor": false,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Force / Shield",
+      "row": 205,
+      "range": "A205:I205"
     }
   },
   "pf1e.autosheet.tower-shield": {
@@ -1336,6 +1542,7 @@ export const generatedAutosheetEquipmentCatalog = {
     "armorCheckPenalty": -10,
     "reduceLandSpeed": false,
     "arcaneSpellFailureChance": 0.5,
+    "wornArmor": false,
     "materialType": "Plate/Chain",
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
@@ -1344,6 +1551,118 @@ export const generatedAutosheetEquipmentCatalog = {
       "category": "Tower / Shield",
       "row": 206,
       "range": "A206:I206"
+    }
+  },
+  "pf1e.autosheet.handy-haversack": {
+    "id": "pf1e.autosheet.handy-haversack",
+    "name": "Handy Haversack",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 5,
+    "containerCapacity": 100,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 4,
+      "range": "CR4:CT4"
+    }
+  },
+  "pf1e.autosheet.bag-of-holding-i": {
+    "id": "pf1e.autosheet.bag-of-holding-i",
+    "name": "Bag of Holding I",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 15,
+    "containerCapacity": 250,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 5,
+      "range": "CR5:CT5"
+    }
+  },
+  "pf1e.autosheet.bag-of-holding-ii": {
+    "id": "pf1e.autosheet.bag-of-holding-ii",
+    "name": "Bag of Holding II",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 25,
+    "containerCapacity": 500,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 6,
+      "range": "CR6:CT6"
+    }
+  },
+  "pf1e.autosheet.bag-of-holding-iii": {
+    "id": "pf1e.autosheet.bag-of-holding-iii",
+    "name": "Bag of Holding III",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 35,
+    "containerCapacity": 1000,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 7,
+      "range": "CR7:CT7"
+    }
+  },
+  "pf1e.autosheet.bag-of-holding-iv": {
+    "id": "pf1e.autosheet.bag-of-holding-iv",
+    "name": "Bag of Holding IV",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 60,
+    "containerCapacity": 1500,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 8,
+      "range": "CR8:CT8"
+    }
+  },
+  "pf1e.autosheet.portable-hole": {
+    "id": "pf1e.autosheet.portable-hole",
+    "name": "Portable Hole",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 0,
+    "unlimitedContainer": true,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 9,
+      "range": "CR9:CT9"
+    }
+  },
+  "pf1e.autosheet.extradimensional-shadow": {
+    "id": "pf1e.autosheet.extradimensional-shadow",
+    "name": "Extradimensional Shadow",
+    "kind": "wondrous",
+    "effects": [],
+    "weight": 0,
+    "containerCapacity": 500,
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Equipment",
+      "system": "PF1e",
+      "category": "Magical storage",
+      "row": 10,
+      "range": "CR10:CT10"
     }
   }
 } satisfies EquipmentCatalog;

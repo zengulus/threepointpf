@@ -185,9 +185,9 @@ export function evaluateSkill(
           ),
         ]
       : []),
-    ...(metadata?.armorCheckPenalty
+    ...((metadata?.armorCheckPenalty || (metadata?.governingAbility === "str" || metadata?.governingAbility === "dex") && runtime.equipment.some((item) => item.equipped && item.armorProficient === false && item.armorCheckPenalty))
       ? runtime.equipment
-          .filter((item) => item.equipped && item.armorCheckPenalty)
+          .filter((item) => item.equipped && item.armorCheckPenalty && (metadata?.armorCheckPenalty || item.armorProficient === false && (metadata?.governingAbility === "str" || metadata?.governingAbility === "dex")))
           .map((item) =>
             sourceContribution(
               target,
@@ -211,7 +211,7 @@ export function evaluateSkill(
   });
   return {
     id: id as SkillId,
-    label: metadata?.name ?? skillLabel(id),
+    label: config.name ?? metadata?.name ?? skillLabel(id),
     total,
     ranks,
     governingAbility,

@@ -1,6 +1,6 @@
-import { formatModifier, type ResolvedRoll } from "@threepointpf/dice";
+import type { ResolvedRoll } from "@threepointpf/dice";
 import type { RollPlan } from "@threepointpf/rules-schema";
-import { formatResolvedOutcome, formatRollDefense } from "./roll-result";
+import { discordRollPayload, formatDiscordRollMessage as sharedFormatDiscordRollMessage } from "@threepointpf/shared";
 
 /** Browser-local integration preferences; never authored character data. */
 export interface DiscordRollSettings {
@@ -154,10 +154,6 @@ export function maskDiscordWebhookUrl(value: string): string {
   return `${url.hostname}/api/webhooks/${id.slice(0, 6)}…/••••`;
 }
 
-function compact(value: string, limit: number): string {
-  return value.replace(/[\r\n]+/g, " ").trim().slice(0, limit);
-}
-
 export interface DiscordWebhookPayload {
   content: string;
   username?: string;
@@ -170,21 +166,9 @@ export function formatDiscordRollMessage(
   characterName: string,
   plan: RollPlan,
   resolved: ResolvedRoll,
+  reference?: string,
 ): string {
-  const parts = [
-    `**${compact(characterName || "Unnamed character", 120)}** — **${compact(plan.label, 180)}**`,
-    resolved.naturalFace === undefined
-      ? `Dice ${resolved.faces.join(", ")}`
-      : `Natural d20 ${resolved.naturalFace}`,
-    `Modifier ${formatModifier(resolved.modifier)}`,
-    plan.context.kind === "damage" ? `Damage ${resolved.total}` : `Total ${resolved.total}`,
-  ];
-  if (resolved.outcome.defense)
-    parts.push(`vs ${formatRollDefense(resolved.outcome.defense)}`);
-  if (plan.outcomePolicy.kind !== "plain")
-    parts.push(formatResolvedOutcome(plan, resolved));
-  if (plan.context.criticalDamage) parts.push("Critical damage");
-  return compact(parts.join(" · "), 2_000);
+  return sharedFormatDiscordRollMessage(characterName, plan, resolved, reference);
 }
 
 export function discordPayloadForRoll(
@@ -195,10 +179,8 @@ export function discordPayloadForRoll(
 ): DiscordWebhookPayload {
   const username = displayName(settings.displayName);
   return {
-    content: formatDiscordRollMessage(characterName, plan, resolved),
+    ...discordRollPayload(characterName, plan, resolved),
     ...(username ? { username } : {}),
-    allowed_mentions: { parse: [] },
-    tts: false,
   };
 }
 

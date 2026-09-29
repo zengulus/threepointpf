@@ -3,6 +3,7 @@ import {
   type Contribution,
   type EvaluationResult,
   type MovementMode,
+  type TacticalMovementMode,
   type SizeCategory,
   type TargetId,
 } from "@threepointpf/rules-schema";
@@ -67,15 +68,20 @@ export function sizeAdjustment(
   const index = sizeCategories.indexOf(runtime.sizeCategory());
   const categoryOffset = index - sizeCategories.indexOf("medium");
   const baseSize = runtime.character.baseSize ?? "medium";
-  const attackAc = [8, 4, 2, 1, 0, -1, -2, -4, -8][index]!;
+  const sourceRow = runtime.sizeAdjustmentCatalog?.[runtime.sizeCategory()];
+  const attackAc = sourceRow?.attackAc ?? [8, 4, 2, 1, 0, -1, -2, -4, -8][index]!;
   const value =
     target === "cmb" || target === "cmd"
-      ? -attackAc
+      ? (sourceRow?.cmbCmd ?? -attackAc)
+      : target === "skill.fly"
+        ? (sourceRow?.fly ?? categoryOffset * perCategoryStep)
+        : target === "skill.stealth"
+          ? (sourceRow?.stealth ?? categoryOffset * perCategoryStep)
       : target === "ac" || target.startsWith("attack.")
         ? attackAc
         : categoryOffset * perCategoryStep;
   return sourceContribution(target, value, "rules-core.size", label, "size", {
-    note: `${runtime.sizeCategory()} size; Autosheet Formula References!A${138 + index}:G${138 + index}`,
+    note: `${runtime.sizeCategory()} size; ${sourceRow?.source.sheet ?? "Autosheet Formula References"}!${sourceRow?.source.range ?? `A${138 + index}:G${138 + index}`}`,
     children: [
       sourceContribution(
         "size.relative",
@@ -144,6 +150,54 @@ export function evaluateMovement(
         "rules-core.speed-floor",
         "Movement minimum 0",
       ),
+    ],
+  };
+}
+
+/** Charge and run distances begin from derived land speed, then apply workbook S/T effects. */
+export function evaluateTacticalMovement(
+  runtime: RulesRuntime,
+  mode: TacticalMovementMode,
+): EvaluationResult {
+  const target = `speed.${mode}` as TargetId;
+  const landSpeed = evaluateMovement(runtime, "land");
+  const multiplier = mode === "charge" ? 2 : 4;
+  const baseline = sourceContribution(
+    target,
+    landSpeed.value * multiplier,
+    `base-speed.${mode}`,
+    `Base ${mode} distance`,
+    undefined,
+    { children: landSpeed.contributions, note: `${multiplier} × derived land speed` },
+  );
+  const result = runtime.result(target, [baseline]);
+  const movementRestriction = runtime.effects.find((effect) =>
+    effect.kind === "grant" && effect.target === "speed.land" && effect.grant === "cannot-run-or-charge",
+  );
+  if (movementRestriction && result.value > 0) {
+    return {
+      ...result,
+      value: 0,
+      contributions: [
+        ...result.contributions,
+        sourceContribution(
+          target,
+          -result.value,
+          `rules-core.movement-restriction.${movementRestriction.source?.id ?? "authored"}`,
+          `${movementRestriction.source?.label ?? "Active condition"}: cannot ${mode}`,
+          undefined,
+          { note: "The active condition prevents running or charging." },
+        ),
+      ],
+    };
+  }
+  if (result.value >= 0) return result;
+  return {
+    ...result,
+    value: 0,
+    contributions: [
+      ...result.contributions,
+      base(target, -result.value, `rules-core.speed-floor.${mode}`, "Movement minimum 0"),
     ],
   };
 }

@@ -3,20 +3,106 @@
   "importer": "scripts/import-autosheet.mjs",
   "input": {
     "path": "INGEST THIS - Pathfinder Autosheet (v6.2.1).xlsx",
-    "sha256": "bf1fe035fe70688b0c7406308252a6c10013d2ce3220c7f21241fb55233d71b8",
+    "sha256": "f68d978aec205057a4a2e90489505ba395ed9344fbb9da42987b6e0e2e1b6e16",
     "workbook": {
       "sheets": [
         {
           "name": "Welcome Page",
           "state": "hidden",
           "bounds": "B1:Q50",
-          "importStatus": "excluded",
-          "reason": "Workbook cover and instructions, not reusable rule content."
+          "formulaCells": 9,
+          "formulaRowGroups": [
+            {
+              "start": 5,
+              "end": 6,
+              "cells": 2
+            },
+            {
+              "start": 8,
+              "end": 8,
+              "cells": 1
+            },
+            {
+              "start": 12,
+              "end": 12,
+              "cells": 1
+            },
+            {
+              "start": 15,
+              "end": 15,
+              "cells": 1
+            },
+            {
+              "start": 17,
+              "end": 17,
+              "cells": 1
+            },
+            {
+              "start": 21,
+              "end": 21,
+              "cells": 1
+            },
+            {
+              "start": 24,
+              "end": 24,
+              "cells": 1
+            },
+            {
+              "start": 27,
+              "end": 27,
+              "cells": 1
+            }
+          ],
+          "importStatus": "partial",
+          "reason": "Spreadsheet-only copy, color, gridline, and linked-document instructions are excluded; skill and optional-rule controls are mapped to character options, with relevant operating guidance adapted for the shared web app."
         },
         {
           "name": "Main Sheet",
           "state": "visible",
           "bounds": "B1:BQ119",
+          "formulaCells": 610,
+          "formulaRowGroups": [
+            {
+              "start": 2,
+              "end": 6,
+              "cells": 27
+            },
+            {
+              "start": 8,
+              "end": 46,
+              "cells": 367
+            },
+            {
+              "start": 71,
+              "end": 71,
+              "cells": 1
+            },
+            {
+              "start": 74,
+              "end": 74,
+              "cells": 30
+            },
+            {
+              "start": 77,
+              "end": 77,
+              "cells": 1
+            },
+            {
+              "start": 95,
+              "end": 99,
+              "cells": 40
+            },
+            {
+              "start": 101,
+              "end": 110,
+              "cells": 25
+            },
+            {
+              "start": 112,
+              "end": 116,
+              "cells": 119
+            }
+          ],
           "importStatus": "partial",
           "reason": "Character-instance cells are not imported. Reviewed quick-toggle semantics are authored in src/content.ts with cell provenance."
         },
@@ -24,20 +110,365 @@
           "name": "Equipment",
           "state": "visible",
           "bounds": "B1:CT74",
-          "importStatus": "excluded",
-          "reason": "Character inventory layout, not an authoritative equipment corpus."
+          "formulaCells": 47,
+          "formulaRowGroups": [
+            {
+              "start": 2,
+              "end": 6,
+              "cells": 25
+            },
+            {
+              "start": 8,
+              "end": 8,
+              "cells": 1
+            },
+            {
+              "start": 10,
+              "end": 22,
+              "cells": 13
+            },
+            {
+              "start": 31,
+              "end": 31,
+              "cells": 1
+            },
+            {
+              "start": 50,
+              "end": 50,
+              "cells": 1
+            },
+            {
+              "start": 60,
+              "end": 63,
+              "cells": 6
+            }
+          ],
+          "importStatus": "partial",
+          "reason": "Character inventory rows remain character-owned; the worn-slot capacity reference and magical storage item weight/capacity table are imported from the workbook.",
+          "semanticRows": "G5:G6,Q10:Q22,CR3:CT10"
         },
         {
           "name": "Spells, Spheres and other stuff",
           "state": "visible",
           "bounds": "A1:BG147",
+          "formulaCells": 319,
+          "formulaRowGroups": [
+            {
+              "start": 2,
+              "end": 2,
+              "cells": 9
+            },
+            {
+              "start": 5,
+              "end": 5,
+              "cells": 1
+            },
+            {
+              "start": 8,
+              "end": 17,
+              "cells": 30
+            },
+            {
+              "start": 19,
+              "end": 19,
+              "cells": 2
+            },
+            {
+              "start": 21,
+              "end": 21,
+              "cells": 1
+            },
+            {
+              "start": 24,
+              "end": 24,
+              "cells": 4
+            },
+            {
+              "start": 27,
+              "end": 27,
+              "cells": 1
+            },
+            {
+              "start": 29,
+              "end": 29,
+              "cells": 2
+            },
+            {
+              "start": 31,
+              "end": 31,
+              "cells": 1
+            },
+            {
+              "start": 35,
+              "end": 35,
+              "cells": 5
+            },
+            {
+              "start": 49,
+              "end": 50,
+              "cells": 2
+            },
+            {
+              "start": 52,
+              "end": 52,
+              "cells": 2
+            },
+            {
+              "start": 54,
+              "end": 54,
+              "cells": 2
+            },
+            {
+              "start": 56,
+              "end": 56,
+              "cells": 2
+            },
+            {
+              "start": 58,
+              "end": 58,
+              "cells": 2
+            },
+            {
+              "start": 63,
+              "end": 81,
+              "cells": 97
+            },
+            {
+              "start": 85,
+              "end": 93,
+              "cells": 60
+            },
+            {
+              "start": 95,
+              "end": 103,
+              "cells": 54
+            },
+            {
+              "start": 105,
+              "end": 105,
+              "cells": 5
+            },
+            {
+              "start": 108,
+              "end": 108,
+              "cells": 1
+            },
+            {
+              "start": 111,
+              "end": 111,
+              "cells": 1
+            },
+            {
+              "start": 113,
+              "end": 113,
+              "cells": 2
+            },
+            {
+              "start": 115,
+              "end": 116,
+              "cells": 6
+            },
+            {
+              "start": 127,
+              "end": 127,
+              "cells": 5
+            },
+            {
+              "start": 130,
+              "end": 130,
+              "cells": 1
+            },
+            {
+              "start": 133,
+              "end": 142,
+              "cells": 18
+            },
+            {
+              "start": 144,
+              "end": 144,
+              "cells": 2
+            },
+            {
+              "start": 146,
+              "end": 146,
+              "cells": 1
+            }
+          ],
           "importStatus": "partial",
-          "reason": "Class-linked Psionics and FFd20 progressions are imported into character-owned system sources; specialized entry corpora and remaining system mechanics still need explicit mappings."
+          "reason": "Class-linked Psionics and FFd20 progressions and the Spheres of Power/Might category lists are imported into character-owned system sources; specialized talent corpora and remaining system mechanics still need explicit mappings."
         },
         {
           "name": "Class Charts",
           "state": "visible",
           "bounds": "A1:AR633",
+          "formulaCells": 222,
+          "formulaRowGroups": [
+            {
+              "start": 3,
+              "end": 4,
+              "cells": 2
+            },
+            {
+              "start": 6,
+              "end": 6,
+              "cells": 2
+            },
+            {
+              "start": 8,
+              "end": 27,
+              "cells": 74
+            },
+            {
+              "start": 30,
+              "end": 30,
+              "cells": 2
+            },
+            {
+              "start": 35,
+              "end": 35,
+              "cells": 1
+            },
+            {
+              "start": 37,
+              "end": 41,
+              "cells": 7
+            },
+            {
+              "start": 44,
+              "end": 44,
+              "cells": 1
+            },
+            {
+              "start": 50,
+              "end": 55,
+              "cells": 11
+            },
+            {
+              "start": 93,
+              "end": 93,
+              "cells": 2
+            },
+            {
+              "start": 151,
+              "end": 151,
+              "cells": 2
+            },
+            {
+              "start": 171,
+              "end": 171,
+              "cells": 1
+            },
+            {
+              "start": 228,
+              "end": 228,
+              "cells": 2
+            },
+            {
+              "start": 237,
+              "end": 241,
+              "cells": 5
+            },
+            {
+              "start": 243,
+              "end": 244,
+              "cells": 2
+            },
+            {
+              "start": 246,
+              "end": 246,
+              "cells": 1
+            },
+            {
+              "start": 251,
+              "end": 253,
+              "cells": 3
+            },
+            {
+              "start": 256,
+              "end": 256,
+              "cells": 1
+            },
+            {
+              "start": 258,
+              "end": 258,
+              "cells": 2
+            },
+            {
+              "start": 260,
+              "end": 260,
+              "cells": 2
+            },
+            {
+              "start": 264,
+              "end": 264,
+              "cells": 2
+            },
+            {
+              "start": 267,
+              "end": 268,
+              "cells": 4
+            },
+            {
+              "start": 270,
+              "end": 270,
+              "cells": 2
+            },
+            {
+              "start": 273,
+              "end": 274,
+              "cells": 4
+            },
+            {
+              "start": 277,
+              "end": 277,
+              "cells": 2
+            },
+            {
+              "start": 279,
+              "end": 280,
+              "cells": 4
+            },
+            {
+              "start": 282,
+              "end": 284,
+              "cells": 6
+            },
+            {
+              "start": 287,
+              "end": 287,
+              "cells": 2
+            },
+            {
+              "start": 290,
+              "end": 290,
+              "cells": 2
+            },
+            {
+              "start": 294,
+              "end": 305,
+              "cells": 13
+            },
+            {
+              "start": 337,
+              "end": 355,
+              "cells": 19
+            },
+            {
+              "start": 517,
+              "end": 517,
+              "cells": 1
+            },
+            {
+              "start": 548,
+              "end": 566,
+              "cells": 19
+            },
+            {
+              "start": 570,
+              "end": 588,
+              "cells": 19
+            }
+          ],
           "importStatus": "imported",
           "reason": "Class chassis, recognized prepared/spontaneous PF1e spell tables, Psionics charts, and FFd20 MP/spells-known tables are imported with provenance.",
           "semanticRows": "3:295,312:492,518:538,541:632"
@@ -46,6 +477,69 @@
           "name": "Class Skills",
           "state": "hidden",
           "bounds": "A1:BH366",
+          "formulaCells": 4316,
+          "formulaRowGroups": [
+            {
+              "start": 5,
+              "end": 26,
+              "cells": 22
+            },
+            {
+              "start": 29,
+              "end": 32,
+              "cells": 4
+            },
+            {
+              "start": 35,
+              "end": 39,
+              "cells": 5
+            },
+            {
+              "start": 41,
+              "end": 51,
+              "cells": 11
+            },
+            {
+              "start": 54,
+              "end": 61,
+              "cells": 8
+            },
+            {
+              "start": 63,
+              "end": 77,
+              "cells": 15
+            },
+            {
+              "start": 80,
+              "end": 109,
+              "cells": 30
+            },
+            {
+              "start": 111,
+              "end": 166,
+              "cells": 56
+            },
+            {
+              "start": 169,
+              "end": 220,
+              "cells": 2083
+            },
+            {
+              "start": 222,
+              "end": 231,
+              "cells": 400
+            },
+            {
+              "start": 234,
+              "end": 236,
+              "cells": 120
+            },
+            {
+              "start": 239,
+              "end": 278,
+              "cells": 1562
+            }
+          ],
           "importStatus": "imported",
           "reason": "Classic class-skill membership and skill metadata are imported from the bounded semantic region.",
           "semanticRows": "1:278"
@@ -54,14 +548,94 @@
           "name": "Formula References",
           "state": "visible",
           "bounds": "A1:AF323",
+          "formulaCells": 396,
+          "formulaRowGroups": [
+            {
+              "start": 3,
+              "end": 8,
+              "cells": 42
+            },
+            {
+              "start": 12,
+              "end": 31,
+              "cells": 39
+            },
+            {
+              "start": 39,
+              "end": 39,
+              "cells": 11
+            },
+            {
+              "start": 44,
+              "end": 61,
+              "cells": 196
+            },
+            {
+              "start": 71,
+              "end": 77,
+              "cells": 13
+            },
+            {
+              "start": 148,
+              "end": 148,
+              "cells": 1
+            },
+            {
+              "start": 150,
+              "end": 197,
+              "cells": 66
+            },
+            {
+              "start": 201,
+              "end": 207,
+              "cells": 8
+            },
+            {
+              "start": 209,
+              "end": 209,
+              "cells": 1
+            },
+            {
+              "start": 220,
+              "end": 220,
+              "cells": 1
+            },
+            {
+              "start": 225,
+              "end": 225,
+              "cells": 1
+            },
+            {
+              "start": 238,
+              "end": 238,
+              "cells": 1
+            },
+            {
+              "start": 241,
+              "end": 241,
+              "cells": 1
+            },
+            {
+              "start": 255,
+              "end": 255,
+              "cells": 1
+            },
+            {
+              "start": 265,
+              "end": 266,
+              "cells": 14
+            }
+          ],
           "importStatus": "partial",
-          "reason": "Age adjustments, XP thresholds, ability-based attack profiles, armor/shield chassis and compatible material adjustments, and numeric condition modifiers are generated. Main Sheet quick toggles and additional PRD equipment supplements are reviewed declarative content in src/content.ts. Context-dependent special material notes and remaining spreadsheet formulas are not executed.",
-          "semanticRows": "28:34,45:61,114:134,149:232,237:268"
+          "reason": "Age adjustments, XP thresholds, size adjustments and carrying-capacity multipliers, ability-based attack profiles, armor/shield chassis and compatible material adjustments, numeric condition modifiers, and the bonus-type reference are generated. Main Sheet quick toggles and additional PRD equipment supplements are reviewed declarative content in src/content.ts. Context-dependent special material notes and remaining spreadsheet formulas are not executed.",
+          "semanticRows": "4:29,28:34,37:39,45:61,96:110,114:134,138:146,149:232,237:268"
         },
         {
           "name": "Changelog",
           "state": "hidden",
           "bounds": "A1:C1006",
+          "formulaCells": 0,
+          "formulaRowGroups": [],
           "importStatus": "excluded",
           "reason": "Workbook release history, not rules content."
         }
@@ -74,12 +648,16 @@
     "progressionsWithSpellcastingTemplates": 27,
     "progressionsWithCharacterSystemTemplates": 26,
     "generatedSkillDefinitions": 54,
-    "generatedEquipmentDefinitions": 45,
+    "generatedEquipmentDefinitions": 56,
     "generatedEquipmentMaterials": 21,
     "generatedExperienceTracks": 3,
     "generatedAgeFeatures": 5,
-    "generatedConditionFeatures": 20,
-    "generatedAttackProfiles": 60,
+    "generatedConditionFeatures": 29,
+    "generatedAttackProfiles": 85,
+    "generatedSphereCategories": 52,
+    "generatedBonusTypeReferenceRows": 14,
+    "generatedSizeAdjustments": 9,
+    "generatedWornSlotRows": 13,
     "progressionsWithClassSkills": 259,
     "explicitPrestigeCharts": 89,
     "classChartCategories": {
@@ -4087,6 +4665,30 @@
   ],
   "equipmentRows": [
     {
+      "equipmentId": "pf1e.autosheet.mage-armor-spell",
+      "name": "Mage Armor (Spell)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 151,
+        "range": "A151:I151",
+        "system": "PF1e",
+        "category": "Unarmored / Special"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.bracers-of-armor-wondrous-item",
+      "name": "Bracers of Armor (Wondrous Item)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 152,
+        "range": "A152:I152",
+        "system": "PF1e",
+        "category": "Unarmored / Special"
+      }
+    },
+    {
       "equipmentId": "pf1e.autosheet.clothing",
       "name": "Clothing",
       "source": {
@@ -4096,6 +4698,18 @@
         "range": "A153:I153",
         "system": "PF1e",
         "category": "Unarmored / Standard"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.unarmored-training",
+      "name": "Unarmored Training",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 154,
+        "range": "A154:I154",
+        "system": "PF1e",
+        "category": "Special / Special"
       }
     },
     {
@@ -4615,6 +5229,18 @@
       }
     },
     {
+      "equipmentId": "pf1e.autosheet.spell-shield",
+      "name": "(Spell) Shield",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 205,
+        "range": "A205:I205",
+        "system": "PF1e",
+        "category": "Force / Shield"
+      }
+    },
+    {
       "equipmentId": "pf1e.autosheet.tower-shield",
       "name": "Tower Shield",
       "source": {
@@ -4624,6 +5250,90 @@
         "range": "A206:I206",
         "system": "PF1e",
         "category": "Tower / Shield"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.handy-haversack",
+      "name": "Handy Haversack",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 4,
+        "range": "CR4:CT4",
+        "system": "PF1e",
+        "category": "Magical storage"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.bag-of-holding-i",
+      "name": "Bag of Holding I",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 5,
+        "range": "CR5:CT5",
+        "system": "PF1e",
+        "category": "Magical storage"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.bag-of-holding-ii",
+      "name": "Bag of Holding II",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 6,
+        "range": "CR6:CT6",
+        "system": "PF1e",
+        "category": "Magical storage"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.bag-of-holding-iii",
+      "name": "Bag of Holding III",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 7,
+        "range": "CR7:CT7",
+        "system": "PF1e",
+        "category": "Magical storage"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.bag-of-holding-iv",
+      "name": "Bag of Holding IV",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 8,
+        "range": "CR8:CT8",
+        "system": "PF1e",
+        "category": "Magical storage"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.portable-hole",
+      "name": "Portable Hole",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 9,
+        "range": "CR9:CT9",
+        "system": "PF1e",
+        "category": "Magical storage"
+      }
+    },
+    {
+      "equipmentId": "pf1e.autosheet.extradimensional-shadow",
+      "name": "Extradimensional Shadow",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 10,
+        "range": "CR10:CT10",
+        "system": "PF1e",
+        "category": "Magical storage"
       }
     }
   ],
@@ -5721,6 +6431,1392 @@
         "range": "AA58",
         "system": "PF1e",
         "category": "Ability-based attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.alchemist-bomb",
+      "name": "Alchemist Bomb: DEX / INT",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "AD45:AF45",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.alchemist-rapid-bomb",
+      "name": "Alchemist Bomb: Rapid Bomb",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "AD46:AF46",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.witch-prehensile-hair",
+      "name": "Witch Prehensile Hair",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 48,
+        "range": "AD48:AF48",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.white-witch-hair-str",
+      "name": "White Witch Hair: STR / INT",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 49,
+        "range": "AD49:AF49",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.white-witch-hair-dex",
+      "name": "White Witch Hair: DEX / INT",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 50,
+        "range": "AD50:AF50",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.kineticist-ranged-con",
+      "name": "Kineticist Ranged: DEX / CON",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "AD53:AF53",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.kineticist-ranged-half-con",
+      "name": "Kineticist Ranged: DEX / ½ CON",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 54,
+        "range": "AD54:AF54",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.kineticist-melee-dex-con",
+      "name": "Kineticist Melee: DEX / CON",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "AD55:AF55",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.kineticist-melee-dex-half-con",
+      "name": "Kineticist Melee: DEX / ½ CON",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 56,
+        "range": "AD56:AF56",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.kineticist-melee-str-con",
+      "name": "Kineticist Melee: STR / CON",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 57,
+        "range": "AD57:AF57",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.kineticist-melee-str-half-con",
+      "name": "Kineticist Melee: STR / ½ CON",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 58,
+        "range": "AD58:AF58",
+        "system": "PF1e",
+        "category": "Specialized attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-str-str-1",
+      "name": "Melee Monk Flurry: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 45,
+        "range": "U45:W45",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-str-str-1-5",
+      "name": "Melee Monk Flurry: STR / 1.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 46,
+        "range": "U46:W46",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-dex-str-1",
+      "name": "Melee Monk Flurry: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 48,
+        "range": "U48:W48",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-dex-dex-1",
+      "name": "Melee Monk Flurry: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 49,
+        "range": "U49:W49",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-wis-str-1",
+      "name": "Melee Monk Flurry: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 51,
+        "range": "U51:W51",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-wis-str-1-5",
+      "name": "Melee Monk Flurry: WIS / 1.5×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 52,
+        "range": "U52:W52",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-melee-wis-wis-1",
+      "name": "Melee Monk Flurry: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "U53:W53",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-ranged-dex-none-0",
+      "name": "Ranged Monk Flurry: DEX / no ability damage",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 55,
+        "range": "U55:W55",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-ranged-dex-str-1",
+      "name": "Ranged Monk Flurry: DEX / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 56,
+        "range": "U56:W56",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-ranged-dex-dex-1",
+      "name": "Ranged Monk Flurry: DEX / 1×DEX",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 57,
+        "range": "U57:W57",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-ranged-str-str-1",
+      "name": "Ranged Monk Flurry: STR / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 58,
+        "range": "U58:W58",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-ranged-wis-str-1",
+      "name": "Ranged Monk Flurry: WIS / 1×STR",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 59,
+        "range": "U59:W59",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.monk-flurry-ranged-wis-wis-1",
+      "name": "Ranged Monk Flurry: WIS / 1×WIS",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 60,
+        "range": "U60:W60",
+        "system": "PF1e",
+        "category": "Monk Flurry attack profiles"
+      }
+    },
+    {
+      "id": "pf1e.autosheet.spell-based",
+      "name": "Spell-Based Attack (Caster Level + Casting Ability)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 53,
+        "range": "O53:Q53",
+        "system": "PF1e",
+        "category": "Spell-based attack profile"
+      }
+    }
+  ],
+  "sphereCategoryRows": [
+    {
+      "system": "spheresOfMight",
+      "name": "Alchemy",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 4,
+        "range": "O4",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Athletics",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 5,
+        "range": "O5",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Barrage",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 6,
+        "range": "O6",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Barroom",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 7,
+        "range": "O7",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Beastmastery",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 8,
+        "range": "O8",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Berserker",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 9,
+        "range": "O9",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Boxing",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 10,
+        "range": "O10",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Brute",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 11,
+        "range": "O11",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Dual Wielding",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 12,
+        "range": "O12",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Duelist",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 13,
+        "range": "O13",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Equipment",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 14,
+        "range": "O14",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Fencing",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 15,
+        "range": "O15",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Gladiator",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 16,
+        "range": "O16",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Guardian",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 17,
+        "range": "O17",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Lancer",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 18,
+        "range": "O18",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Open Hand",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 19,
+        "range": "O19",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Scoundrel",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 20,
+        "range": "O20",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Scout",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 21,
+        "range": "O21",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Shield",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 22,
+        "range": "O22",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Sniper",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 23,
+        "range": "O23",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Trap",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 24,
+        "range": "O24",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Warleader",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 25,
+        "range": "O25",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Wrestling",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 26,
+        "range": "O26",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Leadership",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 27,
+        "range": "O27",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Pilot",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "O28",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfMight",
+      "name": "Tech",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 29,
+        "range": "O29",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Might"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Alteration",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 4,
+        "range": "P4",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Blood",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 5,
+        "range": "P5",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Conjuration",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 6,
+        "range": "P6",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Creation",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 7,
+        "range": "P7",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Dark",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 8,
+        "range": "P8",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Death",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 9,
+        "range": "P9",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Destruction",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 10,
+        "range": "P10",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Divination",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 11,
+        "range": "P11",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Enhancement",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 12,
+        "range": "P12",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Fallen Fey",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 13,
+        "range": "P13",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Fate",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 14,
+        "range": "P14",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Illusion",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 15,
+        "range": "P15",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Life",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 16,
+        "range": "P16",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Light",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 17,
+        "range": "P17",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Mana",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 18,
+        "range": "P18",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Mind",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 19,
+        "range": "P19",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Nature",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 20,
+        "range": "P20",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Protection",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 21,
+        "range": "P21",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Telekinesis",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 22,
+        "range": "P22",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Time",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 23,
+        "range": "P23",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "War",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 24,
+        "range": "P24",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Warp",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 25,
+        "range": "P25",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Weather",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 26,
+        "range": "P26",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Bear",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 27,
+        "range": "P27",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Technomancy",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 28,
+        "range": "P28",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    },
+    {
+      "system": "spheresOfPower",
+      "name": "Veilweaving",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 29,
+        "range": "P29",
+        "system": "PF1e-compatible",
+        "category": "Spheres of Power"
+      }
+    }
+  ],
+  "bonusTypeReferenceRows": [
+    {
+      "label": "Alchemical",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 97,
+        "range": "A97",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Armor",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 98,
+        "range": "A98",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Circumstance (stacks)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 99,
+        "range": "A99",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Competence",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 100,
+        "range": "A100",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Deflect/Enhance/Resist",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 101,
+        "range": "A101",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Dodge (stacks)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 102,
+        "range": "A102",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Insight",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 103,
+        "range": "A103",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Luck",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 104,
+        "range": "A104",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Morale",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 105,
+        "range": "A105",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Precision Damage",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 106,
+        "range": "A106",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Sacred / Profane",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 107,
+        "range": "A107",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Size",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 108,
+        "range": "A108",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Untyped (stacks)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 109,
+        "range": "A109",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    },
+    {
+      "label": "Bonus AC (Stacks)",
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 110,
+        "range": "A110",
+        "system": "PF1e",
+        "category": "Types of Bonuses"
+      }
+    }
+  ],
+  "sizeAdjustmentRows": [
+    {
+      "category": "fine",
+      "attackAc": 8,
+      "cmbCmd": -8,
+      "fly": 8,
+      "stealth": 16,
+      "carryingCapacityMultiplier": 0.125,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 138,
+        "range": "B138:G138",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "diminutive",
+      "attackAc": 4,
+      "cmbCmd": -4,
+      "fly": 6,
+      "stealth": 12,
+      "carryingCapacityMultiplier": 0.25,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 139,
+        "range": "B139:G139",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "tiny",
+      "attackAc": 2,
+      "cmbCmd": -2,
+      "fly": 4,
+      "stealth": 8,
+      "carryingCapacityMultiplier": 0.5,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 140,
+        "range": "B140:G140",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "small",
+      "attackAc": 1,
+      "cmbCmd": -1,
+      "fly": 2,
+      "stealth": 4,
+      "carryingCapacityMultiplier": 0.75,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 141,
+        "range": "B141:G141",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "medium",
+      "attackAc": 0,
+      "cmbCmd": 0,
+      "fly": 0,
+      "stealth": 0,
+      "carryingCapacityMultiplier": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 142,
+        "range": "B142:G142",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "large",
+      "attackAc": -1,
+      "cmbCmd": 1,
+      "fly": -2,
+      "stealth": -4,
+      "carryingCapacityMultiplier": 2,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 143,
+        "range": "B143:G143",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "huge",
+      "attackAc": -2,
+      "cmbCmd": 2,
+      "fly": -4,
+      "stealth": -8,
+      "carryingCapacityMultiplier": 4,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 144,
+        "range": "B144:G144",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "gargantuan",
+      "attackAc": -4,
+      "cmbCmd": 4,
+      "fly": -6,
+      "stealth": -12,
+      "carryingCapacityMultiplier": 8,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 145,
+        "range": "B145:G145",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    },
+    {
+      "category": "colossal",
+      "attackAc": -8,
+      "cmbCmd": 8,
+      "fly": -8,
+      "stealth": -16,
+      "carryingCapacityMultiplier": 16,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Formula References",
+        "row": 146,
+        "range": "B146:G146",
+        "system": "PF1e",
+        "category": "Size adjustments"
+      }
+    }
+  ],
+  "wornSlotRows": [
+    {
+      "slot": "head",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 10,
+        "range": "Q10",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "headband",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 11,
+        "range": "Q11",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "face/eyes",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 12,
+        "range": "Q12",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "throat",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 13,
+        "range": "Q13",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "shoulders",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 14,
+        "range": "Q14",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "body",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 15,
+        "range": "Q15",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "torso",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 16,
+        "range": "Q16",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "arms",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 17,
+        "range": "Q17",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "hands",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 18,
+        "range": "Q18",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "waist",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 19,
+        "range": "Q19",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "feet",
+      "capacity": 1,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 20,
+        "range": "Q20",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "ring",
+      "capacity": 2,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 21,
+        "range": "Q21",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
+      }
+    },
+    {
+      "slot": "ring",
+      "capacity": 2,
+      "source": {
+        "document": "Pathfinder Autosheet v6.2.1",
+        "sheet": "Equipment",
+        "row": 22,
+        "range": "Q22",
+        "system": "PF1e",
+        "category": "Worn magic-item slots"
       }
     }
   ],
@@ -6834,15 +8930,6 @@
       "message": "Used the source workbook's cached formula value; formulas were not evaluated."
     },
     {
-      "kind": "unrecognized-skill-metadata-marker",
-      "skillId": "lore",
-      "source": {
-        "sheet": "Class Skills",
-        "range": "AQ4"
-      },
-      "message": "Ignored \"X\" in the armor-penalty row; only the explicit Armor Penalty label is recognized."
-    },
-    {
       "kind": "supplemental-skill-metadata",
       "skillId": "knowledge-martial",
       "source": {
@@ -6875,7 +8962,15 @@
         "sheet": "Formula References",
         "range": "A149:I206"
       },
-      "message": "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains a cap). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata. Column I is weight category, not pounds. Material compatibility labels are retained on each armor and shield chassis."
+      "message": "Positive check-penalty magnitudes become negative contributions; blank Max Dex means unlimited (zero remains a cap). Medium/heavy armor reduces land speed. Spell-failure percentage is retained as metadata. Column I is armor weight category, not pounds. Material compatibility labels are retained, and numeric material adjustments change the effective category and land-speed penalty."
+    },
+    {
+      "kind": "magical-storage-catalog",
+      "source": {
+        "sheet": "Equipment",
+        "range": "CR3:CT10"
+      },
+      "message": "Imported the workbook's seven magical storage items with their authored carried weights and capacities; Portable Hole has unlimited capacity."
     },
     {
       "kind": "xp-level-one-normalization",
@@ -6894,12 +8989,28 @@
       "message": "Imports only the workbook's explicit ability adjustments, not racial age thresholds or the separate Young Creature template. Entries in the same age group do not stack; choose one age category."
     },
     {
+      "kind": "condition-prose-effects",
+      "source": {
+        "sheet": "Formula References",
+        "range": "U238:U244"
+      },
+      "message": "Parsed the workbook's listed Blinded skill, Dazzled Perception, and Deafened initiative/Perception penalties into roll modifiers."
+    },
+    {
       "kind": "condition-action-scope",
       "source": {
         "sheet": "Formula References",
         "range": "A237:U268"
       },
-      "message": "Imported numeric condition modifiers and movement multipliers. Text-only action restrictions remain descriptive notes because the workbook encodes no executable action-state formula."
+      "message": "Imported numeric modifiers, listed roll penalties, and movement multipliers; selected Pathfinder action and defense rules are overlaid in the rules content."
+    },
+    {
+      "kind": "character-specific-attack-profile",
+      "source": {
+        "sheet": "Formula References",
+        "range": "C56"
+      },
+      "message": "Skipped Charlie-specific attack profile; Charlie's seeded character attacks already carry INT hit and damage modifiers."
     },
     {
       "kind": "attack-profile-normalization",
@@ -6908,53 +9019,16 @@
         "range": "C45:AB61"
       },
       "message": "Ability pairs and 0.5/1/1.5 ratios are extracted from a closed label grammar, never cached character totals. Secondary natural attacks default to −5; an authored +3 adjustment can represent an independently qualified −2 case. Names describe prerequisite-dependent profiles, not automatic feat grants. Off-hand/single/natural profiles do not gain BAB iteratives. Haste eligibility is explicit; combined multiweapon sequences remain contextual."
-    }
-  ],
-  "unsupportedRows": [
-    {
-      "kind": "non-equipment-armor-row",
-      "name": "Mage Armor (Spell)",
-      "source": {
-        "sheet": "Formula References",
-        "row": 151
-      },
-      "reason": "Mage Armor is a spell effect, not worn equipment."
     },
     {
-      "kind": "non-equipment-armor-row",
-      "name": "Bracers of Armor (Wondrous Item)",
-      "source": {
-        "sheet": "Formula References",
-        "row": 152
-      },
-      "reason": "Bracers of Armor has a parameterized +0 placeholder, not a complete item."
-    },
-    {
-      "kind": "non-equipment-armor-row",
-      "name": "Unarmored Training",
-      "source": {
-        "sheet": "Formula References",
-        "row": 154
-      },
-      "reason": "Unarmored Training depends on a separate feat."
-    },
-    {
-      "kind": "non-equipment-armor-row",
-      "name": "(Spell) Shield",
-      "source": {
-        "sheet": "Formula References",
-        "row": 205
-      },
-      "reason": "Shield is a spell effect, not a physical shield."
-    },
-    {
-      "kind": "contextual-attack-profiles",
+      "kind": "character-authored-attack-options",
       "source": {
         "sheet": "Formula References",
         "range": "O45:V61,AD45:AF58"
       },
-      "reason": "Maneuver training, flurry, kineticist and spell-based attack variants require class/ability/roll-context semantics beyond ordinary ability-based weapon profiles; their cached character formulas are not imported."
+      "reason": "All contextual attack rows have selectable profiles, including class-level maneuver training, White Witch Hair CMB, Monk Flurry and spell-based caster-level attacks. Kineticist blast dice and class-specific options are authored on each character's attack because the workbook leaves them tied to active class features."
     }
   ],
+  "unsupportedRows": [],
   "failures": []
 }

@@ -20737,6 +20737,13 @@ export const generatedAutosheetProgressionCatalog = {
       "sense-motive",
       "spellcraft"
     ],
+    "consolidatedClassSkills": [
+      "consolidated-influence",
+      "consolidated-survival",
+      "consolidated-religion",
+      "consolidated-perception",
+      "consolidated-spellcraft"
+    ],
     "chart": [
       {
         "level": 1,
@@ -22344,6 +22351,15 @@ export const generatedAutosheetProgressionCatalog = {
       "ride",
       "survival",
       "swim"
+    ],
+    "consolidatedClassSkills": [
+      "consolidated-acrobatics",
+      "consolidated-athletics",
+      "consolidated-influence",
+      "consolidated-nature",
+      "consolidated-perception",
+      "consolidated-religion",
+      "consolidated-survival"
     ],
     "chart": [
       {

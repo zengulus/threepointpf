@@ -43,7 +43,8 @@ export function FullPageSheet({
   activeTab,
   onActiveTabChange,
   onOpenWorkspace,
-}: SharedSheetPresentationProps & { onOpenWorkspace: () => void }) {
+  playerView,
+}: SharedSheetPresentationProps & { onOpenWorkspace?: () => void; playerView?: boolean }) {
   return (
     <main className="full-page-sheet" data-testid="full-page-sheet">
       <CharacterSheetView
@@ -52,6 +53,7 @@ export function FullPageSheet({
         activeTab={activeTab}
         onActiveTabChange={onActiveTabChange}
         onOpenWorkspace={onOpenWorkspace}
+        playerView={playerView}
       />
     </main>
   );

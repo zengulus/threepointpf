@@ -32,6 +32,7 @@ export {
   applicabilityOf,
   collectDirectModifiers,
   collectFeatureEffects,
+  collectFeatureActionRestrictions,
   matchesAttackSelector,
   featureContextFlags,
 } from "./effects.js";
@@ -42,6 +43,7 @@ export type {
   ReplaceBaseEffect,
 } from "./effects.js";
 export { abilityPenaltyFloor } from "./abilities.js";
+export { refreshDailyCharacterResources } from "./daily-refresh.js";
 export {
   acModifiersForCmd,
   evaluateArmorClass,
@@ -55,8 +57,8 @@ export {
 } from "./skills.js";
 export type { InitiativeRollOptions } from "./skills.js";
 export { evaluateMovement, computeSizeResult, sizeAdjustment } from "./size.js";
-export { resolveEquipment, collectEquipmentEffects, calculateCarryLoad, heavyCarryCapacity } from "./equipment.js";
-export type { CarryLoad, CarryLoadBand } from "./equipment.js";
+export { resolveEquipment, collectEquipmentEffects, calculateCarryLoad, calculateEquipmentBudget, equipmentSlotOverloads, heavyCarryCapacity } from "./equipment.js";
+export type { CarryLoad, CarryLoadBand, EquipmentBudget, EquipmentSlotOverload } from "./equipment.js";
 export {
   actionExclusions,
   actionPlanId,
@@ -92,11 +94,12 @@ export {
   skillOutcomePolicy,
 } from "./outcomes.js";
 export { experienceResult } from "./experience.js";
-export { castSpell, concentrationRollPlan, deriveSpellcastingSource, prepareSpells, refreshSpellcasting, slotResourceId } from "./spellcasting.js";
+export { castSpell, castSpellLike, concentrationRollPlan, spellLikeConcentrationRollPlan, deriveSpellcastingSource, prepareSpells, refreshSpellcasting, resolveTurnAction, slotResourceId, spellDurationInRounds } from "./spellcasting.js";
 export type { DerivedSpellcastingSource, SpellCastRequest, SpellCastResult, SpellValidationIssue } from "./spellcasting.js";
-export { applyDamage, applyHealing, setTemporaryHp, clearTemporaryHp, mitigateDamage, unchainedWoundPenalty } from "./health.js";
+export { applyDamage, applyHealing, setTemporaryHp, clearTemporaryHp, mitigateDamage, unchainedWoundPenalty, deriveNoteDefenses } from "./health.js";
+export type { NoteDerivedDefenses } from "./health.js";
 export type { DamageMitigation } from "./health.js";
-export { deriveCharacterSystems } from "./sheet-systems.js";
+export { deriveCharacterSystems, autosheetTalentRanks } from "./sheet-systems.js";
 export type { DerivedCharacterSystem } from "./sheet-systems.js";
 export type { RulesRuntime, EquipmentEntry, ResultOptions } from "./runtime.js";
 export {

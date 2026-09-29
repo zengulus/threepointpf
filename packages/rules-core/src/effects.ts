@@ -4,6 +4,7 @@ import {
   type AttackDefinition,
   type AttackMode,
   type AttackSelector,
+  type AbilityId,
   type CharacterInput,
   type ContextualModifiers,
   type Contribution,
@@ -11,6 +12,7 @@ import {
   type DamageDiceEffect,
   type Effect,
   type EffectApplicability,
+  type FeatureActionRestriction,
   type EvaluationResult,
   type ExcludedContribution,
   type FeatureCatalog,
@@ -71,6 +73,7 @@ export function collectFeatureEffects(
         continue;
       seenDefinitions.add(definition.id);
     }
+    const stackCount = definition?.stacking === "additive" ? Math.max(1, feature.stackCount ?? 1) : 1;
     for (const effect of feature.effects.length
       ? feature.effects
       : (definition?.effects ?? [])) {
@@ -81,12 +84,15 @@ export function collectFeatureEffects(
       ) {
         throw new Error("AC modifiers require explicit appliesTo contexts");
       }
-      const source = effect.source ?? {
+      const stackedEffect = stackCount > 1 && effect.kind === "modifier"
+        ? { ...effect, value: effect.value * stackCount }
+        : effect;
+      const source = stackedEffect.source ?? {
         id: `feature.${feature.id}`,
-        label: feature.name,
+        label: stackCount > 1 ? `${feature.name} × ${stackCount}` : feature.name,
         ...(definition?.source ? { content: definition.source } : {}),
       };
-      effects.push({ ...effect, source });
+      effects.push({ ...stackedEffect, source });
     }
   }
   return effects;
@@ -111,6 +117,63 @@ export function featureContextFlags(
       flags.add(flag);
   }
   return [...flags].sort();
+}
+
+/** Action limits from enabled conditions and authored features. */
+export function collectFeatureActionRestrictions(
+  character: CharacterInput,
+  catalog: FeatureCatalog = {},
+): FeatureActionRestriction[] {
+  const activeCatalogFeatures = character.features.flatMap((feature) => {
+    if (!feature.enabled || !feature.definitionId) return [];
+    const definition = lookup(catalog, feature.definitionId);
+    return definition ? [definition] : [];
+  });
+  const groupWinners = new Map<string, string>();
+  for (const definition of activeCatalogFeatures) {
+    if (!definition.exclusiveGroup) continue;
+    const current = groupWinners.get(definition.exclusiveGroup);
+    if (!current || (lookup(catalog, current)?.priority ?? 0) < (definition.priority ?? 0))
+      groupWinners.set(definition.exclusiveGroup, definition.id);
+  }
+  const restrictions = new Set<FeatureActionRestriction>();
+  for (const feature of character.features) {
+    if (!feature.enabled) continue;
+    const definition = feature.definitionId ? lookup(catalog, feature.definitionId) : undefined;
+    if (definition?.exclusiveGroup && groupWinners.get(definition.exclusiveGroup) !== definition.id) continue;
+    for (const restriction of feature.turnActionRestrictions ?? []) restrictions.add(restriction);
+    for (const restriction of feature.actionRestrictions ?? []) restrictions.add(restriction);
+    for (const restriction of definition?.actionRestrictions ?? []) restrictions.add(restriction);
+  }
+  return [...restrictions].sort();
+}
+
+/** Defense rules from enabled conditions and authored features. */
+export function collectFeatureDefenseRestrictions(
+  character: CharacterInput,
+  catalog: FeatureCatalog = {},
+): import("@threepointpf/rules-schema").FeatureDefenseRestriction[] {
+  const restrictions = new Set<import("@threepointpf/rules-schema").FeatureDefenseRestriction>();
+  const definitions = character.features.flatMap((feature) => {
+    if (!feature.enabled || !feature.definitionId || feature.effects.length) return [];
+    const definition = lookup(catalog, feature.definitionId);
+    return definition ? [definition] : [];
+  });
+  const winners = new Map<string, string>();
+  for (const definition of definitions) {
+    if (!definition.exclusiveGroup) continue;
+    const current = winners.get(definition.exclusiveGroup);
+    if (!current || (lookup(catalog, current)?.priority ?? 0) < (definition.priority ?? 0)) winners.set(definition.exclusiveGroup, definition.id);
+  }
+  for (const feature of character.features) {
+    if (!feature.enabled) continue;
+    const definition = feature.definitionId ? lookup(catalog, feature.definitionId) : undefined;
+    if (definition?.exclusiveGroup && winners.get(definition.exclusiveGroup) !== definition.id) continue;
+    for (const restriction of feature.defenseRestrictions ?? []) restrictions.add(restriction);
+    if (!feature.effects.length) for (const restriction of definition?.defenseRestrictions ?? []) restrictions.add(restriction);
+    if (feature.actionRestrictions?.includes("denyDexterityBonus")) restrictions.add("denyDexterityBonus");
+  }
+  return [...restrictions].sort();
 }
 
 /**
@@ -170,6 +233,8 @@ function describeApplicability(applicability: EffectApplicability): string {
     );
   if (applicability.maneuvers)
     parts.push(`maneuvers ${applicability.maneuvers.join(", ")}`);
+  if (applicability.excludedManeuvers)
+    parts.push(`except maneuvers ${applicability.excludedManeuvers.join(", ")}`);
   if (applicability.attackIds)
     parts.push(`weapons ${applicability.attackIds.join(", ")}`);
   if (applicability.requiredTags)
@@ -263,6 +328,11 @@ export function applicabilityOf(
       applies: false,
       reason: `maneuvers ${applicability.maneuvers.join(", ")} only`,
     };
+  if (context.maneuver && applicability.excludedManeuvers?.includes(context.maneuver))
+    return {
+      applies: false,
+      reason: `does not apply to maneuvers ${applicability.excludedManeuvers.join(", ")}`,
+    };
   if (
     applicability.attackIds &&
     (!context.attackId || !applicability.attackIds.includes(context.attackId))
@@ -294,7 +364,7 @@ export function applicabilityOf(
 /**
  * A negative modifier on an ability score is a temporary ability penalty and is
  * marked as such so it can be floored at 1 without clamping scores produced by
- * other mechanisms (replacement baselines and future damage/drain).
+ * other mechanisms (replacement baselines and tracked damage/drain).
  */
 export function isAbilityPenalty(
   effect: ModifierEffect,
@@ -485,11 +555,13 @@ export interface DirectModifierInput {
   effects: Effect[];
   /** Lazily evaluated so BAB can depend on its own additive modifiers. */
   bab(): EvaluationResult;
+  characterLevel(): number;
+  abilityModifierValue(id: AbilityId): number;
 }
 
 /**
- * One modifier effect as a contribution for a target, including BAB scaling and
- * the movement cap. Shared by direct modifiers and semantic AC→CMD derivation.
+ * One modifier effect as a contribution for a target, including its scaling and
+ * movement cap. Shared by direct modifiers and semantic AC→CMD derivation.
  */
 export function buildContribution(
   input: DirectModifierInput,
@@ -499,21 +571,24 @@ export function buildContribution(
 ): Contribution {
   const contribution = effectContribution(effect, target);
   if (effect.scaling) {
-    const bab = input.bab();
-    const steps =
-      effect.scaling.base + Math.floor(bab.value / effect.scaling.every);
-    contribution.value *= steps;
-    contribution.note = `${effect.value} × (${effect.scaling.base} + floor(BAB / ${effect.scaling.every}))`;
-    contribution.children = [
-      sourceContribution(
-        "combat.bab",
-        bab.value,
-        "combat.bab",
-        "Base Attack Bonus",
-        undefined,
-        { children: bab.contributions },
-      ),
-    ];
+    if (effect.scaling.kind === "babStep") {
+      const bab = input.bab();
+      const steps = effect.scaling.base + Math.floor(bab.value / effect.scaling.every);
+      contribution.value *= steps;
+      contribution.note = `${effect.value} × (${effect.scaling.base} + floor(BAB / ${effect.scaling.every}))`;
+      contribution.children = [sourceContribution("combat.bab", bab.value, "combat.bab", "Base Attack Bonus", undefined, { children: bab.contributions })];
+    } else {
+      const abilityModifier = input.abilityModifierValue(effect.scaling.ability);
+      const levelSteps = Math.floor(input.characterLevel() / effect.scaling.every);
+      const scaledAbility = effect.value * abilityModifier;
+      const levelBonus = effect.scaling.base + levelSteps;
+      contribution.value = scaledAbility + levelBonus;
+      contribution.note = `${effect.value} × ${effect.scaling.ability.toUpperCase()} modifier + ${effect.scaling.base} + floor(character level / ${effect.scaling.every})`;
+      contribution.children = [
+        sourceContribution(target, scaledAbility, `ability.${effect.scaling.ability}.scaled`, `${effect.scaling.ability.toUpperCase()} modifier × ${effect.value}`),
+        sourceContribution(target, levelBonus, `character.level.scaling.${effect.scaling.every}`, `Base ${effect.scaling.base} + floor(character level ${input.characterLevel()} / ${effect.scaling.every})`),
+      ];
+    }
   }
   if ("capToBase" in effect && effect.capToBase) {
     if (baseline === undefined)

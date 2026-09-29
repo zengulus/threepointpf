@@ -6,6 +6,7 @@ import {
   experienceCatalogSchema,
   mergeProgressionCatalogs,
   movementModes,
+  tacticalMovementModes,
   normalizeAdvancementSlots,
   parseCharacterInput,
   saveIds,
@@ -15,7 +16,9 @@ import {
   type ActionPlan,
   type AttackDefinition,
   type AttackProfileCatalog,
+  type AutosheetSizeAdjustmentCatalog,
   type CharacterInput,
+  type CoverLevel,
   type ContextualModifiers,
   type Contribution,
   type DefenseContext,
@@ -28,10 +31,12 @@ import {
   type EvaluationResult,
   type ExcludedContribution,
   type ExperienceCatalog,
+  type FeatureActionRestriction,
   type FeatureCatalog,
   type GrantedCapability,
   type ManeuverId,
   type MovementMode,
+  type TacticalMovementMode,
   type ProgressionAliasMap,
   type ProgressionCatalog,
   type RollContext,
@@ -61,6 +66,7 @@ import {
   evaluateCombatManeuver,
 } from "./defenses.js";
 import {
+  calculateCarryLoad,
   collectEquipmentEffects,
   resolveEquipment,
 } from "./equipment.js";
@@ -69,6 +75,8 @@ import {
   baselineContribution,
   collectDirectModifiers,
   collectFeatureEffects,
+  collectFeatureActionRestrictions,
+  collectFeatureDefenseRestrictions,
   featureContextFlags,
   findReplacementEffect,
   resolveContextFlags,
@@ -85,9 +93,18 @@ import {
 import {
   computeSizeResult,
   evaluateMovement,
+  evaluateTacticalMovement,
   sizeAdjustment,
   sizeCategoryOf,
 } from "./size.js";
+
+const autosheetBackgroundSkillIds = new Set([
+  "appraise", "handle-animal", "knowledge-engineering", "knowledge-geography",
+  "knowledge-history", "knowledge-nobility", "linguistics", "sleight-of-hand",
+]);
+function isAutosheetBackgroundSkill(id: string): boolean {
+  return autosheetBackgroundSkillIds.has(id) || id === "perform" || id.startsWith("perform:");
+}
 import {
   attackRollPlan,
   buildActionPlan,
@@ -126,6 +143,10 @@ export interface RollRequestOptions {
   /** Known target defense; absent means hit/success stays unresolved. */
   defense?: RollDefense;
   target?: TargetContext;
+  /** The roller's cover when attempting a Reflex save. */
+  cover?: CoverLevel;
+  abilityOverride?: AbilityId;
+  babProgressionId?: string;
 }
 
 /** Concrete progression content belongs to a caller-owned catalog, never rules-core. */
@@ -139,6 +160,7 @@ export interface RulesEngineOptions {
   abilityCatalog?: AbilityCatalog;
   equipmentCatalog?: EquipmentCatalog;
   equipmentMaterialCatalog?: EquipmentMaterialCatalog;
+  sizeAdjustmentCatalog?: AutosheetSizeAdjustmentCatalog;
   attackProfileCatalog?: AttackProfileCatalog;
   experienceCatalog?: ExperienceCatalog;
   /**
@@ -151,16 +173,20 @@ export interface RulesEngineOptions {
 export class RulesEngine implements RulesRuntime {
   readonly character: CharacterInput;
   readonly effects: Effect[];
-  readonly equipment: EquipmentEntry[];
+  private equipmentEntries: EquipmentEntry[] = [];
+  get equipment(): EquipmentEntry[] { return this.equipmentEntries; }
   readonly attackDefinitions: AttackDefinition[];
   readonly skillCatalog?: SkillCatalog;
   readonly attackProfileCatalog?: AttackProfileCatalog;
+  readonly sizeAdjustmentCatalog?: AutosheetSizeAdjustmentCatalog;
   readonly progressionCatalog?: ProgressionCatalog;
   readonly outcomePolicies: RollOutcomePolicySet;
   private readonly advancement?: AdvancementEvaluation;
   private readonly progressionAliases: ProgressionAliasMap;
   private readonly experienceCatalog?: ExperienceCatalog;
   private readonly featureFlags: string[];
+  private readonly featureActionLimits: FeatureActionRestriction[];
+  private readonly featureDefenseLimits: import("@threepointpf/rules-schema").FeatureDefenseRestriction[];
   /** `combat.bab` is a shared derived fact, not a fresh baseline per consumer. */
   private babEvaluation?: EvaluationResult;
   private sizeEvaluation?: EvaluationResult;
@@ -177,6 +203,7 @@ export class RulesEngine implements RulesRuntime {
     this.progressionAliases = options.progressionAliases ?? {};
     this.skillCatalog = options.skillCatalog;
     this.attackProfileCatalog = options.attackProfileCatalog;
+    this.sizeAdjustmentCatalog = options.sizeAdjustmentCatalog;
     this.outcomePolicies = { ...pf1eOutcomePolicies, ...options.outcomePolicies };
     this.experienceCatalog = options.experienceCatalog
       ? experienceCatalogSchema.parse(options.experienceCatalog)
@@ -200,6 +227,16 @@ export class RulesEngine implements RulesRuntime {
     } else {
       this.character = character;
     }
+    const ageCategory = this.character.record?.ageCategory?.trim();
+    if (ageCategory) {
+      const ageDefinitions = Object.values(options.featureCatalog ?? {}).filter((definition) => definition.exclusiveGroup === "pf1e.autosheet.age");
+      const ageDefinitionIds = new Set(ageDefinitions.map((definition) => definition.id));
+      const normalizedCategory = ageCategory.replace(/^Age:\s*/i, "").toLowerCase();
+      const selectedAge = ageDefinitions.find((definition) => definition.name.replace(/^Age:\s*/i, "").toLowerCase() === normalizedCategory);
+      const features = this.character.features.filter((feature) => !feature.definitionId || !ageDefinitionIds.has(feature.definitionId));
+      if (selectedAge) features.push({ id: selectedAge.id, definitionId: selectedAge.id, name: selectedAge.name, enabled: true, effects: [] });
+      this.character = { ...this.character, features };
+    }
     const abilityIssues = validateAbilityReferences(this.character, options.abilityCatalog);
     if (abilityIssues.length) throw new Error(abilityIssues.map((issue) => issue.message).join("; "));
     const effects = collectFeatureEffects(
@@ -208,6 +245,27 @@ export class RulesEngine implements RulesRuntime {
       excludedLegacyFeatureDefinitions(this.character, options.abilityCatalog),
     );
     effects.push(...collectAbilityEffects(this.character, options.abilityCatalog));
+    for (const system of this.character.systems ?? []) {
+      for (const entry of system.entries) {
+        if (!entry.active || entry.known === false) continue;
+        for (const effect of entry.effects ?? [])
+          effects.push({
+            ...effect,
+            source: effect.source ?? {
+              id: `system.${system.id}.entry.${entry.id}`,
+              label: `${entry.name} (${system.name})`,
+            },
+          });
+      }
+    }
+    for (const duration of this.character.activeSpellDurations ?? []) {
+      if (!duration.active || !duration.effectsApplyToCaster) continue;
+      for (const effect of duration.effects ?? [])
+        effects.push({
+          ...effect,
+          source: effect.source ?? { id: `spell-duration.${duration.id}`, label: duration.spellName },
+        });
+    }
     for (const feature of this.advancement?.features ?? []) {
       const definition = this.progressionCatalog?.[feature.progressionId];
       for (const effect of feature.effects ?? [])
@@ -220,17 +278,34 @@ export class RulesEngine implements RulesRuntime {
           },
         });
     }
-    this.equipment = resolveEquipment(character, options.equipmentCatalog, options.equipmentMaterialCatalog);
-    effects.push(...collectEquipmentEffects(this.equipment));
+    this.equipmentEntries = resolveEquipment(character, options.equipmentCatalog, options.equipmentMaterialCatalog);
+    effects.push(...collectEquipmentEffects(this.equipmentEntries));
     this.effects = effects.map((effect) => effectSchema.parse(effect));
+    const load = calculateCarryLoad(this.equipmentEntries, this.abilityScore("str").value, this.sizeCategory(), this.sizeAdjustmentCatalog);
+    if (load.band === "medium" || load.band === "heavy") {
+      this.equipmentEntries = [...this.equipmentEntries, {
+        id: "rules.encumbrance",
+        name: `${load.band[0]!.toUpperCase()}${load.band.slice(1)} load`,
+        equipped: true,
+        kind: "other",
+        maxDexterity: load.band === "medium" ? 3 : 1,
+        armorCheckPenalty: load.band === "medium" ? -3 : -6,
+        reduceLandSpeed: true,
+      }];
+    }
     this.featureFlags = [...new Set([
       ...featureContextFlags(this.character, options.featureCatalog),
       ...abilityContextFlags(this.character, options.abilityCatalog),
     ])].sort();
+    this.featureActionLimits = collectFeatureActionRestrictions(this.character, options.featureCatalog);
+    const nonlethalState = this.nonlethalState();
+    if (nonlethalState === "staggered") this.featureActionLimits.push("oneStandardOrMove");
+    if (nonlethalState === "unconscious") this.featureActionLimits.push("noActions");
+    this.featureDefenseLimits = collectFeatureDefenseRestrictions(this.character, options.featureCatalog);
     this.attackDefinitions = [
       ...character.attacks,
       ...this.equipment
-        .filter((item) => item.equipped && item.attack)
+        .filter((item) => item.equipped && item.held !== false && item.attack)
         .map((item) => ({
           ...item.attack!,
           id: `equipment.${item.id}`,
@@ -248,10 +323,15 @@ export class RulesEngine implements RulesRuntime {
             attackAbility: profile.attackAbility,
             damageAbility: profile.damageAbility,
             damageAbilityMultiplier: profile.damageAbilityMultiplier,
+            damageModifierMode: profile.damageModifierMode,
+            babProgressionId: profile.babProgressionId,
+            attackBaseline: attack.attackBaseline ?? profile.attackBaseline,
             mode: profile.mode,
             attackTags: profile.attackTags,
             iterative: profile.iterative,
             extraAttackEligible: profile.extraAttackEligible,
+            requiredEligibilityTags: profile.requiredEligibilityTags,
+            fullAttackOnly: attack.fullAttackOnly === true || profile.fullAttackOnly === true,
             // A weapon's own threat range and multiplier win over the profile's.
             ...(attack.criticalRange ?? profile.criticalRange
               ? { criticalRange: attack.criticalRange ?? profile.criticalRange }
@@ -263,6 +343,8 @@ export class RulesEngine implements RulesRuntime {
                 }
               : {}),
             attackBonus: (attack.attackBonus ?? 0) + (profile.attackBonus ?? 0),
+            bonusAttackProgression:
+              attack.bonusAttackProgression ?? profile.bonusAttackProgression,
           }
         : attack;
     });
@@ -319,6 +401,23 @@ export class RulesEngine implements RulesRuntime {
 
   enabledContextFlags(): string[] {
     return this.featureFlags;
+  }
+
+  actionRestrictions(): FeatureActionRestriction[] {
+    return this.featureActionLimits;
+  }
+
+  defenseRestrictions(): import("@threepointpf/rules-schema").FeatureDefenseRestriction[] {
+    return this.featureDefenseLimits;
+  }
+
+  nonlethalState(): "normal" | "staggered" | "unconscious" {
+    const damage = this.character.nonlethalDamage ?? 0;
+    if (damage <= 0) return "normal";
+    const currentHp = this.hpResult().value - this.character.damageTaken;
+    if (damage > currentHp) return "unconscious";
+    if (damage === currentHp) return "staggered";
+    return "normal";
   }
 
   /** First-class BAB fact. Its contribution tree is shared by every BAB consumer. */
@@ -393,7 +492,7 @@ export class RulesEngine implements RulesRuntime {
     options: Parameters<RulesRuntime["directModifiers"]>[1] = {},
   ): ContextualModifiers {
     return collectDirectModifiers(
-      { effects: this.effects, bab: () => this.bab() },
+      { effects: this.effects, bab: () => this.bab(), characterLevel: () => this.characterLevel(), abilityModifierValue: (id) => this.abilityModifierValue(id) },
       target,
       options,
     );
@@ -435,6 +534,10 @@ export class RulesEngine implements RulesRuntime {
     return scoreToModifier(this.abilityScore(id).value);
   }
 
+  characterLevel(): number {
+    return this.character.advancementSlots?.length ?? this.character.hitDiceCount ?? 0;
+  }
+
   abilityContribution(id: AbilityId, target: TargetId): Contribution {
     return abilityContribution(this, id, target);
   }
@@ -458,6 +561,10 @@ export class RulesEngine implements RulesRuntime {
 
   movementResult(mode: MovementMode = "land"): EvaluationResult {
     return evaluateMovement(this, mode);
+  }
+
+  tacticalMovementResult(mode: TacticalMovementMode): EvaluationResult {
+    return evaluateTacticalMovement(this, mode);
   }
 
   advancementProgressionLevels(): ProgressionLevelResult[] {
@@ -659,6 +766,7 @@ export class RulesEngine implements RulesRuntime {
       actorCharacterId: this.character.id,
       action: { kind: "save" },
       saveId: id,
+      ...(options.cover ? { cover: options.cover } : {}),
       flags: resolveContextFlags(
         this.enabledContextFlags(),
         options.flags,
@@ -695,6 +803,16 @@ export class RulesEngine implements RulesRuntime {
               `Base ${id}`,
             ),
         this.abilityContribution(ability, target),
+        ...(id === "reflex" && context.cover && context.cover !== "soft"
+          ? [sourceContribution(
+              target,
+              context.cover === "partial" ? 1 : context.cover === "improved" ? 4 : 2,
+              `cover.${context.cover}.reflex`,
+              `${context.cover === "partial" ? "Partial" : context.cover === "improved" ? "Improved" : "Standard"} cover`,
+              "circumstance",
+              { note: "Cover bonus on Reflex saves against attacks originating on the far side of the cover" },
+            )]
+          : []),
         ...modifiers.applied,
       ],
       { rollContext: context, excluded: modifiers.excluded },
@@ -741,6 +859,9 @@ export class RulesEngine implements RulesRuntime {
         "base-hp-before-con",
         "HP before Constitution",
       ),
+      ...(this.character.workbookBonuses?.hp
+        ? [sourceContribution("hp", this.character.workbookBonuses.hp, "workbook.favored-class.hp", "Favored-class HP bonus")]
+        : []),
       {
         ...constitution,
         value: constitution.value * hitDice.value,
@@ -784,7 +905,9 @@ export class RulesEngine implements RulesRuntime {
     if (target.startsWith("skill.") && target !== "skill.all")
       return this.skillResult(target.slice(6)).total;
     if (target.startsWith("speed."))
-      return this.movementResult(target.slice("speed.".length) as MovementMode);
+      return target === "speed.charge" || target === "speed.run"
+        ? this.tacticalMovementResult(target.slice("speed.".length) as TacticalMovementMode)
+        : this.movementResult(target.slice("speed.".length) as MovementMode);
     // A bare fact query names no action, so it carries no action context: an
     // effect that needs one is excluded rather than assumed to apply.
     const context: RollContext | undefined =
@@ -809,7 +932,7 @@ export class RulesEngine implements RulesRuntime {
     );
   }
 
-  private ac(kind: "normal" | "touch" | "flat-footed"): EvaluationResult {
+  private ac(kind: "normal" | "touch" | "flat-footed" | "denied-dexterity"): EvaluationResult {
     return evaluateArmorClass(this, kind);
   }
 
@@ -879,13 +1002,46 @@ export class RulesEngine implements RulesRuntime {
     const speeds = {} as Record<MovementMode, EvaluationResult>;
     for (const mode of movementModesForDerive)
       speeds[mode] = this.movementResult(mode);
+    const tacticalSpeeds = {} as DerivedCharacter["tacticalSpeeds"];
+    for (const mode of tacticalMovementModes)
+      tacticalSpeeds[mode] = this.tacticalMovementResult(mode);
+    const skillMode = this.character.workbookOptions?.skillMode ?? (this.character.workbookOptions?.backgroundSkills === false ? "classic" : "background");
+    const intelligence = abilities.int.modifier.value;
+    const skillRanksPerLevel = (skillPoints: number) => skillMode === "consolidated"
+      ? Math.max(1, Math.floor((skillPoints + intelligence) / 2))
+      : (this.character.workbookOptions?.minimumFourPlusIntSkillRanks ? Math.max(4, skillPoints) : skillPoints) + intelligence;
+    const gestalt = (this.character.advancementSlots?.[0]?.tracks.length ?? 0) > 1;
+    const gestaltSkillBudgets = new Map<string, number>();
+    if (gestalt && this.advancement) {
+      for (const track of this.advancement.tracks) {
+        const byProgression = new Map<string, number>();
+        for (const increment of track.increments) {
+          byProgression.set(increment.progressionId, (byProgression.get(increment.progressionId) ?? 0) + skillRanksPerLevel(increment.skillPoints));
+        }
+        for (const [progressionId, points] of byProgression) {
+          const key = `${track.id}:${progressionId}`;
+          gestaltSkillBudgets.set(key, Math.max(gestaltSkillBudgets.get(key) ?? 0, points));
+        }
+      }
+    }
+    const workbookSkillPointBudget = this.advancement
+      ? (gestalt
+          ? Math.max(0, ...gestaltSkillBudgets.values())
+          : this.advancement.skillPointSources.reduce((total, source) => total + skillRanksPerLevel(source.skillPoints), 0))
+        + (this.character.workbookBonuses?.skillPoints ?? 0)
+      : undefined;
     const advancement = this.advancement
       ? {
           slotCount: this.advancement.slotCount,
           trackIds: this.advancement.tracks.map((track) => track.id),
           hitDiceCount: this.advancement.hitDiceCount,
           hitDieSides: this.advancement.hitDieSides,
-          skillPoints: this.advancement.skillPoints,
+          skillPoints: this.advancement.skillPoints + (this.character.workbookBonuses?.skillPoints ?? 0),
+          ...(this.character.workbookBonuses?.skillPoints ? { skillPointBonus: this.character.workbookBonuses.skillPoints } : {}),
+          workbookSkillPointBudget,
+          backgroundSkillPointBudget: ["background", "ultimate-psionics-background"].includes(this.character.workbookOptions?.skillMode ?? (this.character.workbookOptions?.backgroundSkills === false ? "classic" : "background")) ? this.advancement.slotCount * 2 : 0,
+          skillRanksUsed: Object.values(this.character.skillRanks).reduce((total, ranks) => total + ranks, 0),
+          backgroundSkillRanksUsed: Object.entries(this.character.skillRanks).filter(([id]) => isAutosheetBackgroundSkill(id)).reduce((total, [, ranks]) => total + ranks, 0),
           progressionLevels: Object.fromEntries(
             this.advancement.progressionLevels.map((progression) => [
               progression.id,
@@ -912,12 +1068,14 @@ export class RulesEngine implements RulesRuntime {
       ac: this.ac("normal"),
       touchAc: this.ac("touch"),
       flatFootedAc: this.ac("flat-footed"),
+      deniedDexAc: this.ac("denied-dexterity"),
       initiative: this.initiativeResult(),
       cmb: this.combat("cmb"),
       cmd: this.combat("cmd"),
       skills,
       size: { category: this.sizeCategory(), relative: this.sizeResult() },
       speeds,
+      tacticalSpeeds,
       movement: speeds.land,
       attacks: this.attackDefinitions.map((attack) =>
         deriveAttack(this, attack),
@@ -1015,6 +1173,8 @@ export class RulesEngine implements RulesRuntime {
     options: RollRequestOptions = {},
   ): RollPlan {
     const skill = evaluateSkill(this, id, options);
+    if ((this.skillCatalog?.[id]?.trainedOnly || this.character.skills?.[id]?.trainedOnly) && (this.character.skillRanks[id] ?? 0) < 1)
+      throw new Error(`${skill.label} requires at least 1 rank before it can be rolled.`);
     const context = skill.total.rollContext;
     if (!context)
       throw new Error(`Skill ${id} produced no roll context`);

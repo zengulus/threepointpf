@@ -68,6 +68,8 @@ export const movementModes = [
   "burrow",
 ] as const;
 export type MovementMode = (typeof movementModes)[number];
+export const tacticalMovementModes = ["charge", "run"] as const;
+export type TacticalMovementMode = (typeof tacticalMovementModes)[number];
 
 export const sizeCategories = [
   "fine",
@@ -129,6 +131,7 @@ export type TargetId =
   | "speed.swim"
   | "speed.climb"
   | "speed.burrow"
+  | `speed.${TacticalMovementMode}`
   | "skill.all"
   | `skill.${string}`
   | `resource.${string}.maximum`
@@ -146,13 +149,16 @@ export type EffectTargetId = Exclude<
   `progression.${string}.level` | `resource.${string}.maximum` | "experience.level"
 >;
 
-export type DefenseContext = "normal" | "touch" | "flatFooted";
+export type DefenseContext = "normal" | "touch" | "flatFooted" | "deniedDexterity";
+export const coverLevels = ["partial", "standard", "soft", "improved", "total"] as const;
+export type CoverLevel = (typeof coverLevels)[number];
 
 export const attackTagValues = [
   "weapon.melee",
   "weapon.ranged",
   "weapon.two-handed",
   "weapon.off-hand",
+  "weapon.light",
   "weapon.touch",
   "natural.attack",
 ] as const;
@@ -226,6 +232,8 @@ export interface ActionContext {
   sequenceIndex?: number;
   /** Weapons the action selects, in order (weapon actions only). */
   attackIds?: string[];
+  /** Autosheet Buff Table TWF value: number of off-hand attacks, 0–3. */
+  offHandAttackCount?: number;
 }
 
 /** What a roll is compared against, when that is part of the rolled context. */
@@ -242,6 +250,12 @@ export interface RollDefense {
   value: number;
   /** AC context, when the defense is an Armor Class. */
   context?: DefenseContext;
+  /** Situational cover protecting this attack target. */
+  cover?: CoverLevel;
+  /** Concealment miss chance after the attack beats AC, from 1 to 100 percent. */
+  missChance?: number;
+  /** Ranged attack feature ignores cover short of total cover. */
+  ignoreNonTotalCover?: boolean;
 }
 
 export interface TargetContext {
@@ -271,6 +285,8 @@ export interface RollContext {
   attackId?: string;
   /** The save being rolled, when the roll is a save. */
   saveId?: SaveId;
+  /** The roller's cover against an effect requiring a Reflex save. */
+  cover?: CoverLevel;
   /** The skill being rolled, when the roll is a skill check. */
   skillId?: string;
   /** Semantic spell identity for spell damage or attack plans. */
@@ -283,6 +299,10 @@ export interface RollContext {
   touch?: boolean;
   /** Combat maneuver being attempted, when the roll is a maneuver. */
   maneuver?: ManeuverId;
+  /** Optional ability substitution used by specialized maneuver profiles. */
+  maneuverAbilityOverride?: AbilityId;
+  /** Optional class whose level is compared with BAB for maneuver training. */
+  maneuverBabProgressionId?: string;
   /**
    * True when a damage roll expresses the critical consequence of the attack it
    * follows. It belongs to the roll's identity because the server rebuilds the
@@ -323,6 +343,7 @@ export interface EffectApplicability {
   /** `true` requires full-attack membership; `false` requires a standard attack. */
   fullAttack?: boolean;
   maneuvers?: ManeuverId[];
+  excludedManeuvers?: ManeuverId[];
   /** Named attacks only, matched against the roll's authored attack identity. */
   attackIds?: string[];
   requiredFlags?: string[];
@@ -390,7 +411,8 @@ export interface DamageDiceEffect {
   dice: DiceExpression;
   damageType?: string;
   label?: string;
-  criticalBehavior: DamageCriticalBehavior;
+  /** Omit to use the damage-type rule (precision dice are not multiplied). */
+  criticalBehavior?: DamageCriticalBehavior;
   appliesWhen?: EffectApplicability;
   source?: SourceReference;
 }
@@ -497,12 +519,20 @@ export interface RollOutcome {
   criticalRange?: CriticalRange;
   /** The defense the roll was compared against, when one was supplied. */
   defense?: RollDefense;
+  /** Percentile face checked after the attack hit AC, when concealment applies. */
+  missChanceRoll?: number;
+  /** True when concealment negated an otherwise successful attack. */
+  missedByConcealment?: boolean;
 }
 
 /** Raw dice a plan requires: one count of same-sided dice per group. */
 export interface DiceRequirement {
   sides: number;
   count: number;
+  /** Auxiliary dice are rolled but do not add to the arithmetic total. */
+  addsToTotal?: boolean;
+  /** Why an auxiliary die is part of the roll. */
+  purpose?: "missChance";
 }
 
 /**
@@ -610,6 +640,13 @@ export interface BabStepScaling {
   every: number;
   base: number;
 }
+export interface AbilityLevelStepScaling {
+  kind: "abilityLevelStep";
+  ability: AbilityId;
+  every: number;
+  base: number;
+}
+export type EffectScaling = BabStepScaling | AbilityLevelStepScaling;
 
 export const targetRegistry = {
   abilities: abilityIds.map((id) => `ability.${id}`),
@@ -640,6 +677,8 @@ export const targetRegistry = {
     "speed.swim",
     "speed.climb",
     "speed.burrow",
+    "speed.charge",
+    "speed.run",
   ],
   skills: ["skill.all"],
 } as const;
@@ -675,7 +714,7 @@ export interface AcModifierEffect {
   /** AC applicability is explicit and independent of bonus type. */
   appliesTo: DefenseContext[];
   source?: SourceReference;
-  scaling?: BabStepScaling;
+  scaling?: EffectScaling;
 }
 
 /** Bonus types that never add to CMD; their penalties still apply. */
@@ -709,7 +748,7 @@ export interface NonAcModifierEffect {
   /** Damage subtype for a flat damage contribution (for example, bleed). */
   damageType?: string;
   source?: SourceReference;
-  scaling?: BabStepScaling;
+  scaling?: EffectScaling;
   /** Legacy tag/mode filter; new content should use `appliesWhen`. */
   attackSelector?: AttackSelector;
   /** Contextual applicability, evaluated against a `RollContext`. */
@@ -796,6 +835,7 @@ export interface AbilityDefinition {
   name: string;
   description?: string;
   activation: AbilityActivationType;
+  actionCost?: "standard" | "move" | "swift" | "immediate" | "fullRound" | "free";
   effects: Effect[];
   costs?: ResourceCost[];
   contextFlags?: string[];
@@ -813,8 +853,12 @@ export interface AbilityInstance {
   name: string;
   description?: string;
   activation: AbilityActivationType;
+  /** Action consumed when this ability is activated or used; toggle deactivation is free. */
+  actionCost?: "standard" | "move" | "swift" | "immediate" | "fullRound" | "free";
   /** Only toggleable abilities use active; passive abilities are always effective. */
   active?: boolean;
+  /** Optional active-duration countdown; Start new turn decrements it. */
+  roundsRemaining?: number;
   effects: Effect[];
   costs?: ResourceCost[];
   contextFlags?: string[];
@@ -822,6 +866,9 @@ export interface AbilityInstance {
   priority?: number;
   /** Optional semantic link for spell-like abilities; ability costs remain authoritative. */
   spellId?: string;
+  spellLikeSpellLevel?: number;
+  spellLikeCasterLevel?: number;
+  spellLikeCastingAbility?: AbilityId;
   /** Workbook spell-like category, including at-will/constant tracking. */
   spellLike?: boolean;
   spellLikeFrequency?: "onePerDay" | "threePerDay" | "atWill" | "constant" | "custom";
@@ -838,8 +885,11 @@ export interface SpellDefinition {
   id: string; name: string; description: string; school: string; subschool?: string; descriptors?: string[];
   levels: SpellLevelAssociation[]; castingTime: CastingTime; components: string[];
   range?: string; target?: string; area?: string; duration?: string;
-  savingThrow?: { save?: SaveId; result: "negates" | "half" | "partial" | "disbelief" | "harmless" | "none" };
+  savingThrow?: { save?: SaveId; result: "negates" | "half" | "partial" | "disbelief" | "harmless" | "none"; successfulEffect?: { text?: string; damage?: { dice: DiceExpression; damageType: string; perCasterLevel?: boolean; casterLevelCap?: number }; healing?: { dice: DiceExpression; perCasterLevel?: boolean; casterLevelCap?: number; flatBonus?: number; bonusPerCasterLevel?: boolean; casterLevelBonusCap?: number } } };
   spellResistance?: boolean;
+  /** Character-authored effects that apply to the caster while a duration is active. */
+  effects?: Effect[];
+  effectsApplyToCaster?: boolean;
   execution?: { damage?: { dice: DiceExpression; damageType: string; perCasterLevel?: boolean; casterLevelCap?: number }; healing?: { dice: DiceExpression; perCasterLevel?: boolean; casterLevelCap?: number; flatBonus?: number; bonusPerCasterLevel?: boolean; casterLevelBonusCap?: number }; attack?: "meleeTouch" | "rangedTouch" };
   source?: ProgressionSourceMetadata;
 }
@@ -877,10 +927,14 @@ export interface PreparedSpellAllocation { id: string; spellId: string; spellLev
 export interface SpellcastingSource {
   id: string; name: string; mode: "prepared" | "spontaneous" | (string & {});
   castingAbility: AbilityId; progressionId?: string; progressionLevel?: number;
+  /** Workbook misc. adjustment to class level and caster level. */
+  progressionLevelAdjustment?: number; casterLevelAdjustment?: number;
   spellListId: string; spellListAccess: "list" | "spellbook"; bonusSlots: "standard" | "none";
   progression: SpellSlotProgressionRow[];
   knownSpellIds?: string[]; spellbookSpellIds?: string[]; preparedSpells?: PreparedSpellAllocation[];
   source?: ProgressionSourceMetadata;
+  /** Armor classes exempt from somatic arcane spell failure for this source. */
+  arcaneSpellFailureExemption?: "none" | "lightArmor" | "lightArmorAndShields" | "mediumArmor" | "mediumArmorAndShields" | "heavyArmor" | "all";
 }
 
 export type ResourceMaximumTerm =
@@ -1117,11 +1171,14 @@ export interface CalculatedSkillAllocationPolicy {
   minimumPerLevel?: number;
   firstLevelMultiplier?: number;
   rankCap?: SkillRankCap;
+  /** Pathfinder uses one point per rank; D&D 3.5 uses two for cross-class ranks. */
+  ruleset?: "pathfinder" | "dnd35";
 }
 
 export interface ManualSkillAllocationPolicy {
   kind: "manual";
   rankCap?: SkillRankCap;
+  ruleset?: "pathfinder" | "dnd35";
 }
 
 export interface CustomSkillAllocationPolicy {
@@ -1129,6 +1186,7 @@ export interface CustomSkillAllocationPolicy {
   id: string;
   label: string;
   rankCap?: SkillRankCap;
+  ruleset?: "pathfinder" | "dnd35";
 }
 
 export type SkillAllocationPolicy =
@@ -1158,6 +1216,8 @@ export interface FeatureDefinition {
   name: string;
   description?: string;
   effects: EffectDefinition[];
+  /** Multiply modifier values by an instance's stackCount. */
+  stacking?: "additive";
   source?: ProgressionSourceMetadata;
   /** Only the highest-priority active definition in a group applies. */
   exclusiveGroup?: string;
@@ -1167,7 +1227,18 @@ export interface FeatureDefinition {
    * such as `combat-expertise`. Effects may then require the flag.
    */
   contextFlags?: string[];
+  /** Action-economy limits supplied by active conditions or authored features. */
+  actionRestrictions?: FeatureActionRestriction[];
+  /** Defense-specific restrictions supplied by active conditions or authored features. */
+  defenseRestrictions?: FeatureDefenseRestriction[];
+  /** Drop explicitly held items when this condition becomes active. */
+  dropHeldItemsOnActivation?: boolean;
 }
+
+export const featureActionRestrictions = ["noActions", "noPhysicalActions", "moveOnly", "oneStandardOrMove", "fleeOnly", "noTwoHandedActions", "denyDexterityBonus"] as const;
+export type FeatureActionRestriction = (typeof featureActionRestrictions)[number];
+export const featureDefenseRestrictions = ["denyDexterityBonus", "denyDodgeBonus"] as const;
+export type FeatureDefenseRestriction = (typeof featureDefenseRestrictions)[number];
 
 export type FeatureCatalog = Record<string, FeatureDefinition>;
 
@@ -1176,13 +1247,32 @@ export interface FeatureInstance {
   definitionId?: string;
   name: string;
   description?: string;
+  /** Player-authored Autosheet buff-table note text, such as DR/SR annotations. */
+  notes?: string;
   enabled: boolean;
+  /** Number of copies for a catalog definition that declares additive stacking. */
+  stackCount?: number;
+  /** Optional active-duration countdown; Start new turn decrements it. */
+  roundsRemaining?: number;
+  /** Per-round resolution for conditions such as Confused, cleared at Start new turn. */
+  turnResolution?: string;
+  /** Temporary action limits produced by this round's condition resolution. */
+  turnActionRestrictions?: FeatureActionRestriction[];
+  /** Player-authored damage dealt at the start of this character's turn (used for Bleed). */
+  startOfTurnDamage?: { dice: DiceExpression; bonus?: number };
   effects: EffectDefinition[];
   /** Authored situational flags contributed while this instance is enabled. */
   contextFlags?: string[];
+  /** Overrides or extends catalog action limits for this player-authored instance. */
+  actionRestrictions?: FeatureActionRestriction[];
+  defenseRestrictions?: FeatureDefenseRestriction[];
 }
 
 export interface SkillConfiguration {
+  /** Character-authored skill label for distinct Craft, Profession, Lore, etc. entries. */
+  name?: string;
+  /** An authored skill specialization requires at least one rank before it can be rolled. */
+  trainedOnly?: boolean;
   /** An authored ability overrides catalog metadata. */
   governingAbility?: AbilityId;
   /** Legacy manual override; retained for persisted characters. */
@@ -1217,7 +1307,32 @@ export interface AttackDefinition {
   attackAbility: AbilityId;
   damageAbility?: AbilityId;
   damageAbilityMultiplier?: number;
+  /** Damage modifiers may follow a different mode for special attacks. */
+  damageModifierMode?: "melee" | "ranged";
+  /** Use the greater of character BAB or this class level for attack rolls/iteratives. */
+  babProgressionId?: string;
+  /** Replace BAB with the selected spell source's caster level for this attack. */
+  attackBaseline?: "bab" | "casterLevel";
+  casterLevelSourceId?: string;
+  /** Repeated attacks in a full-attack natural-weapon sequence. */
+  attackCount?: number;
+  /** Natural attacks designated as secondary; mixed manufactured/natural full attacks make all natural attacks secondary. */
+  naturalAttackRole?: "primary" | "secondary";
+  /** Player-authored arm use; natural attacks default to unspecified (no hand restriction). */
+  handUse?: "primary" | "offHand" | "both" | "none";
+  /** Profile-driven bonus attacks by the linked progression's level. */
+  bonusAttackProgression?: {
+    progressionId: string;
+    steps: Array<{ level: number; count: number }>;
+  };
+  /** Character-authored proficiencies for specialized profiles such as Monk Flurry. */
+  eligibilityTags?: string[];
+  requiredEligibilityTags?: string[];
+  /** This attack can only be included in a full-attack action. */
+  fullAttackOnly?: boolean;
   baseDamage: DiceExpression;
+  /** Weapon-specific damage dice at the wielder's current size. Unlisted sizes use baseDamage. */
+  damageBySize?: Partial<Record<SizeCategory, DiceExpression>>;
   weaponBonus?: number;
   /** Selectors can match tags; the tags themselves do not imply arithmetic. */
   attackTags?: AttackTag[];
@@ -1232,6 +1347,8 @@ export interface AttackDefinition {
   criticalRange?: CriticalRange;
   /** Damage multiplier on a critical hit; the profile's value applies when omitted, default ×2. */
   criticalMultiplier?: number;
+  /** Whether the character is proficient with this weapon; false applies the nonproficiency penalty. */
+  proficient?: boolean;
   source?: ProgressionSourceMetadata;
 }
 
@@ -1242,9 +1359,19 @@ export interface AttackProfileDefinition {
   attackAbility: AbilityId;
   damageAbility?: AbilityId;
   damageAbilityMultiplier?: number;
+  damageModifierMode?: "melee" | "ranged";
+  babProgressionId?: string;
+  attackBaseline?: "bab" | "casterLevel";
   mode: "melee" | "ranged";
   attackTags: AttackTag[];
   attackBonus?: number;
+  /** Profile-driven bonus attacks by the linked progression's level. */
+  bonusAttackProgression?: {
+    progressionId: string;
+    steps: Array<{ level: number; count: number }>;
+  };
+  requiredEligibilityTags?: string[];
+  fullAttackOnly?: boolean;
   iterative?: boolean;
   extraAttackEligible?: boolean;
   /** Threat range shared by weapons using this profile; defaults to 20. */
@@ -1267,9 +1394,22 @@ export interface EquipmentDefinition {
   reduceLandSpeed?: boolean;
   /** Retained source metadata; spellcasting failure is not evaluated yet. */
   arcaneSpellFailureChance?: number;
+  /** Chosen armor bonus for parameterized items such as Bracers of Armor. */
+  armorBonus?: number;
+  wornArmor?: boolean;
+  shieldOccupiesHand?: boolean;
+  requiresUnarmored?: boolean;
+  armorBonusProgression?: { base: number; incrementEveryBab: number };
   /** Workbook armor/shield material compatibility class. */
   materialType?: string;
+  /** Autosheet weight category used to determine the armor speed penalty. */
+  armorWeightCategory?: number;
   weight?: number;
+  containerCapacity?: number;
+  /** Fraction of contents weight added to a carried container, where specified by its rules. */
+  containerWeightMultiplier?: number;
+  unlimitedContainer?: boolean;
+  containerWeightSource?: ProgressionSourceMetadata;
   source?: ProgressionSourceMetadata;
 }
 export type EquipmentCatalog = Record<string, EquipmentDefinition>;
@@ -1281,6 +1421,14 @@ export interface EquipmentMaterialVariant {
   armorCheckPenaltyAdjustment?: number;
   arcaneSpellFailureAdjustment?: number;
   weightCategoryAdjustment?: number;
+  initiativeBonus?: number;
+  /** Autosheet initiative formulas that scale with the combined armor/shield weight category. */
+  initiativeBonusByArmorWeightCategory?: boolean;
+  flyBonus?: number;
+  energyResistance?: { damageType: string; amount: number };
+  damageReduction?: { amount: number; bypass?: string; appliesAgainst?: string[] };
+  /** Autosheet DR formulas that use the selected armor's weight category. */
+  damageReductionByArmorWeightCategory?: boolean;
   notes?: string;
   source?: ProgressionSourceMetadata;
 }
@@ -1291,10 +1439,39 @@ export interface EquipmentMaterialDefinition {
   source?: ProgressionSourceMetadata;
 }
 export type EquipmentMaterialCatalog = Record<string, EquipmentMaterialDefinition>;
+export interface AutosheetSphereCategory {
+  name: string;
+  source?: ProgressionSourceMetadata;
+}
+export interface AutosheetSphereCatalog {
+  spheresOfPower: AutosheetSphereCategory[];
+  spheresOfMight: AutosheetSphereCategory[];
+}
+/** Player-facing bonus-type labels transcribed from Formula References. */
+export type AutosheetBonusTypeReference = Array<{
+  label: string;
+  source: ProgressionSourceMetadata;
+}>;
+export type AutosheetSizeAdjustmentCatalog = Record<SizeCategory, {
+  attackAc: number;
+  cmbCmd: number;
+  fly: number;
+  stealth: number;
+  carryingCapacityMultiplier: number;
+  source: ProgressionSourceMetadata;
+}>;
+export type AutosheetWornSlotReference = Array<{
+  slot: string;
+  capacity: number;
+  source: ProgressionSourceMetadata;
+}>;
 export interface EquipmentInstance {
   id: string;
   definitionId?: string;
   name?: string;
+  inventoryCategory?: EquipmentInventoryCategory;
+  notes?: string;
+  saveDc?: number;
   kind?: EquipmentDefinition["kind"];
   equipped: boolean;
   effects?: Effect[];
@@ -1309,10 +1486,24 @@ export interface EquipmentInstance {
   slot?: string;
   material?: string;
   materialType?: string;
+  armorWeightCategory?: number;
   arcaneSpellFailureChance?: number;
+  armorBonus?: number;
+  /** Proficiency with this armor or shield; false applies its armor check penalty broadly. */
+  armorProficient?: boolean;
+  unlimitedContainer?: boolean;
+  wornArmor?: boolean;
   containerId?: string;
   containerCapacity?: number;
   containerWeightMultiplier?: number;
+  /** Equipment item this attachment is applied to (currently used by Armored Kilt). */
+  attachedTo?: string;
+  /** Arm bearing a buckler; defaults to the off hand. */
+  shieldHand?: "primary" | "offHand";
+  /** Whether this shield occupies its arm for weapon use. */
+  shieldOccupiesHand?: boolean;
+  /** Item is currently held in a hand; stunned conditions drop held items. */
+  held?: boolean;
 }
 
 export interface CharacterInventory {
@@ -1320,12 +1511,32 @@ export interface CharacterInventory {
   gold?: number;
   silver?: number;
   copper?: number;
+  /** Starting GP budget; remaining GP is derived from priced inventory. */
+  startingGold?: number;
   storageNotes?: string;
-  companion?: { name?: string; size?: SizeCategory; strength?: number; items?: EquipmentInstance[] };
+  companion?: { name?: string; size?: SizeCategory; strength?: number; bodyType?: CompanionBodyType; items?: EquipmentInstance[] };
 }
+
+/** Body forms listed by the Autosheet's companion wondrous-item slot table. */
+export const companionBodyTypes = [
+  "avian",
+  "biped-claws-paws",
+  "biped-hands",
+  "piscine",
+  "quadruped-claws-paws",
+  "quadruped-hexapod-feet",
+  "quadruped-hooves",
+  "quadruped-squat-body",
+  "saurian",
+  "serpentine",
+  "verminous",
+] as const;
+export type CompanionBodyType = (typeof companionBodyTypes)[number];
 
 export const characterSystemKinds = ["maneuvers", "veilweaving", "spheresOfPower", "spheresOfMight", "psionics", "ffd20"] as const;
 export type CharacterSystemKind = (typeof characterSystemKinds)[number];
+export const veilChakras = ["feet", "hands", "head", "headband", "shoulders", "wrists", "belt", "neck", "body", "chest", "esoteric"] as const;
+export type VeilChakra = (typeof veilChakras)[number];
 export interface CharacterSystemProgressionRow {
   level: number;
   casterLevel: number;
@@ -1339,19 +1550,35 @@ export interface CharacterSystemProgressionRow {
 export interface CharacterSystemEntry {
   id: string;
   name: string;
+  /** Explicit player-authored maneuver/stance role; legacy stance categories remain recognized. */
+  entryType?: "maneuver" | "stance";
   category?: string;
+  /** Player-authored action timing for an activated maneuver, stance, or power. */
+  actionCost?: "standard" | "move" | "swift" | "immediate" | "fullRound" | "free";
   tier?: number;
   ranks?: number;
   description?: string;
+  notes?: string;
   known?: boolean;
+  /** Active entries contribute their authored effects to ordinary rule evaluation. */
+  active?: boolean;
+  /** Optional active-duration countdown; Start new turn decrements it. */
+  roundsRemaining?: number;
+  effects?: Effect[];
   prepared?: boolean;
   readied?: boolean;
   expended?: boolean;
+  chakra?: VeilChakra;
+  essenceInvested?: number;
   resourceCost?: number;
   usesPerDay?: number;
   usesSpent?: number;
   /** Authored roll for a specialized spell, power, maneuver, or veil. */
-  roll?: { kind: "damage" | "healing"; dice: DiceExpression; damageType?: string; perCasterLevel?: boolean; casterLevelCap?: number; flatBonus?: number };
+  roll?:
+    | { kind: "weaponAttack"; attackId: string; repeatCount?: number; bonusDamage?: DiceExpression; bonusDamageVsCursed?: DiceExpression }
+    | { kind: "skillCheck"; skillId: string; flags?: string[] }
+    | { kind: "combatManeuver"; maneuver: string; abilityOverride?: AbilityId; babProgressionId?: string }
+    | { kind: "damage" | "healing"; dice: DiceExpression; damageType?: string; damageMode?: AttackMode; perCasterLevel?: boolean; casterLevelCap?: number; flatBonus?: number };
 }
 /** Character-owned table-backed pages for martial and nonstandard magic tabs. */
 export interface CharacterSystemSource {
@@ -1361,6 +1588,8 @@ export interface CharacterSystemSource {
   progressionId?: string;
   keyAbility: AbilityId;
   level?: number;
+  /** Workbook misc. adjustment to specialized-system class level. */
+  classLevelAdjustment?: number;
   casterLevelBonus?: number;
   effectiveBabBonus?: number;
   dcAdjustment?: number;
@@ -1368,6 +1597,12 @@ export interface CharacterSystemSource {
   resourceSpent?: number;
   /** Manual workbook adjustment added to the calculated resource maximum. */
   resourceMaximumBonus?: number;
+  /** Workbook Veilweaving tab: manual adjustment to per-receptacle essence capacity. */
+  essenceCapacityBonus?: number;
+  /** Non-veil receptacle slots enabled on the workbook Veilweaving tab. */
+  nonVeilReceptacles?: VeilChakra[];
+  /** Workbook sphere headers selected independently of authored talent entries. */
+  sphereSelections?: string[];
   progression: CharacterSystemProgressionRow[];
   entries: CharacterSystemEntry[];
   notes?: string;
@@ -1481,6 +1716,31 @@ export interface AdvancementSlot {
   tracks: AdvancementTrack[];
 }
 
+export const equipmentInventoryCategories = [
+  "general",
+  "disposableMagic",
+  "wornMagic",
+  "alchemicalWeapons",
+  "alchemicalMedicines",
+  "alchemicalTools",
+  "miscellaneousMagic",
+] as const;
+export type EquipmentInventoryCategory = (typeof equipmentInventoryCategories)[number];
+
+export interface ActiveSpellDuration {
+  id: string;
+  spellId: string;
+  spellName: string;
+  sourceId: string;
+  durationText: string;
+  roundsRemaining?: number;
+  targetName?: string;
+  targetCharacterId?: string;
+  effects?: Effect[];
+  effectsApplyToCaster?: boolean;
+  active: boolean;
+}
+
 export interface CharacterInput {
   id: string;
   campaignId?: string;
@@ -1489,12 +1749,21 @@ export interface CharacterInput {
   record?: CharacterRecord;
   /** Character-sheet defenses that are not represented by the attack/AC bonus engine. */
   defenses?: CharacterDefenses;
+  /** Player-authored conditions that apply when this character is a linked target. */
+  activeConditions?: string[];
   nonlethalDamage?: number;
   inventory?: CharacterInventory;
   systems?: CharacterSystemSource[];
+  /** Current turn action use and turn-scoped combat statuses. */
+  turnActions?: { standardSpent?: boolean; moveSpent?: boolean; swiftSpent?: boolean; fullRoundSpent?: boolean; fullAttackPlanId?: string; fullAttackStepIds?: string[]; fullAttackRolledStepIds?: string[]; bucklerAcLostThisTurn?: boolean; shieldAcLostThisTurnIds?: string[]; staggeredActionSpent?: boolean };
   /** Optional Autosheet rule switches; each follows the Welcome Page default when absent. */
-  workbookOptions?: { woundThresholds?: boolean; minimumFourPlusIntSkillRanks?: boolean; backgroundSkills?: boolean; skillMode?: "background" | "classic" | "consolidated" | "ultimate-psionics-background" };
+  workbookOptions?: { woundThresholds?: boolean; minimumFourPlusIntSkillRanks?: boolean; backgroundSkills?: boolean; skillMode?: "background" | "classic" | "consolidated" | "ultimate-psionics-background"; offHandAttackCount?: number; twoWeaponFightingFeat?: boolean; doubleSliceFeat?: boolean; multiattackFeat?: boolean };
+  /** Main Sheet Favored Class Bonuses cells: total bonus HP, skill ranks, and other player-authored bonus notes. */
+  workbookBonuses?: { hp?: number; skillPoints?: number; other?: string };
   baseAbilities: AbilityScores;
+  /** Current ability damage and permanent ability drain, in points by ability. */
+  abilityDamage?: Partial<AbilityScores>;
+  abilityDrain?: Partial<AbilityScores>;
   /** Manual/legacy baseline. Omit in advancement mode. */
   baseBab?: number;
   /** Manual/legacy baseline. Omit in advancement mode. */
@@ -1523,6 +1792,8 @@ export interface CharacterInput {
   resourceStates?: ResourceState[];
   /** Character-owned independent casting sources; capacities are derived from their tables. */
   spellcastingSources?: SpellcastingSource[];
+  /** Current spell durations are owned by the caster sheet and tick at Start new turn. */
+  activeSpellDurations?: ActiveSpellDuration[];
   /** Custom spell definitions travel with this character and never mutate imported catalogs. */
   customSpells?: SpellCatalog;
   equipment?: EquipmentInstance[];
@@ -1571,7 +1842,7 @@ export interface CharacterRecord {
 }
 
 export interface CharacterDefenses {
-  damageReduction?: Array<{ amount: number; bypass?: string }>;
+  damageReduction?: Array<{ amount: number; bypass?: string; appliesAgainst?: string[] }>;
   spellResistance?: number;
   energyResistances?: Record<string, number>;
   energyImmunities?: string[];
@@ -1598,7 +1869,8 @@ const effectTargetIdSchema = targetIdSchema.refine(
     target !== "experience.level",
   "Progression levels, resource maxima, and experience levels are query-only",
 ) as z.ZodType<EffectTargetId>;
-const defenseContextSchema = z.enum(["normal", "touch", "flatFooted"]);
+const defenseContextSchema = z.enum(["normal", "touch", "flatFooted", "deniedDexterity"]);
+const coverLevelSchema = z.enum(coverLevels);
 const attackTagSchema = z.enum(attackTagValues);
 const attackModeSchema = z.enum(attackModes);
 const attackSelectorSchema = z.object({
@@ -1623,6 +1895,7 @@ const applicabilitySchema = z
     touch: z.boolean().optional(),
     fullAttack: z.boolean().optional(),
     maneuvers: z.array(maneuverIdSchema).min(1).optional(),
+    excludedManeuvers: z.array(maneuverIdSchema).min(1).optional(),
     attackIds: z.array(z.string().min(1)).min(1).optional(),
     requiredFlags: z.array(flagSchema).min(1).optional(),
     excludedFlags: z.array(flagSchema).min(1).optional(),
@@ -1639,11 +1912,10 @@ const applicabilitySchema = z
           "An applicability rule must restrict something; omit appliesWhen instead of using {}",
       });
   }) as z.ZodType<EffectApplicability>;
-const scalingSchema = z.object({
-  kind: z.literal("babStep"),
-  every: z.number().finite().int().positive(),
-  base: z.number().finite().int(),
-});
+const scalingSchema: z.ZodType<EffectScaling> = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("babStep"), every: z.number().finite().int().positive(), base: z.number().finite().int() }),
+  z.object({ kind: z.literal("abilityLevelStep"), ability: abilityIdSchema, every: z.number().finite().int().positive(), base: z.number().finite().int() }),
+]);
 /**
  * A threat range is a natural-face threshold: 20 crits on a natural 20, 19 on
  * 19 or 20, and so on. It belongs to the weapon/profile, never to the d20.
@@ -1664,14 +1936,22 @@ export const rollDefenseSchema: z.ZodType<RollDefense> = z
     kind: z.enum(rollDefenseKinds),
     value: z.number().finite(),
     context: defenseContextSchema.optional(),
+    cover: coverLevelSchema.optional(),
+    missChance: z.number().int().min(1).max(100).optional(),
+    ignoreNonTotalCover: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if ((value.cover || value.missChance || value.ignoreNonTotalCover) && value.kind !== "ac")
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [value.cover ? "cover" : "missChance"], message: "Cover and miss chance are only meaningful for an AC defense" });
+  });
 export const actionContextSchema: z.ZodType<ActionContext> = z
   .object({
     kind: z.enum(actionKinds),
     sequenceId: z.string().min(1).optional(),
     sequenceIndex: z.number().int().nonnegative().optional(),
     attackIds: z.array(z.string().min(1)).min(1).optional(),
+    offHandAttackCount: z.number().int().min(0).max(3).optional(),
   })
   .strict();
 export const targetContextSchema: z.ZodType<TargetContext> = z
@@ -1689,17 +1969,24 @@ export const rollContextSchema: z.ZodType<RollContext> = z
     target: targetContextSchema.optional(),
     attackId: z.string().min(1).optional(),
     saveId: z.enum(saveIds).optional(),
+    cover: coverLevelSchema.optional(),
     skillId: z.string().min(1).optional(),
     spellId: z.string().min(1).optional(),
     attackTags: z.array(attackTagSchema).optional(),
     mode: attackModeSchema.optional(),
     touch: z.boolean().optional(),
     maneuver: maneuverIdSchema.optional(),
+    maneuverAbilityOverride: abilityIdSchema.optional(),
+    maneuverBabProgressionId: z.string().min(1).optional(),
     criticalDamage: z.boolean().optional(),
     flags: z.array(flagSchema).optional(),
     excludeFlags: z.array(flagSchema).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.cover && (value.kind !== "save" || value.saveId !== "reflex"))
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["cover"], message: "Roller cover only applies to Reflex saves" });
+  });
 const naturalFacePolicySchema: z.ZodType<NaturalFacePolicy> = z.object({
   automatic: z.boolean(),
   classification: z.enum(naturalFaceClassifications),
@@ -1725,6 +2012,8 @@ export const rollOutcomeSchema: z.ZodType<RollOutcome> = z.object({
   critical: z.boolean().optional(),
   criticalRange: criticalRangeSchema.optional(),
   defense: rollDefenseSchema.optional(),
+  missChanceRoll: z.number().int().min(1).max(100).optional(),
+  missedByConcealment: z.boolean().optional(),
 });
 const acModifierSchema = z.object({
   kind: z.literal("modifier"),
@@ -1808,7 +2097,7 @@ export const effectSchema: z.ZodType<Effect> = z
       dice: diceExpressionSchema,
       damageType: z.string().min(1).optional(),
       label: z.string().min(1).optional(),
-      criticalBehavior: z.enum(damageCriticalBehaviors),
+      criticalBehavior: z.enum(damageCriticalBehaviors).optional(),
       appliesWhen: applicabilitySchema.optional(),
       source: sourceReferenceSchema.optional(),
     }),
@@ -1992,7 +2281,7 @@ export const hpAcquisitionSchema: z.ZodType<HpAcquisition> = z.object({
 });
 export const skillRankAllocationSchema: z.ZodType<SkillRankAllocation> = z.object({
   slotId: z.string().min(1),
-  ranks: z.record(z.number().finite().int().nonnegative()),
+  ranks: z.record(z.number().finite().nonnegative()),
   method: z.enum(skillAllocationMethods),
   note: z.string().min(1).optional(),
   source: z
@@ -2154,16 +2443,19 @@ export const skillAllocationPolicySchema: z.ZodType<SkillAllocationPolicy> =
       minimumPerLevel: z.number().finite().int().nonnegative().optional(),
       firstLevelMultiplier: z.number().finite().int().positive().optional(),
       rankCap: skillRankCapSchema.optional(),
+      ruleset: z.enum(["pathfinder", "dnd35"]).optional(),
     }),
     z.object({
       kind: z.literal("manual"),
       rankCap: skillRankCapSchema.optional(),
+      ruleset: z.enum(["pathfinder", "dnd35"]).optional(),
     }),
     z.object({
       kind: z.literal("custom"),
       id: z.string().min(1),
       label: z.string().min(1),
       rankCap: skillRankCapSchema.optional(),
+      ruleset: z.enum(["pathfinder", "dnd35"]).optional(),
     }),
   ]) as z.ZodType<SkillAllocationPolicy>;
 export const campaignAdvancementTrackSchema: z.ZodType<CampaignAdvancementTrack> =
@@ -2233,9 +2525,17 @@ export const featureInstanceSchema: z.ZodType<FeatureInstance> = z.object({
   definitionId: z.string().optional(),
   name: z.string().min(1),
   description: z.string().optional(),
+  notes: z.string().optional(),
   enabled: z.boolean(),
+  stackCount: z.number().finite().int().positive().optional(),
+  roundsRemaining: z.number().finite().int().nonnegative().optional(),
+  turnResolution: z.string().optional(),
+  turnActionRestrictions: z.array(z.enum(featureActionRestrictions)).optional(),
+  startOfTurnDamage: z.object({ dice: diceExpressionSchema, bonus: z.number().finite().optional() }).optional(),
   effects: z.array(effectSchema),
   contextFlags: z.array(flagSchema).min(1).optional(),
+  actionRestrictions: z.array(z.enum(featureActionRestrictions)).optional(),
+  defenseRestrictions: z.array(z.enum(featureDefenseRestrictions)).optional(),
 });
 export const resourceCostSchema: z.ZodType<ResourceCost> = z.object({
   resourceId: z.string().min(1),
@@ -2248,6 +2548,7 @@ export const abilityDefinitionSchema: z.ZodType<AbilityDefinition> = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   activation: z.enum(abilityActivationTypes),
+  actionCost: z.enum(["standard", "move", "swift", "immediate", "fullRound", "free"]).optional(),
   effects: z.array(effectSchema),
   costs: z.array(resourceCostSchema).optional(),
   contextFlags: z.array(flagSchema).min(1).optional(),
@@ -2267,13 +2568,18 @@ export const abilityInstanceSchema: z.ZodType<AbilityInstance> = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   activation: z.enum(abilityActivationTypes),
+  actionCost: z.enum(["standard", "move", "swift", "immediate", "fullRound", "free"]).optional(),
   active: z.boolean().optional(),
+  roundsRemaining: z.number().finite().int().nonnegative().optional(),
   effects: z.array(effectSchema),
   costs: z.array(resourceCostSchema).optional(),
   contextFlags: z.array(flagSchema).min(1).optional(),
   exclusiveGroup: z.string().min(1).optional(),
   priority: z.number().finite().int().optional(),
   spellId: z.string().min(1).optional(),
+  spellLikeSpellLevel: z.number().finite().int().nonnegative().optional(),
+  spellLikeCasterLevel: z.number().finite().int().nonnegative().optional(),
+  spellLikeCastingAbility: abilityIdSchema.optional(),
   spellLike: z.boolean().optional(),
   spellLikeFrequency: z.enum(["onePerDay", "threePerDay", "atWill", "constant", "custom"]).optional(),
   usesPerDay: z.number().finite().int().nonnegative().optional(),
@@ -2288,8 +2594,9 @@ export const spellDefinitionSchema: z.ZodType<SpellDefinition> = z.object({
   subschool: z.string().optional(), descriptors: z.array(z.string()).optional(),
   levels: z.array(z.object({ spellListId: z.string().min(1), level: z.number().int().nonnegative() })).min(1),
   castingTime: castingTimeSchema, components: z.array(z.string()), range: z.string().optional(), target: z.string().optional(), area: z.string().optional(), duration: z.string().optional(),
-  savingThrow: z.object({ save: saveIdSchema.optional(), result: z.enum(["negates", "half", "partial", "disbelief", "harmless", "none"]) }).optional(),
+  savingThrow: z.object({ save: saveIdSchema.optional(), result: z.enum(["negates", "half", "partial", "disbelief", "harmless", "none"]), successfulEffect: z.object({ text: z.string().optional(), damage: z.object({ dice: diceExpressionSchema, damageType: z.string().min(1), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional() }).optional(), healing: z.object({ dice: diceExpressionSchema, perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional(), flatBonus: z.number().finite().optional(), bonusPerCasterLevel: z.boolean().optional(), casterLevelBonusCap: z.number().int().positive().optional() }).optional() }).optional() }).optional(),
   spellResistance: z.boolean().optional(),
+  effects: z.array(effectSchema).optional(), effectsApplyToCaster: z.boolean().optional(),
   execution: z.object({ damage: z.object({ dice: diceExpressionSchema, damageType: z.string().min(1), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional() }).optional(), healing: z.object({ dice: diceExpressionSchema, perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional(), flatBonus: z.number().finite().optional(), bonusPerCasterLevel: z.boolean().optional(), casterLevelBonusCap: z.number().int().positive().optional() }).optional(), attack: z.enum(["meleeTouch", "rangedTouch"]).optional() }).optional(),
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
@@ -2320,9 +2627,10 @@ const spellcastingAdvancementSchema: z.ZodType<SpellcastingAdvancement> = z.obje
 const preparedSpellAllocationSchema: z.ZodType<PreparedSpellAllocation> = z.object({ id: z.string().min(1), spellId: z.string().min(1), spellLevel: z.number().int().nonnegative(), expended: z.boolean().optional() });
 export const spellcastingSourceSchema: z.ZodType<SpellcastingSource> = z.object({
   id: z.string().min(1), name: z.string().min(1), mode: z.string().min(1), castingAbility: abilityIdSchema,
-  progressionId: z.string().min(1).optional(), progressionLevel: z.number().int().nonnegative().optional(),
+  progressionId: z.string().min(1).optional(), progressionLevel: z.number().int().nonnegative().optional(), progressionLevelAdjustment: z.number().finite().optional(), casterLevelAdjustment: z.number().finite().optional(),
   spellListId: z.string().min(1), spellListAccess: z.enum(["list", "spellbook"]), bonusSlots: z.enum(["standard", "none"]),
   progression: z.array(spellProgressionRowSchema).min(1), knownSpellIds: z.array(z.string().min(1)).optional(), spellbookSpellIds: z.array(z.string().min(1)).optional(), preparedSpells: z.array(preparedSpellAllocationSchema).optional(), source: z.lazy(() => progressionSourceMetadataSchema).optional(),
+  arcaneSpellFailureExemption: z.enum(["none", "lightArmor", "lightArmorAndShields", "mediumArmor", "mediumArmorAndShields", "heavyArmor", "all"]).optional(),
 }).superRefine((source, context) => {
   const levels = source.progression.map((row) => row.level);
   if (new Set(levels).size !== levels.length) context.addIssue({ code: z.ZodIssueCode.custom, path: ["progression"], message: "Duplicate spellcasting progression level" });
@@ -2370,13 +2678,42 @@ export const resourceStateSchema: z.ZodType<ResourceState> = z.object({
   spent: z.number().finite().int().nonnegative(),
   roundsUntilRefresh: z.number().finite().int().nonnegative().optional(),
 });
+const bonusAttackProgressionSchema = z.object({
+  progressionId: z.string().min(1),
+  steps: z.array(z.object({
+    level: z.number().int().positive(),
+    count: z.number().int().nonnegative().max(256),
+  })).min(1),
+}).superRefine((progression, context) => {
+  for (let index = 1; index < progression.steps.length; index++) {
+    const previous = progression.steps[index - 1]!;
+    const current = progression.steps[index]!;
+    if (current.level <= previous.level)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["steps", index, "level"], message: "Bonus attack levels must be strictly increasing" });
+    if (current.count < previous.count)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["steps", index, "count"], message: "Bonus attack counts cannot decrease" });
+  }
+});
+
 export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   attackAbility: abilityIdSchema,
   damageAbility: abilityIdSchema.optional(),
   damageAbilityMultiplier: z.number().finite().optional(),
+  damageModifierMode: z.enum(["melee", "ranged"]).optional(),
+  babProgressionId: z.string().min(1).optional(),
+  attackBaseline: z.enum(["bab", "casterLevel"]).optional(),
+  casterLevelSourceId: z.string().min(1).optional(),
+  attackCount: z.number().int().min(1).max(256).optional(),
+  naturalAttackRole: z.enum(["primary", "secondary"]).optional(),
+  handUse: z.enum(["primary", "offHand", "both", "none"]).optional(),
+  bonusAttackProgression: bonusAttackProgressionSchema.optional(),
+  eligibilityTags: z.array(z.string().trim().min(1)).optional(),
+  requiredEligibilityTags: z.array(z.string().trim().min(1)).optional(),
+  fullAttackOnly: z.boolean().optional(),
   baseDamage: diceExpressionSchema,
+  damageBySize: z.record(z.enum(sizeCategories), diceExpressionSchema).optional(),
   weaponBonus: z.number().finite().optional(),
   attackTags: z.array(attackTagSchema).optional(),
   mode: z.enum(["melee", "ranged"]).optional(),
@@ -2387,6 +2724,7 @@ export const attackDefinitionSchema: z.ZodType<AttackDefinition> = z.object({
   extraAttackEligible: z.boolean().optional(),
   criticalRange: criticalRangeSchema.optional(),
   criticalMultiplier: criticalMultiplierSchema.optional(),
+  proficient: z.boolean().optional(),
   source: z.lazy(() => progressionSourceMetadataSchema).optional(),
 });
 export const progressionFeatureDefinitionSchema: z.ZodType<ProgressionFeatureDefinition> =
@@ -2436,10 +2774,14 @@ export const featureDefinitionSchema: z.ZodType<FeatureDefinition> = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   effects: z.array(effectSchema),
+  stacking: z.enum(["additive"]).optional(),
   source: progressionSourceMetadataSchema.optional(),
   exclusiveGroup: z.string().min(1).optional(),
   priority: z.number().finite().int().optional(),
   contextFlags: z.array(flagSchema).min(1).optional(),
+  actionRestrictions: z.array(z.enum(featureActionRestrictions)).optional(),
+  defenseRestrictions: z.array(z.enum(featureDefenseRestrictions)).optional(),
+  dropHeldItemsOnActivation: z.boolean().optional(),
 });
 export const attackProfileDefinitionSchema: z.ZodType<AttackProfileDefinition> =
   z.object({
@@ -2449,9 +2791,15 @@ export const attackProfileDefinitionSchema: z.ZodType<AttackProfileDefinition> =
     attackAbility: abilityIdSchema,
     damageAbility: abilityIdSchema.optional(),
     damageAbilityMultiplier: z.number().finite().optional(),
+    damageModifierMode: z.enum(["melee", "ranged"]).optional(),
+    babProgressionId: z.string().min(1).optional(),
+    attackBaseline: z.enum(["bab", "casterLevel"]).optional(),
     mode: z.enum(["melee", "ranged"]),
     attackTags: z.array(attackTagSchema),
     attackBonus: z.number().finite().optional(),
+    bonusAttackProgression: bonusAttackProgressionSchema.optional(),
+    requiredEligibilityTags: z.array(z.string().trim().min(1)).optional(),
+    fullAttackOnly: z.boolean().optional(),
     iterative: z.boolean().optional(),
     extraAttackEligible: z.boolean().optional(),
     criticalRange: criticalRangeSchema.optional(),
@@ -2470,8 +2818,16 @@ export const equipmentDefinitionSchema: z.ZodType<EquipmentDefinition> =
     armorCheckPenalty: z.number().finite().nonpositive().optional(),
     reduceLandSpeed: z.boolean().optional(),
     arcaneSpellFailureChance: z.number().finite().min(0).max(1).optional(),
+    armorBonus: z.number().finite().nonnegative().optional(),
+    wornArmor: z.boolean().optional(), shieldOccupiesHand: z.boolean().optional(), requiresUnarmored: z.boolean().optional(),
+    armorBonusProgression: z.object({ base: z.number().finite(), incrementEveryBab: z.number().int().positive() }).optional(),
     materialType: z.string().optional(),
+    armorWeightCategory: z.number().finite().int().min(0).max(3).optional(),
     weight: z.number().finite().nonnegative().optional(),
+    containerCapacity: z.number().finite().nonnegative().optional(),
+    containerWeightMultiplier: z.number().finite().min(0).max(1).optional(),
+    unlimitedContainer: z.boolean().optional(),
+    containerWeightSource: progressionSourceMetadataSchema.optional(),
     source: progressionSourceMetadataSchema.optional(),
   });
 const equipmentMaterialVariantSchema: z.ZodType<EquipmentMaterialVariant> = z.object({
@@ -2479,14 +2835,57 @@ const equipmentMaterialVariantSchema: z.ZodType<EquipmentMaterialVariant> = z.ob
   armorClassAdjustment: z.number().finite().optional(), maxDexterityAdjustment: z.number().finite().optional(),
   armorCheckPenaltyAdjustment: z.number().finite().optional(), arcaneSpellFailureAdjustment: z.number().finite().optional(),
   weightCategoryAdjustment: z.number().finite().optional(), notes: z.string().optional(), source: progressionSourceMetadataSchema.optional(),
+  initiativeBonus: z.number().finite().optional(), initiativeBonusByArmorWeightCategory: z.boolean().optional(), flyBonus: z.number().finite().optional(),
+  energyResistance: z.object({ damageType: z.string().min(1), amount: z.number().finite().nonnegative() }).optional(),
+  damageReduction: z.object({ amount: z.number().finite().nonnegative(), bypass: z.string().optional(), appliesAgainst: z.array(z.string().min(1)).optional() }).optional(),
+  damageReductionByArmorWeightCategory: z.boolean().optional(),
 });
 export const equipmentMaterialCatalogSchema: z.ZodType<EquipmentMaterialCatalog> = z.record(z.object({ id: z.string().min(1), name: z.string().min(1), variants: z.array(equipmentMaterialVariantSchema).min(1), source: progressionSourceMetadataSchema.optional() })).superRefine((catalog, context) => {
   for (const [id, material] of Object.entries(catalog)) if (material.id !== id) context.addIssue({ code: z.ZodIssueCode.custom, path: [id], message: "Equipment material catalog key must match definition id" });
+});
+export const autosheetSphereCatalogSchema: z.ZodType<AutosheetSphereCatalog> = z.object({
+  spheresOfPower: z.array(z.object({ name: z.string().min(1), source: progressionSourceMetadataSchema.optional() })),
+  spheresOfMight: z.array(z.object({ name: z.string().min(1), source: progressionSourceMetadataSchema.optional() })),
+});
+export const autosheetBonusTypeReferenceSchema: z.ZodType<AutosheetBonusTypeReference> = z.array(z.object({
+  label: z.string().min(1),
+  source: progressionSourceMetadataSchema,
+}));
+const autosheetSizeAdjustmentRowSchema = z.object({
+  attackAc: z.number().finite(),
+  cmbCmd: z.number().finite(),
+  fly: z.number().finite(),
+  stealth: z.number().finite(),
+  carryingCapacityMultiplier: z.number().finite().positive(),
+  source: progressionSourceMetadataSchema,
+});
+export const autosheetSizeAdjustmentCatalogSchema: z.ZodType<AutosheetSizeAdjustmentCatalog> = z.object({
+  fine: autosheetSizeAdjustmentRowSchema,
+  diminutive: autosheetSizeAdjustmentRowSchema,
+  tiny: autosheetSizeAdjustmentRowSchema,
+  small: autosheetSizeAdjustmentRowSchema,
+  medium: autosheetSizeAdjustmentRowSchema,
+  large: autosheetSizeAdjustmentRowSchema,
+  huge: autosheetSizeAdjustmentRowSchema,
+  gargantuan: autosheetSizeAdjustmentRowSchema,
+  colossal: autosheetSizeAdjustmentRowSchema,
+});
+export const autosheetWornSlotReferenceSchema: z.ZodType<AutosheetWornSlotReference> = z.array(z.object({
+  slot: z.string().min(1),
+  capacity: z.number().int().positive(),
+  source: progressionSourceMetadataSchema,
+})).superRefine((rows, context) => {
+  const allowedCounts = new Map<string, number>();
+  for (const row of rows) allowedCounts.set(row.slot.toLocaleLowerCase("en-US"), (allowedCounts.get(row.slot.toLocaleLowerCase("en-US")) ?? 0) + 1);
+  for (const row of rows) if (row.capacity !== allowedCounts.get(row.slot.toLocaleLowerCase("en-US"))) context.addIssue({ code: z.ZodIssueCode.custom, path: [row.source.row ?? -1, "capacity"], message: `Worn slot ${row.slot} capacity must match the workbook's repeated slot rows` });
 });
 export const equipmentInstanceSchema: z.ZodType<EquipmentInstance> = z.object({
   id: z.string().min(1),
   definitionId: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
+  inventoryCategory: z.enum(equipmentInventoryCategories).optional(),
+  notes: z.string().optional(),
+  saveDc: z.number().finite().nonnegative().optional(),
   kind: z.enum(["armor", "shield", "weapon", "wondrous", "other"]).optional(),
   equipped: z.boolean(),
   effects: z.array(effectSchema).optional(),
@@ -2501,10 +2900,19 @@ export const equipmentInstanceSchema: z.ZodType<EquipmentInstance> = z.object({
   slot: z.string().optional(),
   material: z.string().optional(),
   materialType: z.string().optional(),
+  armorWeightCategory: z.number().finite().int().min(0).max(3).optional(),
   arcaneSpellFailureChance: z.number().finite().min(0).max(1).optional(),
+  armorBonus: z.number().finite().nonnegative().optional(),
+  armorProficient: z.boolean().optional(),
+  unlimitedContainer: z.boolean().optional(),
+  wornArmor: z.boolean().optional(),
   containerId: z.string().min(1).optional(),
   containerCapacity: z.number().finite().nonnegative().optional(),
   containerWeightMultiplier: z.number().finite().min(0).max(1).optional(),
+  attachedTo: z.string().min(1).optional(),
+  shieldHand: z.enum(["primary", "offHand"]).optional(),
+  shieldOccupiesHand: z.boolean().optional(),
+  held: z.boolean().optional(),
 });
 function catalogSchema<T extends { id: string }>(
   schema: z.ZodType<T>,
@@ -2856,29 +3264,33 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
       attackNotes: z.string().optional(), armorNotes: z.string().optional(),
     }).optional(),
     defenses: z.object({
-      damageReduction: z.array(z.object({ amount: z.number().finite().nonnegative(), bypass: z.string().optional() })).optional(),
+      damageReduction: z.array(z.object({ amount: z.number().finite().nonnegative(), bypass: z.string().optional(), appliesAgainst: z.array(z.string().min(1)).optional() })).optional(),
       spellResistance: z.number().finite().nonnegative().optional(),
       energyResistances: z.record(z.number().finite().nonnegative()).optional(),
       energyImmunities: z.array(z.string().min(1)).optional(),
     }).optional(),
+    activeConditions: z.array(z.string().min(1)).optional(),
     nonlethalDamage: z.number().finite().nonnegative().optional(),
     inventory: z.object({
       platinum: z.number().finite().nonnegative().optional(), gold: z.number().finite().nonnegative().optional(),
       silver: z.number().finite().nonnegative().optional(), copper: z.number().finite().nonnegative().optional(),
+      startingGold: z.number().finite().nonnegative().optional(),
       storageNotes: z.string().optional(),
-      companion: z.object({ name: z.string().optional(), size: z.enum(sizeCategories).optional(), strength: z.number().finite().positive().optional(), items: z.array(equipmentInstanceSchema).optional() }).optional(),
+      companion: z.object({ name: z.string().optional(), size: z.enum(sizeCategories).optional(), strength: z.number().finite().positive().optional(), bodyType: z.enum(companionBodyTypes).optional(), items: z.array(equipmentInstanceSchema).optional() }).optional(),
     }).optional(),
     systems: z.array(z.object({
       id: z.string().min(1), kind: z.enum(characterSystemKinds), name: z.string().min(1),
       progressionId: z.string().min(1).optional(), keyAbility: abilityIdSchema,
       level: z.number().finite().int().nonnegative().optional(),
-      casterLevelBonus: z.number().finite().optional(), effectiveBabBonus: z.number().finite().optional(), dcAdjustment: z.number().finite().optional(),
-      resourceName: z.string().optional(), resourceSpent: z.number().finite().nonnegative().optional(), resourceMaximumBonus: z.number().finite().optional(),
+      classLevelAdjustment: z.number().finite().optional(), casterLevelBonus: z.number().finite().optional(), effectiveBabBonus: z.number().finite().optional(), dcAdjustment: z.number().finite().optional(),
+      resourceName: z.string().optional(), resourceSpent: z.number().finite().nonnegative().optional(), resourceMaximumBonus: z.number().finite().optional(), essenceCapacityBonus: z.number().finite().optional(), nonVeilReceptacles: z.array(z.enum(veilChakras)).optional(), sphereSelections: z.array(z.string().min(1)).optional(),
       progression: z.array(z.object({ level: z.number().int().positive(), casterLevel: z.number().finite().nonnegative(), maximumTier: z.number().finite().nonnegative(), resourceMaximum: z.number().finite().nonnegative().optional(), resourceBonusByAbility: z.record(z.string().regex(/^\d+$/), z.number().finite().nonnegative()).optional(), knownCount: z.number().finite().nonnegative().optional(), knownByTier: z.record(z.string().regex(/^\d+$/), z.number().finite().nonnegative()).optional(), talentCount: z.number().finite().nonnegative().optional() })),
-      entries: z.array(z.object({ id: z.string().min(1), name: z.string().min(1), category: z.string().optional(), tier: z.number().finite().nonnegative().optional(), ranks: z.number().finite().nonnegative().optional(), description: z.string().optional(), known: z.boolean().optional(), prepared: z.boolean().optional(), readied: z.boolean().optional(), expended: z.boolean().optional(), resourceCost: z.number().finite().nonnegative().optional(), usesPerDay: z.number().finite().int().nonnegative().optional(), usesSpent: z.number().finite().int().nonnegative().optional(), roll: z.object({ kind: z.enum(["damage", "healing"]), dice: diceExpressionSchema, damageType: z.string().min(1).optional(), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional(), flatBonus: z.number().finite().optional() }).optional() })),
+      entries: z.array(z.object({ id: z.string().min(1), name: z.string().min(1), entryType: z.enum(["maneuver", "stance"]).optional(), category: z.string().optional(), actionCost: z.enum(["standard", "move", "swift", "immediate", "fullRound", "free"]).optional(), tier: z.number().finite().nonnegative().optional(), ranks: z.number().finite().nonnegative().optional(), description: z.string().optional(), known: z.boolean().optional(), active: z.boolean().optional(), roundsRemaining: z.number().finite().int().nonnegative().optional(), effects: z.array(effectSchema).optional(), prepared: z.boolean().optional(), readied: z.boolean().optional(), expended: z.boolean().optional(), chakra: z.enum(veilChakras).optional(), essenceInvested: z.number().finite().int().nonnegative().optional(), resourceCost: z.number().finite().nonnegative().optional(), usesPerDay: z.number().finite().int().nonnegative().optional(), usesSpent: z.number().finite().int().nonnegative().optional(), roll: z.union([z.object({ kind: z.literal("weaponAttack"), attackId: z.string().min(1), repeatCount: z.number().int().min(1).max(20).optional(), bonusDamage: diceExpressionSchema.optional(), bonusDamageVsCursed: diceExpressionSchema.optional() }), z.object({ kind: z.literal("skillCheck"), skillId: z.string().min(1), flags: z.array(flagSchema).optional() }), z.object({ kind: z.literal("combatManeuver"), maneuver: maneuverIdSchema, abilityOverride: abilityIdSchema.optional(), babProgressionId: z.string().min(1).optional() }), z.object({ kind: z.enum(["damage", "healing"]), dice: diceExpressionSchema, damageType: z.string().min(1).optional(), damageMode: z.enum(["melee", "ranged"]).optional(), perCasterLevel: z.boolean().optional(), casterLevelCap: z.number().int().positive().optional(), flatBonus: z.number().finite().optional() })]).optional() })),
       notes: z.string().optional(),
     })).optional(),
-    workbookOptions: z.object({ woundThresholds: z.boolean().optional(), minimumFourPlusIntSkillRanks: z.boolean().optional(), backgroundSkills: z.boolean().optional(), skillMode: z.enum(["background", "classic", "consolidated", "ultimate-psionics-background"]).optional() }).optional(),
+    turnActions: z.object({ standardSpent: z.boolean().optional(), moveSpent: z.boolean().optional(), swiftSpent: z.boolean().optional(), fullRoundSpent: z.boolean().optional(), fullAttackPlanId: z.string().optional(), fullAttackStepIds: z.array(z.string()).optional(), fullAttackRolledStepIds: z.array(z.string()).optional(), bucklerAcLostThisTurn: z.boolean().optional(), shieldAcLostThisTurnIds: z.array(z.string()).optional(), staggeredActionSpent: z.boolean().optional() }).strict().optional(),
+    workbookOptions: z.object({ woundThresholds: z.boolean().optional(), minimumFourPlusIntSkillRanks: z.boolean().optional(), backgroundSkills: z.boolean().optional(), skillMode: z.enum(["background", "classic", "consolidated", "ultimate-psionics-background"]).optional(), offHandAttackCount: z.number().int().min(0).max(3).optional(), twoWeaponFightingFeat: z.boolean().optional(), doubleSliceFeat: z.boolean().optional(), multiattackFeat: z.boolean().optional() }).optional(),
+    workbookBonuses: z.object({ hp: z.number().finite().optional(), skillPoints: z.number().finite().optional(), other: z.string().optional() }).strict().optional(),
     customProgressions: progressionCatalogSchema.optional(),
     lifecycle: characterLifecycleStateSchema.optional(),
     experience: z
@@ -2896,6 +3308,8 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
       wis: z.number().finite(),
       cha: z.number().finite(),
     }),
+    abilityDamage: z.object({ str: z.number().int().nonnegative().optional(), dex: z.number().int().nonnegative().optional(), con: z.number().int().nonnegative().optional(), int: z.number().int().nonnegative().optional(), wis: z.number().int().nonnegative().optional(), cha: z.number().int().nonnegative().optional() }).strict().optional(),
+    abilityDrain: z.object({ str: z.number().int().nonnegative().optional(), dex: z.number().int().nonnegative().optional(), con: z.number().int().nonnegative().optional(), int: z.number().int().nonnegative().optional(), wis: z.number().int().nonnegative().optional(), cha: z.number().int().nonnegative().optional() }).strict().optional(),
     baseBab: z.number().finite().optional(),
     baseSaves: z
       .object({
@@ -2911,6 +3325,8 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
     skills: z
       .record(
         z.object({
+          name: z.string().min(1).optional(),
+          trainedOnly: z.boolean().optional(),
           governingAbility: abilityIdSchema.optional(),
           classSkill: z.boolean().optional(),
           classSkillOverride: z.boolean().optional(),
@@ -2925,6 +3341,7 @@ export const characterInputSchema: z.ZodType<CharacterInput> = z
     resources: z.array(resourceDefinitionSchema).optional(),
     resourceStates: z.array(resourceStateSchema).optional(),
     spellcastingSources: z.array(spellcastingSourceSchema).optional(),
+    activeSpellDurations: z.array(z.object({ id: z.string().min(1), spellId: z.string().min(1), spellName: z.string().min(1), sourceId: z.string().min(1), durationText: z.string().min(1), roundsRemaining: z.number().finite().int().nonnegative().optional(), targetName: z.string().optional(), targetCharacterId: z.string().optional(), effects: z.array(effectSchema).optional(), effectsApplyToCaster: z.boolean().optional(), active: z.boolean() }).strict()).optional(),
     customSpells: spellCatalogSchema.optional(),
     damageTaken: z.number().finite().int().nonnegative(),
     temporaryHp: z.number().finite().int().nonnegative(),
@@ -3210,6 +3627,12 @@ export interface AdvancementSummary {
   /** Best available die type per ordered slot; HP-from-HD remains a later layer. */
   hitDieSides: number[];
   skillPoints: number;
+  /** Additional favored-class skill ranks entered in the Autosheet bonus cell. */
+  skillPointBonus?: number;
+  workbookSkillPointBudget?: number;
+  backgroundSkillPointBudget?: number;
+  skillRanksUsed?: number;
+  backgroundSkillRanksUsed?: number;
   /** Character-global levels, with slot/track provenance for every earned level. */
   progressionLevels: Record<string, EvaluationResult>;
   /** Metadata-only class-chart features unlocked by those progression levels. */
@@ -3321,6 +3744,7 @@ export interface DerivedCharacter {
   ac: EvaluationResult;
   touchAc: EvaluationResult;
   flatFootedAc: EvaluationResult;
+  deniedDexAc: EvaluationResult;
   initiative: EvaluationResult;
   cmb: EvaluationResult;
   cmd: EvaluationResult;
@@ -3328,6 +3752,8 @@ export interface DerivedCharacter {
   size: DerivedSize;
   /** All movement modes are evaluated through the same ordered effect pipeline. */
   speeds: Record<MovementMode, EvaluationResult>;
+  /** Charge and run distances from land speed with workbook condition modifiers applied. */
+  tacticalSpeeds: Record<TacticalMovementMode, EvaluationResult>;
   /** Compatibility view of speeds.land. */
   movement: EvaluationResult;
   attacks: DerivedAttack[];
@@ -3368,5 +3794,7 @@ export const targetLabels: Record<string, string> = {
   "speed.swim": "Swim speed",
   "speed.climb": "Climb speed",
   "speed.burrow": "Burrow speed",
+  "speed.charge": "Charge distance",
+  "speed.run": "Run distance",
   "skill.all": "All skills",
 };

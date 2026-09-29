@@ -5,7 +5,7 @@ import {
   type ResolvedRoll,
   type RollPlan,
 } from "@threepointpf/dice";
-import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, mitigateDamage, setTemporaryHp, unchainedWoundPenalty } from "@threepointpf/rules-core";
+import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, deriveNoteDefenses, mitigateDamage, resolveTurnAction, setTemporaryHp, unchainedWoundPenalty } from "@threepointpf/rules-core";
 import {
   attackFromProfile,
   attackProfileCatalog,
@@ -16,13 +16,18 @@ import {
 } from "@threepointpf/rules-data";
 import {
   parseCharacterInput,
+  sizeCategories,
   type AbilityId,
   type AdvancementSlot,
   type AttackDefinition,
   type BonusType,
   type CharacterInput,
+  type CoverLevel,
   type DefenseContext,
+  type DiceExpression,
+  type EffectApplicability,
   type Effect,
+  type FeatureActionRestriction,
   type EffectTargetId,
   type EquipmentInstance,
   type EvaluationResult,
@@ -38,7 +43,7 @@ import {
   slug,
 } from "../lib/format";
 import { activeCatalog, repositoryFor } from "../lib/repository";
-import { CharacterApiError, type CharacterRepository } from "@threepointpf/shared";
+import { CharacterApiError, type CharacterRepository, type HostedRollResponse } from "@threepointpf/shared";
 import {
   defaultSample,
   sampleCharacter,
@@ -59,7 +64,8 @@ import {
 import { useDiscordRollSettings } from "./useDiscordRollSettings";
 import { publishCompletedRoll } from "../lib/discord-roll-publishing";
 import { formatRollResultNotice } from "../lib/roll-result";
-import { copyWithNewCharacterId, importCharacterSnapshot } from "../lib/character-portability";
+import { hostedDeliveryNotice, recordHostedRoll } from "../lib/hosted-roll";
+import { copyWithNewCharacterId, exportCharacterLibrarySnapshot, importCharacterLibrarySnapshot, importCharacterSnapshot } from "../lib/character-portability";
 
 /**
  * A caller-selected authored character. Omit `characterId` for the standalone
@@ -97,26 +103,47 @@ type PendingTargetRollIntent =
       targetKind: "dc";
       save: "fortitude" | "reflex" | "will";
       label: string;
+      cover?: CoverLevel;
     }
   | {
-      kind: "skill";
-      targetKind: "dc";
-      skillId: string;
-      label: string;
+    kind: "skill";
+    targetKind: "dc";
+    skillId: string;
+    label: string;
+    flags?: string[];
+    systemId?: string;
+    systemEntryId?: string;
+    spendStandardAction?: boolean;
     }
   | {
       kind: "weapon";
       targetKind: "ac";
       attackId: string;
+      attackIds: string[];
+      offHandAttackCount: number;
       action: WeaponActionKind;
       stepIndex: number;
       label: string;
+      actionPlanId?: string;
+      actionStepIds?: string[];
+      repeatCount?: number;
+      maneuverId?: string;
+      flags?: string[];
+      systemId?: string;
+      systemEntryId?: string;
+      followupDamage?: { dice: DiceExpression; label: string; sourceId: string; damageType?: string };
     }
   | {
       kind: "maneuver";
       targetKind: "cmd";
       maneuver: string;
       label: string;
+      abilityOverride?: AbilityId;
+      babProgressionId?: string;
+      flags?: string[];
+      systemId?: string;
+      systemEntryId?: string;
+      spendStandardAction?: boolean;
     };
 
 function targetLabel(kind: RollDefense["kind"]): string {
@@ -150,6 +177,49 @@ function draftForCharacterId(characterId: string): CharacterInput {
   return { ...draft, id: characterId, name: "Unnamed character" };
 }
 
+/** Carry additive authored defaults from a sample into older saved copies. */
+function migrateSampleDefaults(saved: CharacterInput, sample: ReturnType<typeof sampleForCharacterId>): CharacterInput {
+  if (!sample) return saved;
+  let changed = false;
+  let inventory = saved.inventory;
+  let abilities = saved.abilities;
+  // Equipment!G5:G6 incorrectly contains the level-20 WBL amount. Charlie is
+  // level 3, so migrate that seeded value to the 3,000 gp level-3 amount.
+  if (sample.id === "charlie" && (inventory?.gold === 880000 || inventory?.startingGold === 880000)) {
+    inventory = { ...(inventory ?? {}), gold: sample.character.inventory?.gold ?? 3000 };
+    delete inventory.startingGold;
+    changed = true;
+  } else if (sample.id === "charlie" && inventory?.gold === 3000 && inventory.startingGold === 3000) {
+    // An earlier correction duplicated the same wealth as both purse and budget.
+    inventory = { ...inventory };
+    delete inventory.startingGold;
+    changed = true;
+  }
+  const savedAbilityIds = new Set((saved.abilities ?? []).map((ability) => ability.id));
+  const missingSampleAbilities = (sample.character.abilities ?? []).filter((ability) => !savedAbilityIds.has(ability.id));
+  if (missingSampleAbilities.length) {
+    abilities = [...(saved.abilities ?? []), ...clone(missingSampleAbilities)];
+    changed = true;
+  }
+  const systems = (saved.systems ?? []).map((system) => {
+    const authored = sample.character.systems?.find((item) => item.id === system.id);
+    // Charlie's old sample encoded the pool/capacity mix-up as a +2 pool
+    // adjustment. Remove that known fixture value when loading saved copies.
+    if (sample.id === "charlie" && system.id === "charlie-rajah-veilweaving" && system.resourceMaximumBonus === 2 && authored?.resourceMaximumBonus === undefined) {
+      const corrected = { ...system };
+      delete corrected.resourceMaximumBonus;
+      changed = true;
+      return corrected;
+    }
+    if (system.resourceMaximumBonus !== undefined || authored?.resourceMaximumBonus === undefined) return system;
+    changed = true;
+    return { ...system, resourceMaximumBonus: authored.resourceMaximumBonus };
+  });
+  return changed
+    ? { ...saved, ...(inventory !== saved.inventory ? { inventory } : {}), ...(abilities !== saved.abilities ? { abilities } : {}), systems }
+    : saved;
+}
+
 /**
  * The reusable sheet controller. Authored state, rules evaluation and roll
  * planning live here; chrome and the dice overlay are deliberately outside it.
@@ -162,10 +232,10 @@ export function useCharacterSheetController({
   mode: requestedMode,
   onAuthenticationRequired,
 }: CharacterSheetControllerOptions) {
-  const discord = useDiscordRollSettings();
   // Browser mode is the default and needs no server; hosted mode is explicit.
   const environment = useMemo(() => activeSheetEnvironment(), []);
   const mode = requestedMode ?? sheetModeFor(environment);
+  const discord = useDiscordRollSettings(mode === "browser");
   // The sample this browser last looked at, so a reload comes back to it. A
   // saved snapshot may replace it once, at mount; later sample switches are
   // explicit choices and are never overwritten by a load.
@@ -184,6 +254,7 @@ export function useCharacterSheetController({
   const [character, setCharacter] = useState<CharacterInput>(() =>
     draftForCharacterId(startingCharacterId),
   );
+  const characterRef = useRef(character);
   const startingSample = sampleForCharacterId(startingCharacterId);
   const [notice, setNotice] = useState(
     mode === "browser"
@@ -195,12 +266,20 @@ export function useCharacterSheetController({
   const [integrationNotice, setIntegrationNotice] = useState<string | null>(
     null,
   );
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** An optional caller-entered DC; blank means "no known DC". */
   const [rollDc, setRollDc] = useState("");
   /** Target defenses are transient table context, not character data. */
   const [attackAc, setAttackAc] = useState("");
+  const [targetCover, setTargetCover] = useState<CoverLevel | "none">("none");
+  const [targetMissChance, setTargetMissChance] = useState(0);
+  const [ignoreNonTotalCover, setIgnoreNonTotalCover] = useState(false);
+  const [reflexCover, setReflexCover] = useState<CoverLevel | "none">("none");
   const [maneuverCmd, setManeuverCmd] = useState("");
+  const [maneuverAbilityOverride, setManeuverAbilityOverride] = useState<AbilityId | "">("");
+  const [maneuverBabProgressionId, setManeuverBabProgressionId] = useState("");
   const [pendingTargetRoll, setPendingTargetRoll] =
     useState<PendingTargetRollIntent | null>(null);
   const [pendingTargetValue, setPendingTargetValue] = useState("");
@@ -208,10 +287,14 @@ export function useCharacterSheetController({
     null,
   );
   const pendingTargetTrigger = useRef<HTMLElement | null>(null);
+  const combatActionRollInProgress = useRef(false);
   const [lastRoll, setLastRoll] = useState<{
     plan: RollPlan;
     resolved: ResolvedRoll;
   } | null>(null);
+  const [lastHostedRoll, setLastHostedRoll] = useState<HostedRollResponse | null>(null);
+  const [rollHistory, setRollHistory] = useState<HostedRollResponse[]>([]);
+  const [criticalAttackResults, setCriticalAttackResults] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<{
     label: string;
     evaluation: EvaluationResult;
@@ -227,23 +310,96 @@ export function useCharacterSheetController({
   const [featureContexts, setFeatureContexts] = useState<
     "all" | "normal" | "normalTouch" | "normalFlat"
   >("all");
+  const [manualFeatureActionRestrictions, setManualFeatureActionRestrictions] = useState<FeatureActionRestriction[]>([]);
+  const [featureModes, setFeatureModes] = useState<NonNullable<EffectApplicability["modes"]>>([]);
+  const [featureKinds, setFeatureKinds] = useState<NonNullable<EffectApplicability["kinds"]>>([]);
+  const [featureTouch, setFeatureTouch] = useState<"any" | "touch" | "nonTouch">("any");
+  const [featureAction, setFeatureAction] = useState<"any" | "standard" | "full">("any");
+  const [featureAttackIds, setFeatureAttackIds] = useState("");
+  const [featureRequiredTags, setFeatureRequiredTags] = useState<NonNullable<EffectApplicability["requiredTags"]>>([]);
+  const [featureExcludedTags, setFeatureExcludedTags] = useState<NonNullable<EffectApplicability["excludedTags"]>>([]);
+  const [featureRequiredFlags, setFeatureRequiredFlags] = useState("");
+  const [featureExcludedFlags, setFeatureExcludedFlags] = useState("");
   const [attackName, setAttackName] = useState("");
   const [attackDice, setAttackDice] = useState("1d8");
+  const [attackCriticalRange, setAttackCriticalRange] = useState("");
+  const [attackCriticalMultiplier, setAttackCriticalMultiplier] = useState("");
+  const [attackDamageBySize, setAttackDamageBySize] = useState<Record<string, string>>({});
   const [attackAbility, setAttackAbility] = useState<AbilityId>("str");
+  const [attackIsNatural, setAttackIsNatural] = useState(false);
+  const [attackFlurryEligible, setAttackFlurryEligible] = useState(false);
+  const [attackNaturalRole, setAttackNaturalRole] = useState<"primary" | "secondary">("primary");
   const [equipmentId, setEquipmentId] = useState("");
   const [customWeaponName, setCustomWeaponName] = useState("");
   const [customWeaponDice, setCustomWeaponDice] = useState("1d6");
+  const [customWeaponCriticalRange, setCustomWeaponCriticalRange] = useState("");
+  const [customWeaponCriticalMultiplier, setCustomWeaponCriticalMultiplier] = useState("");
+  const [customWeaponAttackCount, setCustomWeaponAttackCount] = useState("1");
+  const [customWeaponOffHand, setCustomWeaponOffHand] = useState(false);
+  const [customWeaponLight, setCustomWeaponLight] = useState(false);
+  const [customWeaponNatural, setCustomWeaponNatural] = useState(false);
+  const [customWeaponNaturalRole, setCustomWeaponNaturalRole] = useState<"primary" | "secondary">("primary");
+  const [customWeaponProficient, setCustomWeaponProficient] = useState(true);
+  const [customWeaponFlurryEligible, setCustomWeaponFlurryEligible] = useState(false);
   const [weaponEnhancement, setWeaponEnhancement] = useState("0");
   const [weaponAttackAdjustment, setWeaponAttackAdjustment] = useState("0");
   const [weaponStrengthRating, setWeaponStrengthRating] = useState("");
   const [profileId, setProfileId] = useState("");
+  const [casterLevelSourceId, setCasterLevelSourceId] = useState("");
   const [repo] = useState(() => injectedRepository ?? repositoryFor(mode, environment));
-  const [savedCharacters, setSavedCharacters] = useState<Array<{ id: string; name: string }>>([]);
+  const [savedCharacters, setSavedCharacters] = useState<Array<{ id: string; name: string; campaignId?: string }>>([]);
+  const [linkedTargetId, setLinkedTargetId] = useState("");
+  const [linkedTargetCharacter, setLinkedTargetCharacter] = useState<CharacterInput | null>(null);
+  const [targetDefenseContext, setTargetDefenseContext] = useState<DefenseContext>("normal");
   const refreshSavedCharacters = async () => {
     try { setSavedCharacters(await repo.list()); } catch { setSavedCharacters([]); }
   };
   useEffect(() => { void refreshSavedCharacters(); }, [repo]);
+  useEffect(() => {
+    let active = true;
+    setLinkedTargetCharacter(null);
+    if (!linkedTargetId) return () => { active = false; };
+    void repo.load(linkedTargetId).then((loaded) => {
+      if (active) setLinkedTargetCharacter(loaded);
+    }).catch(() => {
+      if (active) setLinkedTargetCharacter(null);
+    });
+    return () => { active = false; };
+  }, [repo, linkedTargetId]);
+  const linkedTargetDerived = useMemo(() => {
+    if (!linkedTargetCharacter || linkedTargetCharacter.id !== linkedTargetId) return undefined;
+    try { return new RulesEngine(linkedTargetCharacter, rulesCatalogs).derive(); }
+    catch { return undefined; }
+  }, [linkedTargetCharacter, linkedTargetId]);
+  const linkedTargetDefenseValue = linkedTargetDerived
+    ? ({
+        normal: linkedTargetDerived.ac.value,
+        touch: linkedTargetDerived.touchAc.value,
+        flatFooted: linkedTargetDerived.flatFootedAc.value,
+        deniedDexterity: linkedTargetDerived.deniedDexAc.value,
+      } satisfies Record<DefenseContext, number>)[targetDefenseContext]
+    : undefined;
+  const linkedTargetTouchAc = linkedTargetDerived?.touchAc.value;
+  const linkedTargetCmdValue = linkedTargetDerived?.cmd.value;
+  const linkedTargetCmbValue = linkedTargetDerived?.cmb.value;
+  const linkedTargetNoteDefenses = useMemo(
+    () => deriveNoteDefenses((linkedTargetCharacter?.features ?? []).filter((feature) => feature.enabled).map((feature) => feature.notes ?? "")),
+    [linkedTargetCharacter],
+  );
+  const linkedTargetSpellResistance = linkedTargetCharacter?.id === linkedTargetId
+    ? Math.max(linkedTargetCharacter.defenses?.spellResistance ?? 0, linkedTargetNoteDefenses.spellResistance ?? 0) || undefined
+    : undefined;
+  const refreshLinkedTarget = async () => {
+    if (!linkedTargetId) return;
+    try { setLinkedTargetCharacter(await repo.load(linkedTargetId)); }
+    catch { setLinkedTargetCharacter(null); }
+  };
   const editRevision = useRef(0);
+  const isDirtyRef = useRef(false);
+  // HTTP revisions live in the repository. Serialize calls so an older save
+  // cannot overtake a newer one and reuse a stale revision token.
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const activeSaves = useRef(0);
   const loadRevision = useRef(0);
   const pendingSampleDraft = useRef<PendingSampleDraft | null>(null);
   useEffect(() => {
@@ -252,7 +408,11 @@ export function useCharacterSheetController({
     // A new target is a distinct authored-state session. Edits to the old
     // character must not suppress a persisted load for this one.
     editRevision.current = 0;
+    isDirtyRef.current = false;
+    setIsDirty(false);
     setLastRoll(null);
+    setLastHostedRoll(null);
+    setRollHistory([]);
     setIntegrationNotice(null);
     setPendingTargetRoll(null);
     setPendingTargetValue("");
@@ -261,6 +421,7 @@ export function useCharacterSheetController({
     const pending = pendingSampleDraft.current;
     if (pending?.character.id === characterId) {
       pendingSampleDraft.current = null;
+      characterRef.current = pending.character;
       setCharacter(pending.character);
       setSelected(null);
       setError(null);
@@ -271,7 +432,9 @@ export function useCharacterSheetController({
     }
 
     const sample = sampleForCharacterId(characterId);
-    setCharacter(draftForCharacterId(characterId));
+    const draft = draftForCharacterId(characterId);
+    characterRef.current = draft;
+    setCharacter(draft);
     setSelected(null);
     setError(null);
     if (!sample)
@@ -297,8 +460,21 @@ export function useCharacterSheetController({
           throw new Error(
             "Saved character identity does not match the selected character",
           );
-        new RulesEngine(saved, rulesCatalogs).derive();
-        setCharacter(saved);
+        const migrationSample = sample ?? (saved.attacks?.some((attack) => attack.id === "izanamis-nodachi")
+          ? sampleCharacter("charlie")
+          : undefined);
+        const migrated = migrateSampleDefaults(saved, migrationSample);
+        new RulesEngine(migrated, rulesCatalogs).derive();
+        characterRef.current = migrated;
+        setCharacter(migrated);
+        if (migrated !== saved) {
+          void repo.save(migrated).then(() => {
+            if (active && revision === loadRevision.current && editRevision.current === 0) setNotice("Updated and saved workbook-derived system values.");
+          }).catch(() => {
+            if (active && revision === loadRevision.current && editRevision.current === 0) setNotice("Workbook-derived system values updated; save the character to keep them.");
+          });
+          return;
+        }
         setNotice(
           mode === "browser"
             ? "Demo mode · reloaded your saved sheet"
@@ -347,6 +523,8 @@ export function useCharacterSheetController({
   }, [character]);
   const engine = evaluated.engine;
   const derived = evaluated.derived;
+  const offHandAttackCount = character.workbookOptions?.offHandAttackCount ?? 0;
+  const noteDerivedDefenses = useMemo(() => deriveNoteDefenses(character.features.filter((feature) => feature.enabled).map((feature) => feature.notes ?? "")), [character.features]);
 
   const apply = (
     next: CharacterInput,
@@ -361,6 +539,9 @@ export function useCharacterSheetController({
       parseCharacterInput(next);
       new RulesEngine(next, rulesCatalogs).derive();
       editRevision.current += 1;
+      isDirtyRef.current = true;
+      setIsDirty(true);
+      characterRef.current = next;
       setCharacter(next);
       setLastRoll(null);
       setPendingTargetRoll(null);
@@ -378,16 +559,32 @@ export function useCharacterSheetController({
     }
   };
   const update = (changes: Partial<CharacterInput>, success?: string) =>
-    apply({ ...character, ...changes }, success);
+    apply({ ...characterRef.current, ...changes }, success);
+  const confirmDiscardUnsavedChanges = (action: string) => {
+    if (!isDirtyRef.current) return true;
+    return globalThis.confirm(
+      `Unsaved changes to ${characterRef.current.name} will be lost if you ${action}. Save first or cancel to keep working.`,
+    );
+  };
+  const setOffHandAttackCount = (count: number) => update({
+    workbookOptions: { ...character.workbookOptions, offHandAttackCount: count },
+  }, `Set off-hand attack count to ${count}`);
   const healthAction = (operation: (value: CharacterInput) => CharacterInput, message: string) => {
-    try { apply(operation(character), message); }
+    try { apply(operation(characterRef.current), message); }
     catch (failure) { fail(errorText(failure)); }
   };
-  const takeDamage = (amount: number, damageType = "untyped", bypass?: string) => {
+  const takeDamage = (amount: number, damageType = "untyped", bypass?: string, attackerType?: string) => {
     try {
-      const mitigation = mitigateDamage(character, amount, damageType, bypass);
-      const absorbed = Math.min(character.temporaryHp, mitigation.afterDamageReduction);
-      apply(applyDamage(character, mitigation.afterDamageReduction), `Took ${amount} ${damageType} damage: ${mitigation.immune ? "immune" : `${mitigation.resistance} resistance and ${mitigation.damageReduction} DR`} applied; ${absorbed} temporary HP absorbed, ${mitigation.afterDamageReduction - absorbed} HP lost`);
+      const current = characterRef.current;
+      const currentEngine = new RulesEngine(current, rulesCatalogs);
+      const materialDefenses = currentEngine.equipment.filter((item) => item.equipped);
+      const resistances = { ...(current.defenses?.energyResistances ?? {}) };
+      for (const item of materialDefenses) if (item.materialEnergyResistance) resistances[item.materialEnergyResistance.damageType] = Math.max(resistances[item.materialEnergyResistance.damageType] ?? 0, item.materialEnergyResistance.amount);
+      const currentNoteDefenses = deriveNoteDefenses(current.features.filter((feature) => feature.enabled).map((feature) => feature.notes ?? ""));
+      const damageReduction = [...(current.defenses?.damageReduction ?? []), ...currentNoteDefenses.damageReduction, ...materialDefenses.flatMap((item) => item.materialDamageReduction ? [item.materialDamageReduction] : [])];
+      const mitigation = mitigateDamage({ ...current, defenses: { ...current.defenses, energyResistances: resistances, damageReduction } }, amount, damageType, bypass, attackerType);
+      const absorbed = Math.min(current.temporaryHp, mitigation.afterDamageReduction);
+      apply(applyDamage(current, mitigation.afterDamageReduction), `Took ${amount} ${damageType} damage: ${mitigation.immune ? "immune" : `${mitigation.resistance} resistance and ${mitigation.damageReduction} DR`} applied; ${absorbed} temporary HP absorbed, ${mitigation.afterDamageReduction - absorbed} HP lost`);
     } catch (failure) { fail(errorText(failure)); }
   };
   const heal = (amount: number) => healthAction((value) => applyHealing(value, amount), `Healed ${amount} HP`);
@@ -421,18 +618,35 @@ export function useCharacterSheetController({
     feature.effects.length
       ? undefined
       : featureCatalog[feature.definitionId ?? ""]?.exclusiveGroup;
+  const dropHeldInventoryItems = () => (character.equipment ?? []).map((item) => {
+    const kind = item.kind ?? equipmentCatalog[item.definitionId ?? ""]?.kind;
+    const held = item.held === true || (item.held === undefined && item.equipped
+      && (kind === "weapon" || kind === "shield" && item.shieldOccupiesHand !== false || Boolean(item.attack)));
+    if (!held) return item;
+    return {
+      ...item,
+      held: false,
+      carried: false,
+      ...((kind === "weapon" || kind === "shield" || item.attack) ? { equipped: false } : {}),
+    };
+  });
   const toggleFeature = (id: string) => {
     const selected = character.features.find((feature) => feature.id === id);
+    const definition = selected?.definitionId ? featureCatalog[selected.definitionId] : undefined;
     const group =
       selected && !selected.enabled ? groupFor(selected) : undefined;
+    const activating = selected !== undefined && !selected.enabled;
     update({
       features: character.features.map((feature) =>
         feature.id === id
-          ? { ...feature, enabled: !feature.enabled }
+          ? { ...feature, enabled: !feature.enabled, ...(!feature.enabled ? {} : { roundsRemaining: undefined }) }
           : group && groupFor(feature) === group
-            ? { ...feature, enabled: false }
+            ? { ...feature, enabled: false, roundsRemaining: undefined }
             : feature,
       ),
+      ...(activating && definition?.dropHeldItemsOnActivation ? {
+        equipment: dropHeldInventoryItems(),
+      } : {}),
     });
   };
   const addCatalogFeature = () => {
@@ -475,6 +689,7 @@ export function useCharacterSheetController({
           ),
           feature,
         ],
+        ...(definition.dropHeldItemsOnActivation ? { equipment: dropHeldInventoryItems() } : {}),
       },
       "Added " + definition.name,
     );
@@ -502,6 +717,17 @@ export function useCharacterSheetController({
           : featureContexts === "normalFlat"
             ? ["normal", "flatFooted"]
             : ["normal", "touch"];
+    const appliesWhen: EffectApplicability = {
+      ...(featureKinds.length ? { kinds: featureKinds } : {}),
+      ...(featureModes.length ? { modes: featureModes } : {}),
+      ...(featureTouch !== "any" ? { touch: featureTouch === "touch" } : {}),
+      ...(featureAction !== "any" ? { fullAttack: featureAction === "full" } : {}),
+      ...(featureAttackIds.trim() ? { attackIds: featureAttackIds.split(",").map((id) => id.trim()).filter(Boolean) } : {}),
+      ...(featureRequiredTags.length ? { requiredTags: featureRequiredTags } : {}),
+      ...(featureExcludedTags.length ? { excludedTags: featureExcludedTags } : {}),
+      ...(featureRequiredFlags.trim() ? { requiredFlags: featureRequiredFlags.split(",").map((flag) => slug(flag.trim())).filter(Boolean) } : {}),
+      ...(featureExcludedFlags.trim() ? { excludedFlags: featureExcludedFlags.split(",").map((flag) => slug(flag.trim())).filter(Boolean) } : {}),
+    };
     let effect: Effect;
     if (featureKind === "modifier")
       effect =
@@ -512,12 +738,14 @@ export function useCharacterSheetController({
               value,
               bonusType: featureBonus,
               appliesTo: contexts,
+              ...(Object.keys(appliesWhen).length ? { appliesWhen } : {}),
             }
           : {
               kind: "modifier",
               target: featureTarget,
               value,
               bonusType: featureBonus,
+              ...(Object.keys(appliesWhen).length ? { appliesWhen } : {}),
             };
     else if (featureKind === "replaceBase")
       effect = { kind: "replaceBase", target: featureTarget, value };
@@ -541,6 +769,7 @@ export function useCharacterSheetController({
       name: featureName.trim(),
       enabled: true,
       effects: [effect],
+      ...(manualFeatureActionRestrictions.length ? { actionRestrictions: manualFeatureActionRestrictions } : {}),
     };
     const added = update(
       { features: [...character.features, feature] },
@@ -553,8 +782,8 @@ export function useCharacterSheetController({
   };
   const addAttack = () => {
     const dice = /^(\d+)d(\d+)$/i.exec(attackDice.trim());
-    if (!attackName.trim() || !dice) {
-      fail("Use an attack name and dice in the form 1d8.");
+    if (!attackName.trim() || !dice || Object.values(attackDamageBySize).some((value) => value.trim() && !/^(\d+)d(\d+)$/i.test(value.trim()))) {
+      fail("Use an attack name and dice in the form 1d8. Size-specific dice must also use NdN.");
       return;
     }
     const attack: AttackDefinition = {
@@ -567,16 +796,31 @@ export function useCharacterSheetController({
       damageAbility: attackAbility,
       damageAbilityMultiplier: 1,
       baseDamage: { count: Number(dice[1]), sides: Number(dice[2]) },
+      ...(attackCriticalRange ? { criticalRange: { minimumNaturalRoll: Number(attackCriticalRange) } } : {}),
+      ...(attackCriticalMultiplier ? { criticalMultiplier: Number(attackCriticalMultiplier) } : {}),
+      ...(Object.entries(attackDamageBySize).some(([, value]) => value.trim()) ? {
+        damageBySize: Object.fromEntries(Object.entries(attackDamageBySize).flatMap(([size, value]) => {
+          if (!value.trim()) return [];
+          const parsed = /^(\d+)d(\d+)$/i.exec(value.trim())!;
+          return [[size, { count: Number(parsed[1]), sides: Number(parsed[2]) }]];
+        })),
+      } : {}),
+      ...(attackIsNatural ? { attackCount: Math.max(1, Math.min(256, Math.trunc(Number(customWeaponAttackCount) || 1))), naturalAttackRole: attackNaturalRole } : {}),
       mode: "melee",
-      attackTags: ["weapon.melee"],
+      attackTags: ["weapon.melee", ...(attackIsNatural ? ["natural.attack" as const] : [])],
+      ...(attackFlurryEligible ? { eligibilityTags: ["monk-flurry-weapon"] } : {}),
     };
     if (
       update(
         { attacks: [...character.attacks, attack] },
         "Added " + attack.name,
       )
-    )
+    ) {
       setAttackName("");
+      setAttackCriticalRange("");
+      setAttackCriticalMultiplier("");
+      setAttackDamageBySize({});
+    }
   };
   const addEquipment = () => {
     const definition = equipmentCatalog[equipmentId];
@@ -606,6 +850,10 @@ export function useCharacterSheetController({
       fail("A custom weapon needs a name and dice in the form 1d6.");
       return;
     }
+    if (attackProfileCatalog[profileId]?.attackBaseline === "casterLevel" && !character.spellcastingSources?.some((source) => source.id === casterLevelSourceId)) {
+      fail("Choose a spellcasting source for this caster-level attack.");
+      return;
+    }
     const id = nextId(
       "equipment-" + slug(customWeaponName),
       (character.equipment ?? []).map((entry) => entry.id),
@@ -615,6 +863,7 @@ export function useCharacterSheetController({
       name: customWeaponName.trim(),
       baseDamage: { count: Number(dice[1]), sides: Number(dice[2]) },
     };
+    const naturalAttack = customWeaponNatural || attackProfileCatalog[profileId]?.attackTags.includes("natural.attack") === true;
     const attack: AttackDefinition = {
       ...(profileId
         ? attackFromProfile(profileId, base)
@@ -628,9 +877,27 @@ export function useCharacterSheetController({
           }),
       weaponBonus: Number(weaponEnhancement),
       attackBonus: Number(weaponAttackAdjustment),
+      proficient: customWeaponProficient,
+      ...(customWeaponFlurryEligible ? { eligibilityTags: ["monk-flurry-weapon"] } : {}),
+      ...(customWeaponCriticalRange ? { criticalRange: { minimumNaturalRoll: Number(customWeaponCriticalRange) } } : {}),
+      ...(customWeaponCriticalMultiplier ? { criticalMultiplier: Number(customWeaponCriticalMultiplier) } : {}),
+      ...(naturalAttack ? {
+        attackCount: Math.max(1, Math.min(256, Math.trunc(Number(customWeaponAttackCount) || 1))),
+        naturalAttackRole: customWeaponNaturalRole,
+      } : {}),
+      ...(attackProfileCatalog[profileId]?.attackBaseline === "casterLevel" && casterLevelSourceId ? { casterLevelSourceId } : {}),
       ...(weaponStrengthRating.trim()
         ? { damageAbilityMaximum: Number(weaponStrengthRating) }
         : {}),
+      attackTags: [
+        ...new Set([
+          ...(profileId ? attackProfileCatalog[profileId]?.attackTags ?? [] : ["weapon.melee" as const]),
+          ...(customWeaponOffHand ? ["weapon.off-hand" as const] : []),
+          ...(customWeaponLight ? ["weapon.light" as const] : []),
+          ...(customWeaponNatural ? ["natural.attack" as const] : []),
+        ]),
+      ],
+      ...(customWeaponNatural ? { naturalAttackRole: customWeaponNaturalRole } : {}),
     };
     const added = update(
       {
@@ -647,7 +914,17 @@ export function useCharacterSheetController({
       },
       "Added " + customWeaponName.trim(),
     );
-    if (added) setCustomWeaponName("");
+    if (added) {
+      setCustomWeaponName("");
+      setCustomWeaponCriticalRange("");
+      setCustomWeaponCriticalMultiplier("");
+      setCustomWeaponOffHand(false);
+      setCustomWeaponLight(false);
+      setCustomWeaponProficient(true);
+      setCustomWeaponFlurryEligible(false);
+      setCustomWeaponNatural(false);
+      setCustomWeaponNaturalRole("primary");
+    }
   };
   /**
    * Loads a sample from scratch. It is authored state, never a saved snapshot:
@@ -655,6 +932,7 @@ export function useCharacterSheetController({
    */
   const requestCharacterId = (nextCharacterId: string): boolean => {
     if (nextCharacterId === characterId) return true;
+    loadRevision.current += 1;
     if (isCharacterIdControlled) {
       if (!onCharacterIdChange) {
         fail("This sheet's character is controlled by its caller.");
@@ -679,6 +957,7 @@ export function useCharacterSheetController({
       fail("Choose a character with a non-empty id.");
       return false;
     }
+    if (nextCharacterId !== characterId && !confirmDiscardUnsavedChanges("switch characters")) return false;
     pendingSampleDraft.current = null;
     return requestCharacterId(nextCharacterId);
   };
@@ -695,6 +974,7 @@ export function useCharacterSheetController({
       fail("This sheet's character is controlled by its caller.");
       return;
     }
+    if (!confirmDiscardUnsavedChanges(targetChanges ? `load the ${sample.label} sample` : `reset to the ${sample.label} sample`)) return;
 
     setSampleId(id);
     saveSelectedSampleId(id);
@@ -703,6 +983,7 @@ export function useCharacterSheetController({
       apply(next, sampleNotice, true);
       return;
     }
+    loadRevision.current += 1;
 
     // A sample switch deliberately starts pristine authored state instead of
     // reloading any browser snapshot for the sample's character id.
@@ -735,12 +1016,24 @@ export function useCharacterSheetController({
     [rollDc],
   );
   const attackDefense = useMemo(
-    () => defenseFromInput(attackAc, "ac"),
-    [attackAc],
+    () => {
+      const defense = linkedTargetDefenseValue !== undefined
+        ? { kind: "ac" as const, value: linkedTargetDefenseValue, context: targetDefenseContext }
+        : defenseFromInput(attackAc, "ac");
+      return defense
+        ? {
+            ...defense,
+            ...(targetCover !== "none" ? { cover: targetCover } : {}),
+            ...(targetMissChance ? { missChance: targetMissChance } : {}),
+            ...(ignoreNonTotalCover ? { ignoreNonTotalCover: true } : {}),
+          }
+        : defense;
+    },
+    [attackAc, targetCover, targetMissChance, ignoreNonTotalCover, linkedTargetDefenseValue, targetDefenseContext],
   );
   const maneuverDefense = useMemo(
-    () => defenseFromInput(maneuverCmd, "cmd"),
-    [maneuverCmd],
+    () => linkedTargetCmdValue !== undefined ? { kind: "cmd" as const, value: linkedTargetCmdValue } : defenseFromInput(maneuverCmd, "cmd"),
+    [maneuverCmd, linkedTargetCmdValue],
   );
 
   /**
@@ -749,44 +1042,152 @@ export function useCharacterSheetController({
    */
   const rollPlan = async (plan: RollPlan) => {
     try {
-      const raw = await new BrowserDiceProvider().roll({
+      if (mode === "hosted" && isDirtyRef.current && !await save()) {
+        setIntegrationNotice("Save your changes before rolling.");
+        return null;
+      }
+      if (mode === "hosted") await saveQueue.current;
+      if (plan.context.kind === "attack") {
+        setCriticalAttackResults((previous) => {
+          if (!(plan.id in previous)) return previous;
+          const next = { ...previous };
+          delete next[plan.id];
+          return next;
+        });
+      }
+      const recorded = mode === "hosted"
+        ? await recordHostedRoll(characterRef.current, plan, Number(repo.getRevision?.(characterRef.current.id)))
+        : null;
+      const displayPlan = recorded?.plan ?? plan;
+      const result = recorded?.result ?? resolveRollPlan(plan, (await new BrowserDiceProvider().roll({
         planId: plan.id,
         dice: plan.dice,
-      });
-      const result = resolveRollPlan(plan, raw.faces);
+      })).faces);
       // The authoritative faces already decided the result; the overlay is only
       // asked to land the dice on them.
-      dice.present(plan, result, { characterName: character.name });
-      setLastRoll({ plan, resolved: result });
-      setNotice(formatRollResultNotice(character.name, plan, result));
-      setIntegrationNotice(null);
+      setLastRoll({ plan: displayPlan, resolved: result });
+      setLastHostedRoll(recorded);
+      if (recorded) setRollHistory((previous) => [recorded, ...previous.filter((item) => item.rollId !== recorded.rollId)].slice(0, 20));
+      try { dice.present(displayPlan, result, { characterName: character.name }); }
+      catch { /* The recorded result and delivery status remain visible without 3D dice. */ }
+      if (plan.context.kind === "attack") {
+        setCriticalAttackResults((previous) => {
+          const next = { ...previous, [plan.id]: result.outcome.critical === true };
+          const ids = Object.keys(next);
+          while (ids.length > 64) delete next[ids.shift()!];
+          return next;
+        });
+      }
+      setNotice(formatRollResultNotice(character.name, displayPlan, result));
+      setIntegrationNotice(recorded ? `${hostedDeliveryNotice(recorded.delivery)} Roll reference: ${recorded.rollId.slice(0, 8)}.` : null);
       // Publishing is deliberately outside the local completion path. A
       // rejected/deleted webhook never replaces the result the player just got.
-      void publishCompletedRoll(discord.settings, character.name, plan, result)
-        .then((published) => {
-          if (published) setIntegrationNotice("Roll published to Discord.");
-        })
-        .catch(() => {
-          setIntegrationNotice(
-            "Discord publishing failed. Your local roll is still available.",
-          );
-        });
+      if (mode === "browser") {
+        void publishCompletedRoll(discord.settings, character.name, plan, result)
+          .then((published) => {
+            if (published) setIntegrationNotice("Roll published to Discord.");
+          })
+          .catch(() => {
+            setIntegrationNotice(
+              "Discord publishing failed. Your local roll is still available.",
+            );
+          });
+      }
       return result;
     } catch (failure) {
       setNotice("Roll could not be completed: " + errorText(failure));
       return null;
     }
   };
+  useEffect(() => {
+    if (mode !== "hosted" || !characterId) return;
+    let active = true;
+    const refresh = () => {
+      fetch(`/api/rolls?characterId=${encodeURIComponent(characterId)}`, { credentials: "same-origin" })
+        .then(async (response) => response.ok ? response.json() as Promise<{ rolls: HostedRollResponse[] }> : null)
+        .then((body) => { if (active && body) setRollHistory(body.rolls); })
+        .catch(() => { /* History remains available on the next refresh. */ });
+    };
+    refresh();
+    const timer = globalThis.setInterval(refresh, 15_000);
+    return () => { active = false; globalThis.clearInterval(timer); };
+  }, [characterId, mode]);
+  useEffect(() => {
+    if (mode !== "hosted" || !lastHostedRoll || !["pending", "sending", "retryable_failed"].includes(lastHostedRoll.delivery.state)) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/rolls/${encodeURIComponent(lastHostedRoll.rollId)}`, { credentials: "same-origin" });
+        if (!response.ok) return;
+        const recorded = await response.json() as HostedRollResponse;
+        if (!active || recorded.rollId !== lastHostedRoll.rollId) return;
+        setLastHostedRoll(recorded);
+        setRollHistory((previous) => previous.map((item) => item.rollId === recorded.rollId ? recorded : item));
+        setIntegrationNotice(`${hostedDeliveryNotice(recorded.delivery)} Roll reference: ${recorded.rollId.slice(0, 8)}.`);
+      } catch { /* The recorded roll remains available for the next status check. */ }
+    };
+    const timer = globalThis.setInterval(() => { void poll(); }, 5_000);
+    return () => { active = false; globalThis.clearInterval(timer); };
+  }, [lastHostedRoll?.rollId, lastHostedRoll?.delivery.state, mode]);
+  const retryHostedDelivery = async (target: HostedRollResponse | null = lastHostedRoll) => {
+    if (!target) return;
+    const unknown = target.delivery.state === "delivery_unknown";
+    if (unknown && !globalThis.confirm("Discord may already have this roll. Check the channel using its roll reference before sending again; a duplicate message is possible. Retry sending?")) return;
+    try {
+      const response = await fetch(`/api/rolls/${encodeURIComponent(target.rollId)}/discord/retry`, {
+        method: "POST", credentials: "same-origin",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify(unknown ? { confirmPossibleDuplicate: true } : {}),
+      });
+      const body = await response.json() as HostedRollResponse & { error?: { message?: string } };
+      if (!response.ok) throw new Error(body.error?.message ?? "Discord delivery could not be retried.");
+      if (lastHostedRoll?.rollId === body.rollId) setLastHostedRoll(body);
+      setRollHistory((previous) => previous.map((item) => item.rollId === body.rollId ? body : item));
+      setIntegrationNotice(`${hostedDeliveryNotice(body.delivery)} Roll reference: ${body.rollId.slice(0, 8)}.`);
+    } catch (failure) {
+      setIntegrationNotice("Discord delivery: " + errorText(failure));
+    }
+  };
   /** Build one exact weapon action for both display and button execution. */
+  const engineForSystemEntry = (systemId?: string, entryId?: string) => {
+    if (!systemId || !entryId) return engine;
+    const system = engine.character.systems?.find((item) => item.id === systemId);
+    if (!system || !system.entries.some((entry) => entry.id === entryId)) return engine;
+    const activatedCharacter = {
+      ...engine.character,
+      systems: engine.character.systems!.map((item) => item.id !== systemId ? item : {
+        ...item,
+        entries: item.entries.map((entry) => entry.id === entryId ? { ...entry, active: true } : entry),
+      }),
+    };
+    return new RulesEngine(activatedCharacter, rulesCatalogs);
+  };
+  const linkedTargetFlags = linkedTargetCharacter?.id === linkedTargetId
+    ? [
+        ...(linkedTargetCharacter.activeConditions ?? []).map((condition) => `target-${slug(condition)}`).filter((flag) => flag !== "target-"),
+        ...(linkedTargetDerived && (linkedTargetCharacter.nonlethalDamage ?? 0) >= linkedTargetDerived.currentHp && (linkedTargetCharacter.nonlethalDamage ?? 0) > 0
+          ? [`target-${(linkedTargetCharacter.nonlethalDamage ?? 0) > linkedTargetDerived.currentHp ? "unconscious" : "staggered"}`]
+          : []),
+      ]
+    : [];
   const createWeaponActionPlan = (
     attackId: string,
     action: WeaponActionKind,
     defense: RollDefense | null | undefined = attackDefense,
+    attackIds: string[] = [attackId],
+    offHandAttackCount = 0,
+    maneuver?: string,
+    planEngine: RulesEngine = engine,
+    contextFlags: string[] = [],
   ) =>
-    engine.createActionPlan({
+    planEngine.createActionPlan({
       action,
-      attackIds: [attackId],
+      attackIds,
+      offHandAttackCount,
+      ...(maneuver ? { maneuver } : {}),
+      ...((linkedTargetFlags.length || contextFlags.length) ? { flags: [...new Set([...linkedTargetFlags, ...contextFlags])] } : {}),
       ...(defense ? { defense } : {}),
+      ...(linkedTargetCharacter?.id === linkedTargetId ? { target: { characterId: linkedTargetCharacter.id, name: linkedTargetCharacter.name } } : {}),
     });
   const createCriticalDamagePlan = (damage: RollPlan) => {
     const { context } = damage;
@@ -801,6 +1202,7 @@ export function useCharacterSheetController({
       action,
       attackIndex: context.action.sequenceIndex ?? 0,
       ...(context.action.attackIds ? { attackIds: context.action.attackIds } : {}),
+      ...(context.action.offHandAttackCount !== undefined ? { offHandAttackCount: context.action.offHandAttackCount } : {}),
       criticalDamage: true,
     });
   };
@@ -816,19 +1218,23 @@ export function useCharacterSheetController({
     return ordinaryCount ? Math.max(2, Math.round(criticalCount / ordinaryCount)) : 2;
   };
   const canRollCriticalDamage = (attack: RollPlan) =>
-    lastRoll?.plan.id === attack.id && lastRoll.resolved.outcome.critical === true;
+    criticalAttackResults[attack.id] === true;
   const createManeuverPlan = (
     maneuver: string,
     defense: RollDefense | null | undefined = maneuverDefense,
+    abilityOverride: AbilityId | "" = maneuverAbilityOverride,
+    babProgressionId = maneuverBabProgressionId,
+    planEngine: RulesEngine = engine,
+    contextFlags: string[] = [],
   ) =>
-    engine.createManeuverRollPlan(
+    planEngine.createManeuverRollPlan(
       maneuver,
-      defense ? { defense } : {},
+      { ...(defense ? { defense } : {}), ...(abilityOverride ? { abilityOverride } : {}), ...(babProgressionId ? { babProgressionId } : {}), ...((linkedTargetFlags.length || contextFlags.length) ? { flags: [...new Set([...linkedTargetFlags, ...contextFlags])] } : {}) },
     );
   const currentDefenseFor = (kind: RollDefense["kind"]) =>
     kind === "dc" ? dcDefense : kind === "ac" ? attackDefense : maneuverDefense;
   const currentTargetValueFor = (kind: RollDefense["kind"]) =>
-    kind === "dc" ? rollDc : kind === "ac" ? attackAc : maneuverCmd;
+    kind === "dc" ? rollDc : kind === "ac" ? attackAc : linkedTargetCmdValue !== undefined ? String(linkedTargetCmdValue) : maneuverCmd;
   const setCurrentTargetValue = (kind: RollDefense["kind"], value: string) => {
     if (kind === "dc") setRollDc(value);
     else if (kind === "ac") setAttackAc(value);
@@ -842,30 +1248,36 @@ export function useCharacterSheetController({
       case "save":
         return engine.createSaveRollPlan(
           intent.save,
-          defense ? { defense } : {},
+          { ...(defense ? { defense } : {}), ...(intent.cover ? { cover: intent.cover } : {}) },
         );
       case "skill":
-        return engine.createSkillRollPlan(
+        return engineForSystemEntry(intent.systemId, intent.systemEntryId).createSkillRollPlan(
           intent.skillId,
-          defense ? { defense } : {},
+          { ...(defense ? { defense } : {}), ...(intent.flags ? { flags: intent.flags } : {}) },
         );
       case "maneuver":
-        return createManeuverPlan(intent.maneuver, defense ?? null);
+        return createManeuverPlan(intent.maneuver, defense ?? null, intent.abilityOverride ?? "", intent.babProgressionId ?? "", engineForSystemEntry(intent.systemId, intent.systemEntryId), intent.flags);
       case "weapon": {
+        const planEngine = engineForSystemEntry(intent.systemId, intent.systemEntryId);
         const actionPlan = createWeaponActionPlan(
           intent.attackId,
           intent.action,
           defense ?? null,
+          intent.attackIds,
+          intent.offHandAttackCount,
+          intent.maneuverId,
+          planEngine,
+          intent.flags,
         );
         return (
-          actionPlan.attacks[0]?.steps.find(
+          actionPlan.attacks.find((attack) => attack.attackId === intent.attackId)?.steps.find(
             (step) => step.index === intent.stepIndex,
           )?.roll ?? null
         );
       }
     }
   };
-  const executeTargetIntent = (
+  const executeTargetIntent = async (
     intent: PendingTargetRollIntent,
     defense: RollDefense | undefined,
   ) => {
@@ -874,7 +1286,131 @@ export function useCharacterSheetController({
       setNotice("That roll is no longer available. Please try again.");
       return;
     }
-    void rollPlan(plan);
+    const actionRestrictions = engine.actionRestrictions();
+    if ((intent.kind === "weapon" || intent.kind === "maneuver" || intent.kind === "skill" && intent.spendStandardAction) && (actionRestrictions.includes("noActions") || actionRestrictions.includes("noPhysicalActions") || actionRestrictions.includes("moveOnly") || actionRestrictions.includes("fleeOnly"))) {
+      setNotice("An active condition prevents this combat action.");
+      return;
+    }
+    if (intent.kind === "weapon" && actionRestrictions.includes("noTwoHandedActions") && plan.context.attackTags?.includes("weapon.two-handed")) {
+      setNotice("Grappled characters cannot use two-handed weapons.");
+      return;
+    }
+    if (intent.kind === "weapon" && intent.action === "fullAttack" && actionRestrictions.includes("oneStandardOrMove")) {
+      setNotice("An active condition prevents full-round actions.");
+      return;
+    }
+    if (intent.kind === "weapon" && plan.context.flags?.includes("shield-hand-unavailable")) {
+      setNotice("That attack needs a hand occupied by an equipped shield.");
+      return;
+    }
+    const repeatCount = intent.kind === "weapon" ? Math.max(1, Math.min(20, intent.repeatCount ?? 1)) : 1;
+    const actionEngine = intent.kind === "weapon" ? engineForSystemEntry(intent.systemId, intent.systemEntryId) : engine;
+    const trackedCombatAction = (intent.kind === "weapon" && !intent.systemEntryId && intent.actionPlanId)
+      || ((intent.kind === "maneuver" || intent.kind === "skill") && intent.spendStandardAction && !intent.systemEntryId);
+    if (trackedCombatAction && combatActionRollInProgress.current) {
+      setNotice("Finish the current combat roll before starting another combat action.");
+      return;
+    }
+    if (trackedCombatAction) combatActionRollInProgress.current = true;
+    try {
+    const currentTurnActions = character.turnActions ?? {};
+    const stepId = plan.id;
+    let nextTurnActions = currentTurnActions;
+    if (trackedCombatAction) {
+      if (intent.kind === "maneuver" || intent.kind === "skill") {
+        const resolved = resolveTurnAction(currentTurnActions, "standard", actionEngine.actionRestrictions());
+        if ("error" in resolved && resolved.error) { setNotice(resolved.error); return; }
+        nextTurnActions = resolved.state;
+      } else if (intent.action === "standardAttack") {
+        const resolved = resolveTurnAction(currentTurnActions, "standard", actionEngine.actionRestrictions());
+        if ("error" in resolved && resolved.error) { setNotice(resolved.error); return; }
+        nextTurnActions = resolved.state;
+      } else if (currentTurnActions.fullRoundSpent) {
+        const allowed = currentTurnActions.fullAttackStepIds ?? [];
+        const alreadyRolled = currentTurnActions.fullAttackRolledStepIds ?? [];
+        if (currentTurnActions.fullAttackPlanId !== intent.actionPlanId || !allowed.includes(stepId) || alreadyRolled.includes(stepId)) {
+          setNotice(alreadyRolled.includes(stepId) ? "That attack in the full-round action has already been rolled." : "A full-round action is already spent this turn.");
+          return;
+        }
+        nextTurnActions = { ...currentTurnActions, fullAttackRolledStepIds: [...alreadyRolled, stepId] };
+      } else {
+        const resolved = resolveTurnAction(currentTurnActions, "fullRound", actionEngine.actionRestrictions());
+        if ("error" in resolved && resolved.error) { setNotice(resolved.error); return; }
+        nextTurnActions = { ...resolved.state, fullAttackPlanId: intent.actionPlanId, fullAttackStepIds: intent.actionStepIds ?? [stepId], fullAttackRolledStepIds: [stepId] };
+      }
+    }
+    const usesBucklerArm = plan.context.flags?.includes("buckler-arm-used") === true;
+    const shieldBash = intent.kind === "weapon" && intent.attackId.startsWith("equipment.")
+      ? actionEngine.equipment.find((item) => item.id === intent.attackId.slice("equipment.".length) && item.equipped && item.kind === "shield" && item.attack)
+      : undefined;
+    if (shieldBash && !(nextTurnActions.shieldAcLostThisTurnIds ?? []).includes(shieldBash.id)) {
+      nextTurnActions = { ...nextTurnActions, shieldAcLostThisTurnIds: [...(nextTurnActions.shieldAcLostThisTurnIds ?? []), shieldBash.id] };
+    }
+    if (usesBucklerArm && !nextTurnActions.bucklerAcLostThisTurn)
+      nextTurnActions = { ...nextTurnActions, bucklerAcLostThisTurn: true };
+    for (let index = 0; index < repeatCount; index += 1) {
+      const strikePlan = repeatCount === 1 ? plan : {
+        ...plan,
+        id: `${plan.id}:strike:${index + 1}`,
+        label: `${intent.label} · strike ${index + 1}/${repeatCount}`,
+      };
+      const attackResult = await rollPlan(strikePlan);
+      if (!attackResult) break;
+      if (nextTurnActions !== currentTurnActions) {
+        const messages = [
+          ...(trackedCombatAction ? [intent.kind === "maneuver" ? "Spent a standard action to attempt a combat maneuver" : intent.kind === "skill" ? "Spent a standard action for a skill check" : intent.action === "standardAttack" ? "Spent a standard attack action" : "Spent a full-round attack action"] : []),
+          ...(nextTurnActions.staggeredActionSpent && !currentTurnActions.staggeredActionSpent ? ["Used the condition-limited standard-or-move action"] : []),
+          ...(usesBucklerArm && !currentTurnActions.bucklerAcLostThisTurn ? ["Buckler AC bonus lost until your next turn"] : []),
+          ...(shieldBash && !(currentTurnActions.shieldAcLostThisTurnIds ?? []).includes(shieldBash.id) ? [`${shieldBash.name ?? "Shield"} AC bonus lost until your next turn`] : []),
+        ];
+        if (!update({ turnActions: nextTurnActions }, messages.join(" · "))) return;
+      }
+      if ((intent.kind === "maneuver" && intent.maneuver === "escape-grapple" || intent.kind === "skill" && intent.skillId === "escape-artist") && attackResult.outcome.success === true) {
+        const grappledFeatures = characterRef.current.features.map((feature) =>
+          feature.definitionId === "pf1e.paizo.grappled" && feature.enabled ? { ...feature, enabled: false } : feature,
+        );
+        if (grappledFeatures.some((feature, index) => feature !== characterRef.current.features[index]))
+          update({ features: grappledFeatures }, "Escaped the grapple");
+      }
+      if (intent.kind !== "weapon" || !intent.followupDamage || attackResult?.outcome.hit !== true) continue;
+      const isCritical = attackResult.outcome.critical === true;
+      const damage = actionEngine.createDamageRollPlan(intent.attackId, {
+        action: intent.action,
+        attackIndex: intent.stepIndex,
+        attackIds: intent.attackIds,
+        offHandAttackCount: intent.offHandAttackCount,
+        ...(intent.maneuverId ? { maneuver: intent.maneuverId } : {}),
+        criticalDamage: isCritical,
+      });
+      const multiplier = isCritical
+        ? Math.max(2, ...(damage.provenance?.damageTerms ?? []).filter((term) => term.criticalBehavior === "normal").map((term) => term.multiplier))
+        : 1;
+      const bonus = intent.followupDamage;
+      const bonusSourceId = repeatCount === 1 ? bonus.sourceId : `${bonus.sourceId}.strike.${index + 1}`;
+      const damageTerm = {
+        kind: "dice" as const,
+        dice: bonus.dice,
+        label: bonus.label,
+        source: { id: bonusSourceId, label: bonus.label },
+        damageType: bonus.damageType ?? "untyped",
+        criticalBehavior: "normal" as const,
+        multiplier,
+      };
+      await rollPlan({
+        ...damage,
+        id: `${damage.id}:${bonusSourceId}`,
+        label: `${strikePlan.label} · ${damage.label}`,
+        dice: [...damage.dice, { sides: bonus.dice.sides, count: bonus.dice.count * multiplier }],
+        context: { ...damage.context, ...(strikePlan.context.target ? { target: strikePlan.context.target } : {}) },
+        provenance: {
+          ...damage.provenance!,
+          damageTerms: [...(damage.provenance?.damageTerms ?? []), damageTerm],
+        },
+      });
+    }
+    } finally {
+      if (trackedCombatAction) combatActionRollInProgress.current = false;
+    }
   };
   const dismissTargetPrompt = () => {
     const trigger = pendingTargetTrigger.current;
@@ -886,6 +1422,26 @@ export function useCharacterSheetController({
       globalThis.setTimeout(() => trigger.focus(), 0);
   };
   const requestTargetedRoll = (intent: PendingTargetRollIntent) => {
+    const restrictions = engine.actionRestrictions();
+    if (intent.kind === "maneuver" && intent.maneuver === "trip" && linkedTargetDerived && linkedTargetCharacter?.id === linkedTargetId) {
+      const sizeDifference = sizeCategories.indexOf(linkedTargetDerived.size.category) - sizeCategories.indexOf(derived.size.category);
+      if (sizeDifference > 1) {
+        setNotice(`Trip cannot affect a target more than one size category larger (${linkedTargetDerived.size.category} vs ${derived.size.category}).`);
+        return;
+      }
+    }
+    if ((intent.kind === "weapon" || intent.kind === "maneuver" || intent.kind === "skill" && intent.spendStandardAction) && (restrictions.includes("noActions") || restrictions.includes("noPhysicalActions") || restrictions.includes("moveOnly") || restrictions.includes("fleeOnly"))) {
+      setNotice("An active condition prevents this combat action.");
+      return;
+    }
+    if (intent.kind === "weapon" && restrictions.includes("noTwoHandedActions") && (character.attacks.find((attack) => attack.id === intent.attackId)?.attackTags ?? []).includes("weapon.two-handed")) {
+      setNotice("Grappled characters cannot use two-handed weapons.");
+      return;
+    }
+    if (intent.kind === "weapon" && intent.action === "fullAttack" && restrictions.includes("oneStandardOrMove")) {
+      setNotice("An active condition prevents full-round actions.");
+      return;
+    }
     const defense = currentDefenseFor(intent.targetKind);
     if (defense) {
       executeTargetIntent(intent, defense);
@@ -902,7 +1458,10 @@ export function useCharacterSheetController({
   const confirmTargetPrompt = () => {
     const intent = pendingTargetRoll;
     if (!intent) return;
-    const defense = defenseFromInput(pendingTargetValue, intent.targetKind);
+    const enteredDefense = defenseFromInput(pendingTargetValue, intent.targetKind);
+    const defense = enteredDefense?.kind === "ac" && (targetCover !== "none" || targetMissChance > 0)
+      ? { ...enteredDefense, ...(targetCover !== "none" ? { cover: targetCover } : {}), ...(targetMissChance ? { missChance: targetMissChance } : {}) }
+      : enteredDefense;
     if (!defense) {
       setPendingTargetError(`Enter a numeric ${targetLabel(intent.targetKind)}.`);
       return;
@@ -935,55 +1494,139 @@ export function useCharacterSheetController({
       kind: "save",
       targetKind: "dc",
       save,
+      ...(save === "reflex" && reflexCover !== "none" ? { cover: reflexCover } : {}),
       label: `${save.charAt(0).toUpperCase()}${save.slice(1)} save`,
     });
-  const rollSkill = (skillId: string) =>
-    requestTargetedRoll({
+  const rollSkill = (skillId: string, use?: "jump", contextFlags: string[] = [], systemEntry?: { systemId: string; entryId: string }, spendStandardAction = false) => {
+    const flags = [...(use === "jump" ? ["jump-check"] : []), ...contextFlags];
+    return requestTargetedRoll({
       kind: "skill",
       targetKind: "dc",
       skillId,
+      ...(flags.length ? { flags } : {}),
+      ...(systemEntry ? { systemId: systemEntry.systemId, systemEntryId: systemEntry.entryId } : {}),
+      ...(spendStandardAction && !systemEntry ? { spendStandardAction: true } : {}),
       label: derived.skills[skillId]?.label
-        ? `${derived.skills[skillId]!.label} check`
+        ? `${use === "jump" ? "Jump" : derived.skills[skillId]!.label} check`
         : "Skill check",
     });
+  };
   const rollWeaponAttack = (
     attackId: string,
     action: WeaponActionKind,
     stepIndex: number,
     attackName: string,
+    attackIds: string[] = [attackId],
+    offHandAttackCount = 0,
+    actionPlanId?: string,
+    actionStepIds?: string[],
   ) =>
     requestTargetedRoll({
       kind: "weapon",
       targetKind: "ac",
       attackId,
+      attackIds,
+      offHandAttackCount,
       action,
       stepIndex,
       label:
         action === "standardAttack"
           ? `${attackName} standard attack`
           : `${attackName} attack${stepIndex ? ` ${stepIndex + 1}` : ""}`,
+      ...(actionPlanId ? { actionPlanId, actionStepIds } : {}),
     });
-  const rollManeuver = (maneuver: string) =>
-    requestTargetedRoll({
+  const rollWeaponStrike = (
+    attackId: string,
+    attackName: string,
+    followupDamage?: { dice: DiceExpression; label: string; sourceId: string; damageType?: string },
+    options: { repeatCount?: number; maneuverId?: string; flags?: string[]; systemId?: string; systemEntryId?: string } = {},
+  ) => requestTargetedRoll({
+    kind: "weapon",
+    targetKind: "ac",
+    attackId,
+    attackIds: [attackId],
+    offHandAttackCount: 0,
+    action: "standardAttack",
+    stepIndex: 0,
+    label: attackName,
+    ...(options.repeatCount && options.repeatCount > 1 ? { repeatCount: options.repeatCount } : {}),
+    ...(options.maneuverId ? { maneuverId: options.maneuverId } : {}),
+    ...(options.flags?.length ? { flags: options.flags } : {}),
+    ...(options.systemId ? { systemId: options.systemId } : {}),
+    ...(options.systemEntryId ? { systemEntryId: options.systemEntryId } : {}),
+    ...(followupDamage ? { followupDamage } : {}),
+  });
+  const rollManeuver = (maneuver: string, abilityOverride?: AbilityId, babProgressionId?: string, systemEntry?: { systemId: string; entryId: string }, flags: string[] = []) => {
+    const selectedAbility = abilityOverride || maneuverAbilityOverride;
+    const selectedProgression = babProgressionId || maneuverBabProgressionId;
+    const spendStandardAction = !systemEntry;
+    return requestTargetedRoll({
       kind: "maneuver",
       targetKind: "cmd",
       maneuver,
       label: `CMB ${maneuver}`,
+      ...(selectedAbility ? { abilityOverride: selectedAbility } : {}),
+      ...(selectedProgression ? { babProgressionId: selectedProgression } : {}),
+      ...(spendStandardAction ? { spendStandardAction: true } : {}),
+      ...((linkedTargetFlags.length || flags.length) ? { flags: [...new Set([...linkedTargetFlags, ...flags])] } : {}),
+      ...(systemEntry ? { systemId: systemEntry.systemId, systemEntryId: systemEntry.entryId } : {}),
     });
+  };
   const save = async () => {
+    const characterRevision = loadRevision.current;
+    activeSaves.current += 1;
+    setIsSaving(true);
     try {
-      await repo.save(character);
+      const revision = editRevision.current;
+      const snapshot = characterRef.current;
+      const operation = saveQueue.current.then(() => repo.save(snapshot));
+      saveQueue.current = operation.catch(() => undefined);
+      await operation;
       await refreshSavedCharacters();
+      if (loadRevision.current !== characterRevision) return false;
       setError(null);
-      setNotice(mode === "hosted" ? "Saved to your account" : "Saved in this browser (demo mode)");
+      const upToDate = editRevision.current === revision;
+      if (upToDate) {
+        isDirtyRef.current = false;
+        setIsDirty(false);
+        setNotice(mode === "hosted" ? "Saved to your account" : "Saved in this browser (demo mode)");
+      } else {
+        setNotice("Saved the previous draft; newer changes still need saving");
+      }
+      return upToDate;
     } catch (failure) {
       notifyAuthenticationRequired(failure);
       fail("Save failed: " + errorText(failure));
+      return false;
+    } finally {
+      activeSaves.current -= 1;
+      if (activeSaves.current === 0) setIsSaving(false);
     }
   };
+  useEffect(() => {
+    if (mode !== "hosted" || !isDirty) return;
+    const expectedCharacterId = characterId;
+    const expectedEditRevision = editRevision.current;
+    const timer = globalThis.setTimeout(() => {
+      if (characterRef.current.id !== expectedCharacterId || editRevision.current !== expectedEditRevision || !isDirtyRef.current) return;
+      void save();
+    }, 700);
+    return () => globalThis.clearTimeout(timer);
+  }, [character, characterId, isDirty, mode]);
+  const exportLibrarySnapshot = async () => {
+    const summaries = await repo.list();
+    const loaded = await Promise.all(summaries.map(({ id }) => repo.load(id)));
+    const characters = new Map(loaded.filter((value): value is CharacterInput => value !== null).map((value) => [value.id, value]));
+    // Include the current draft so a backup never silently omits unsaved edits.
+    characters.set(characterRef.current.id, characterRef.current);
+    return exportCharacterLibrarySnapshot([...characters.values()]);
+  };
   const reload = async () => {
+    if (!confirmDiscardUnsavedChanges("reload the saved character")) return;
     try {
+      const characterRevision = loadRevision.current;
       const loaded = await repo.load(characterId);
+      if (loadRevision.current !== characterRevision) return;
       if (!loaded) {
         setNotice("No saved character found");
         return;
@@ -995,6 +1638,9 @@ export function useCharacterSheetController({
       parseCharacterInput(loaded);
       new RulesEngine(loaded, rulesCatalogs).derive();
       editRevision.current += 1;
+      isDirtyRef.current = false;
+      setIsDirty(false);
+      characterRef.current = loaded;
       setCharacter(loaded);
       setLastRoll(null);
       setPendingTargetRoll(null);
@@ -1008,17 +1654,39 @@ export function useCharacterSheetController({
       fail("Reload failed: " + errorText(failure));
     }
   };
-  const importSnapshot = async (text: string, copyOnCollision = false) => {
+  const importSnapshot = async (text: string, collisionAction?: "copy" | "replace") => {
+    const characterRevision = loadRevision.current;
     try {
       let imported = importCharacterSnapshot(text);
-      if (await repo.load(imported.id)) {
-        if (!copyOnCollision) return "collision" as const;
-        imported = copyWithNewCharacterId(imported);
+      const existing = await repo.load(imported.id);
+      if (loadRevision.current !== characterRevision) return "cancelled" as const;
+      if (existing) {
+        if (!collisionAction) return { status: "collision" as const, incomingName: imported.name, existingName: existing.name };
+        if (collisionAction === "copy") imported = copyWithNewCharacterId(imported);
       }
+      const importAction = imported.id === characterId ? "replace this character with the imported file" : "import this character";
+      if (!confirmDiscardUnsavedChanges(importAction)) return "cancelled" as const;
+      const editRevisionAtConfirmation = editRevision.current;
       await repo.save(imported);
       await refreshSavedCharacters();
-      selectCharacter(imported.id);
-      setNotice(`Imported ${imported.name}`);
+      if (loadRevision.current !== characterRevision) {
+        setNotice(`Imported ${imported.name}; the character you switched to was left unchanged`);
+        return "imported" as const;
+      }
+      if (editRevision.current !== editRevisionAtConfirmation && isDirtyRef.current) {
+        setNotice(`Imported ${imported.name}; your newer draft was left unchanged`);
+        return "imported" as const;
+      }
+      if (imported.id === characterId) {
+        if (!apply(imported, `Imported ${imported.name}`, true)) return false as const;
+        isDirtyRef.current = false;
+        setIsDirty(false);
+      } else {
+        if (!requestCharacterId(imported.id)) return false as const;
+        isDirtyRef.current = false;
+        setIsDirty(false);
+        setNotice(`Imported ${imported.name}`);
+      }
       setError(null);
       return "imported" as const;
     } catch (failure) {
@@ -1028,19 +1696,81 @@ export function useCharacterSheetController({
       return false as const;
     }
   };
+  const importLibrarySnapshot = async (text: string) => {
+    const characterRevision = loadRevision.current;
+    try {
+      let imported = importCharacterLibrarySnapshot(text);
+      const summaries = await repo.list();
+      if (loadRevision.current !== characterRevision) return { status: "cancelled" } as const;
+      const existingIds = new Set([...summaries.map(({ id }) => id), characterId]);
+      const conflicts = imported.filter(({ id }) => existingIds.has(id));
+      const copyConflicts = conflicts.length > 0 && !confirm(`This backup contains ${conflicts.length} character${conflicts.length === 1 ? "" : "s"} with matching IDs. Replace those existing characters in your library, including the open sheet, with the backup versions? Choose Cancel to import matching IDs as copies instead.`);
+      const replacesCurrent = !copyConflicts && conflicts.some(({ id }) => id === characterId);
+      if (replacesCurrent && !confirmDiscardUnsavedChanges("restore the selected character from this backup")) return { status: "cancelled" } as const;
+      const editRevisionAtConfirmation = editRevision.current;
+      if (copyConflicts) {
+        const usedIds = new Set([...existingIds, ...imported.filter(({ id }) => !existingIds.has(id)).map(({ id }) => id)]);
+        imported = imported.map((character) => {
+          if (!existingIds.has(character.id)) return character;
+          let copy = copyWithNewCharacterId(character);
+          while (usedIds.has(copy.id)) copy = copyWithNewCharacterId(character);
+          usedIds.add(copy.id);
+          return copy;
+        });
+      }
+      let count = 0;
+      for (const character of imported) {
+        if (loadRevision.current !== characterRevision) break;
+        setNotice(`Importing character ${count + 1} of ${imported.length}: ${character.name}`);
+        await repo.save(character);
+        count++;
+      }
+      await refreshSavedCharacters();
+      if (count < imported.length) {
+        setNotice(`Imported ${count} of ${imported.length} characters before the selected character changed`);
+        return { status: "imported", count, copied: copyConflicts ? conflicts.length : 0, replaced: copyConflicts ? 0 : conflicts.length } as const;
+      }
+      const activeReplacement = replacesCurrent ? imported.find(({ id }) => id === characterId) : undefined;
+      if (activeReplacement && loadRevision.current === characterRevision) {
+        if (editRevision.current === editRevisionAtConfirmation && apply(activeReplacement, `Restored ${activeReplacement.name}`, true)) {
+          isDirtyRef.current = false;
+          setIsDirty(false);
+        } else if (isDirtyRef.current) {
+          setNotice(`Restored ${activeReplacement.name} to the library; newer edits remain on screen. Reload to view the restored version.`);
+        }
+      }
+      setError(null);
+      if (!activeReplacement || !isDirtyRef.current) setNotice(`Imported ${count} characters${copyConflicts ? `; ${conflicts.length} added as copies` : conflicts.length ? `; ${conflicts.length} existing characters replaced` : ""}`);
+      return { status: "imported", count, copied: copyConflicts ? conflicts.length : 0, replaced: copyConflicts ? 0 : conflicts.length } as const;
+    } catch (failure) {
+      await refreshSavedCharacters();
+      notifyAuthenticationRequired(failure);
+      setError(errorText(failure));
+      setNotice("Library import failed; some characters may already have been saved");
+      return false as const;
+    }
+  };
   const commitLifecycleCharacter = async (next: CharacterInput, success: string) => {
     try {
+      if (next.id !== characterId && !confirmDiscardUnsavedChanges("create this character")) return false;
       parseCharacterInput(next);
       new RulesEngine(next, rulesCatalogs).derive();
       await repo.save(next);
       await refreshSavedCharacters();
       if (next.id !== characterId) {
-        const selected = selectCharacter(next.id);
+        const selected = requestCharacterId(next.id);
         if (!selected) throw new Error("The saved character could not be selected by this sheet host.");
+        isDirtyRef.current = false;
+        setIsDirty(false);
         setNotice(success);
         return true;
       }
-      return apply(next, success);
+      const applied = apply(next, success);
+      if (applied) {
+        isDirtyRef.current = false;
+        setIsDirty(false);
+      }
+      return applied;
     } catch (failure) {
       notifyAuthenticationRequired(failure);
       fail(errorText(failure));
@@ -1052,6 +1782,20 @@ export function useCharacterSheetController({
     mode,
     characterId,
     savedCharacters,
+    exportLibrarySnapshot,
+    importLibrarySnapshot,
+    linkedTargetId,
+    setLinkedTargetId,
+    linkedTargetCharacter,
+    targetDefenseContext,
+    setTargetDefenseContext,
+    linkedTargetDefenseValue,
+    linkedTargetTouchAc,
+    linkedTargetCmdValue,
+    linkedTargetCmbValue,
+    linkedTargetSaves: linkedTargetDerived?.saves,
+    linkedTargetSpellResistance,
+    refreshLinkedTarget,
     selectCharacter,
     samples: sampleCharacters,
     sampleId,
@@ -1060,10 +1804,15 @@ export function useCharacterSheetController({
     character,
     catalog,
     derived,
+    abilityModifier: (id: AbilityId) => new RulesEngine(characterRef.current, rulesCatalogs).derive().abilities[id].modifier.value,
+    noteDerivedDefenses,
     engine,
+    engineForSystemEntry,
     evaluated,
     notice,
     integrationNotice,
+    isDirty,
+    isSaving,
     error,
     validationError: error ?? evaluated.error,
     selected,
@@ -1073,9 +1822,23 @@ export function useCharacterSheetController({
     dcDefense,
     attackAc,
     setAttackAc,
+    targetCover,
+    setTargetCover,
+    targetMissChance,
+    ignoreNonTotalCover,
+    setIgnoreNonTotalCover,
+    setTargetMissChance,
+    reflexCover,
+    setReflexCover,
+    offHandAttackCount,
+    setOffHandAttackCount,
     attackDefense,
     maneuverCmd,
     setManeuverCmd,
+    maneuverAbilityOverride,
+    setManeuverAbilityOverride,
+    maneuverBabProgressionId,
+    setManeuverBabProgressionId,
     maneuverDefense,
     targetPrompt: pendingTargetRoll
       ? {
@@ -1107,11 +1870,15 @@ export function useCharacterSheetController({
     addCustomClass,
     discord,
     lastRoll,
+    lastHostedRoll,
+    rollHistory,
+    retryHostedDelivery,
     rollPlan,
     rollInitiative,
     rollSave,
     rollSkill,
     rollWeaponAttack,
+    rollWeaponStrike,
     rollManeuver,
     createManeuverPlan,
     createWeaponActionPlan,
@@ -1141,18 +1908,68 @@ export function useCharacterSheetController({
     setFeatureGrant,
     featureContexts,
     setFeatureContexts,
+    manualFeatureActionRestrictions,
+    setManualFeatureActionRestrictions,
+    featureModes,
+    setFeatureModes,
+    featureKinds,
+    setFeatureKinds,
+    featureTouch,
+    setFeatureTouch,
+    featureAction,
+    setFeatureAction,
+    featureAttackIds,
+    setFeatureAttackIds,
+    featureRequiredTags,
+    setFeatureRequiredTags,
+    featureExcludedTags,
+    setFeatureExcludedTags,
+    featureRequiredFlags,
+    setFeatureRequiredFlags,
+    featureExcludedFlags,
+    setFeatureExcludedFlags,
     attackName,
+    attackCriticalRange,
+    setAttackCriticalRange,
+    attackCriticalMultiplier,
+    setAttackCriticalMultiplier,
     setAttackName,
     attackDice,
     setAttackDice,
+    attackDamageBySize,
+    setAttackDamageBySize,
     attackAbility,
     setAttackAbility,
+    attackIsNatural,
+    attackFlurryEligible,
+    setAttackIsNatural,
+    setAttackFlurryEligible,
+    attackNaturalRole,
+    setAttackNaturalRole,
     equipmentId,
     setEquipmentId,
     customWeaponName,
+    customWeaponCriticalRange,
+    setCustomWeaponCriticalRange,
+    customWeaponCriticalMultiplier,
+    setCustomWeaponCriticalMultiplier,
     setCustomWeaponName,
     customWeaponDice,
     setCustomWeaponDice,
+    customWeaponAttackCount,
+    customWeaponOffHand,
+    setCustomWeaponOffHand,
+    customWeaponLight,
+    customWeaponNatural,
+    setCustomWeaponNatural,
+    customWeaponNaturalRole,
+    setCustomWeaponNaturalRole,
+    customWeaponProficient,
+    customWeaponFlurryEligible,
+    setCustomWeaponFlurryEligible,
+    setCustomWeaponProficient,
+    setCustomWeaponLight,
+    setCustomWeaponAttackCount,
     weaponEnhancement,
     setWeaponEnhancement,
     weaponAttackAdjustment,
@@ -1161,6 +1978,8 @@ export function useCharacterSheetController({
     setWeaponStrengthRating,
     profileId,
     setProfileId,
+    casterLevelSourceId,
+    setCasterLevelSourceId,
   } as const;
 }
 

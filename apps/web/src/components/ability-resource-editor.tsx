@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { abilityCatalog, spellCatalog } from "@threepointpf/rules-data";
 import {
   cloneAbilityDefinition,
@@ -19,13 +19,14 @@ import type {
   Effect,
   EffectApplicability,
   EffectTargetId,
+  AbilityId,
   ResourceCostTiming,
   ResourceDefinition,
   ResourceMaximumTerm,
   ResourceRefreshRule,
 } from "@threepointpf/rules-schema";
 import { catalogValues, clone, describeEffect, nextId, slug } from "../lib/format";
-import { bonusTypes, effectTargets } from "../lib/options";
+import { abilities, abilityLabels, bonusTypes, effectTargets } from "../lib/options";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
 
 type EffectKind = Effect["kind"];
@@ -62,6 +63,59 @@ function resourceFacts(sheet: CharacterSheet): ResourceFacts {
   };
 }
 
+async function mutateResource(sheet: CharacterSheet, operation: "spend" | "restore" | "refresh", id: string, isCurrent: () => boolean = () => true) {
+  try {
+    const facts = resourceFacts(sheet);
+    const definition = sheet.character.resources?.find((item) => item.id === id);
+    let rechargeTotal: number | undefined;
+    if (operation === "spend" && definition?.refresh.kind === "rechargeRoll") {
+      const rolled = await sheet.rollPlan(createRechargeRollPlan(sheet.character, definition));
+      if (!rolled) return;
+      if (!isCurrent()) return;
+      rechargeTotal = rolled.total;
+    }
+    const character = operation === "spend"
+      ? spendResource(sheet.character, id, 1, facts, (_dice) => rechargeTotal!)
+      : operation === "restore"
+        ? restoreResource(sheet.character, id, 1, facts)
+        : refreshResource(sheet.character, id);
+    sheet.update(character, `${operation} ${id}`);
+  } catch (error) {
+    sheet.fail(error instanceof Error ? error.message : "Resource update failed");
+  }
+}
+
+export function QuickResourceControls({ sheet, resourceId }: { sheet: CharacterSheet; resourceId: string }) {
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const activeCharacterId = useRef(sheet.character.id);
+  useEffect(() => {
+    if (activeCharacterId.current === sheet.character.id) return;
+    activeCharacterId.current = sheet.character.id;
+    busyRef.current = false;
+    setBusy(false);
+  }, [sheet.character.id]);
+  const resource = sheet.derived.resources.find((item) => item.id === resourceId);
+  if (!resource) return null;
+  const update = async (operation: "spend" | "restore") => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    const characterId = sheet.character.id;
+    try { await mutateResource(sheet, operation, resourceId, () => activeCharacterId.current === characterId); }
+    finally {
+      if (activeCharacterId.current === characterId) {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    }
+  };
+  return <span className="summary-resource-controls" aria-label={`Adjust ${resource.name}`}>
+    <button type="button" aria-label={`Spend one ${resource.name}`} title={`Spend one ${resource.name}`} disabled={busy || resource.remaining === 0} onClick={() => void update("spend")}>−1</button>
+    <button type="button" aria-label={`Restore one ${resource.name}`} title={`Restore one ${resource.name}`} disabled={busy || resource.spent <= 0} onClick={() => void update("restore")}>+1</button>
+  </span>;
+}
+
 function refreshLabel(refresh: ResourceRefreshRule): string {
   if (refresh.kind === "interval") return `every ${refresh.rounds} rounds`;
   if (refresh.kind === "rechargeRoll") return `recharge ${refresh.dice.count}d${refresh.dice.sides} rounds`;
@@ -70,6 +124,7 @@ function refreshLabel(refresh: ResourceRefreshRule): string {
 
 function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const authoringRef = useRef<HTMLDetailsElement>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [maximumKind, setMaximumKind] = useState<"fixed" | "manual" | "derived">("fixed");
@@ -91,6 +146,7 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
     setRefreshValue("1");
   };
   const edit = (resource: ResourceDefinition) => {
+    if (authoringRef.current) authoringRef.current.open = true;
     setEditingId(resource.id);
     setName(resource.name);
     setDescription(resource.description ?? "");
@@ -148,50 +204,32 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
       resourceStates: (sheet.character.resourceStates ?? []).filter((item) => item.resourceId !== resource.id),
     }, `Removed ${resource.name}`);
   };
-  const mutate = async (operation: "spend" | "restore" | "refresh", id: string) => {
-    try {
-      const facts = resourceFacts(sheet);
-      const definition = sheet.character.resources?.find((item) => item.id === id);
-      let rechargeTotal: number | undefined;
-      if (operation === "spend" && definition?.refresh.kind === "rechargeRoll") {
-        const rolled = await sheet.rollPlan(createRechargeRollPlan(sheet.character, definition));
-        if (!rolled) return;
-        rechargeTotal = rolled.total;
-      }
-      const character = operation === "spend"
-        ? spendResource(sheet.character, id, 1, facts, (_dice) => rechargeTotal!)
-        : operation === "restore"
-          ? restoreResource(sheet.character, id, 1, facts)
-          : refreshResource(sheet.character, id);
-      sheet.update(character, `${operation} ${id}`);
-    } catch (error) {
-      sheet.fail(error instanceof Error ? error.message : "Resource update failed");
-    }
-  };
+  const mutate = (operation: "spend" | "restore" | "refresh", id: string) => mutateResource(sheet, operation, id);
 
   return <section className="editor-subsection ability-resource-section" aria-label="Resources">
     <h3>Resources</h3>
-    <p className="muted">Capacity is an authored/derived fact. Spent and recharge state are mutable play state.</p>
+    <p className="muted">Use or restore points during play. Open Manage when you need to change a resource.</p>
     {sheet.derived.resources.map((resource) => {
       const definition = sheet.character.resources?.find((item) => item.id === resource.id)!;
       return <div className="feature-row enabled" key={resource.id}>
         <div>
           <b>{resource.name}</b>
           <small>
-            Maximum: {resource.maximum ?? "Unlimited"} · Remaining: {resource.remaining ?? "Unlimited"} · Spent: {resource.spent}
+            {resource.remaining === undefined ? "Unlimited" : `${resource.remaining} left of ${resource.maximum ?? "the maximum"}`} · {resource.spent} spent
             {resource.roundsUntilRefresh !== undefined ? ` · ${resource.roundsUntilRefresh} rounds remaining` : ""}
-            {` · ${refreshLabel(resource.refresh)}`}
+            {` · Refresh: ${refreshLabel(resource.refresh)}`}
           </small>
         </div>
         <div className="mini-fields">
           <button className="table-action" aria-label={`Spend ${resource.name}`} onClick={() => void mutate("spend", resource.id)}>−1</button>
           <button className="table-action" aria-label={`Restore ${resource.name}`} onClick={() => mutate("restore", resource.id)}>+1</button>
           <button className="table-action" aria-label={`Refresh ${resource.name}`} onClick={() => mutate("refresh", resource.id)}>Refresh</button>
-          <button className="table-action" aria-label={`Edit resource ${resource.name}`} onClick={() => edit(definition)}>Edit</button>
-          <button className="table-action" aria-label={`Remove resource ${resource.name}`} onClick={() => remove(definition)}>×</button>
+          <details className="feature-rules-notes"><summary>Manage</summary><button className="table-action" aria-label={`Edit resource ${resource.name}`} onClick={() => edit(definition)}>Edit</button><button className="table-action" aria-label={`Remove resource ${resource.name}`} onClick={() => remove(definition)}>Remove</button></details>
         </div>
       </div>;
     })}
+    <details className="editor-subsection system-source-edit" ref={authoringRef}>
+      <summary>{editingId ? "Edit resource" : "Add or edit resources"}</summary>
     <div className="feature-form">
       <input aria-label="Resource name" placeholder="Resource name" value={name} onChange={(event) => setName(event.target.value)} />
       <input aria-label="Resource description" placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
@@ -210,19 +248,26 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
       <button className="button quiet" onClick={save}>{editingId ? "Save resource" : "+ Add resource"}</button>
       {editingId && <button className="button quiet" onClick={reset}>Cancel edit</button>}
     </div>
+    </details>
   </section>;
 }
 
 function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
+  const [fleeingAbilityIds, setFleeingAbilityIds] = useState<string[]>([]);
   const [catalogId, setCatalogId] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const authoringRef = useRef<HTMLDetailsElement>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [activation, setActivation] = useState<AbilityActivationType>("toggleable");
+  const [actionCost, setActionCost] = useState<NonNullable<AbilityInstance["actionCost"]> | "">("");
   const [spellLike, setSpellLike] = useState(false);
   const [spellLikeFrequency, setSpellLikeFrequency] = useState<NonNullable<AbilityInstance["spellLikeFrequency"]>>("atWill");
   const [spellId, setSpellId] = useState("");
+  const [spellLikeSpellLevel, setSpellLikeSpellLevel] = useState("");
+  const [spellLikeCasterLevel, setSpellLikeCasterLevel] = useState("");
+  const [spellLikeCastingAbility, setSpellLikeCastingAbility] = useState<AbilityId>("cha");
   const [usesPerDay, setUsesPerDay] = useState("");
   const [effects, setEffects] = useState<Effect[]>([]);
   const [costs, setCosts] = useState<NonNullable<AbilityInstance["costs"]>>([]);
@@ -232,7 +277,7 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
   const [bonus, setBonus] = useState<BonusType>("untyped");
   const [dice, setDice] = useState("1d6");
   const [damageType, setDamageType] = useState("");
-  const [criticalBehavior, setCriticalBehavior] = useState<"normal" | "notMultiplied">("normal");
+  const [criticalBehavior, setCriticalBehavior] = useState<"auto" | "normal" | "notMultiplied">("auto");
   const [criticalOperation, setCriticalOperation] = useState<"widen" | "double">("widen");
   const [acContexts, setAcContexts] = useState<Array<"normal" | "touch" | "flatFooted">>(["normal"]);
   const [kinds, setKinds] = useState<NonNullable<EffectApplicability["kinds"]>>([]);
@@ -250,10 +295,11 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
   const [costTimingValue, setCostTimingValue] = useState<ResourceCostTiming>("onActivate");
 
   const reset = () => {
-    setEditingId(null); setDraftId(null); setName(""); setDescription(""); setActivation("toggleable"); setEffects([]); setCosts([]); setCostTimingValue("onActivate"); setSpellLike(false); setSpellLikeFrequency("atWill"); setSpellId(""); setUsesPerDay("");
+    setEditingId(null); setDraftId(null); setName(""); setDescription(""); setActivation("toggleable"); setActionCost(""); setEffects([]); setCosts([]); setCostTimingValue("onActivate"); setSpellLike(false); setSpellLikeFrequency("atWill"); setSpellId(""); setSpellLikeSpellLevel(""); setSpellLikeCasterLevel(""); setSpellLikeCastingAbility("cha"); setUsesPerDay("");
   };
   const load = (ability: AbilityInstance) => {
-    setEditingId(ability.id); setDraftId(ability.id); setName(ability.name); setDescription(ability.description ?? ""); setActivation(ability.activation); setEffects(clone(ability.effects)); setCosts(clone(ability.costs ?? [])); setSpellLike(ability.spellLike ?? false); setSpellLikeFrequency(ability.spellLikeFrequency ?? (ability.activation === "passive" ? "constant" : ability.usesPerDay === 1 ? "onePerDay" : ability.usesPerDay === 3 ? "threePerDay" : ability.usesPerDay !== undefined ? "custom" : "atWill")); setSpellId(ability.spellId ?? ""); setUsesPerDay(ability.usesPerDay === undefined ? "" : String(ability.usesPerDay));
+    if (authoringRef.current) authoringRef.current.open = true;
+    setEditingId(ability.id); setDraftId(ability.id); setName(ability.name); setDescription(ability.description ?? ""); setActivation(ability.activation); setActionCost(ability.actionCost ?? ""); setEffects(clone(ability.effects)); setCosts(clone(ability.costs ?? [])); setSpellLike(ability.spellLike ?? false); setSpellLikeFrequency(ability.spellLikeFrequency ?? (ability.activation === "passive" ? "constant" : ability.usesPerDay === 1 ? "onePerDay" : ability.usesPerDay === 3 ? "threePerDay" : ability.usesPerDay !== undefined ? "custom" : "atWill")); setSpellId(ability.spellId ?? ""); setSpellLikeSpellLevel(ability.spellLikeSpellLevel === undefined ? "" : String(ability.spellLikeSpellLevel)); setSpellLikeCasterLevel(ability.spellLikeCasterLevel === undefined ? "" : String(ability.spellLikeCasterLevel)); setSpellLikeCastingAbility(ability.spellLikeCastingAbility ?? "cha"); setUsesPerDay(ability.usesPerDay === undefined ? "" : String(ability.usesPerDay));
   };
   const applicability = (): EffectApplicability | undefined => {
     const value = {
@@ -276,7 +322,7 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     let effect: Effect | undefined;
     if (effectKind === "damageDice") {
       const parsed = parseDice(dice);
-      if (parsed && (target === "damage.melee" || target === "damage.ranged")) effect = { kind: "damageDice", target, dice: parsed, criticalBehavior, ...(damageType.trim() ? { damageType: damageType.trim() } : {}), ...(appliesWhen ? { appliesWhen } : {}) };
+      if (parsed && (target === "damage.melee" || target === "damage.ranged")) effect = { kind: "damageDice", target, dice: parsed, ...(criticalBehavior !== "auto" ? { criticalBehavior } : {}), ...(damageType.trim() ? { damageType: damageType.trim() } : {}), ...(appliesWhen ? { appliesWhen } : {}) };
     } else if (effectKind === "criticalRange") {
       if ((target === "attack.melee" || target === "attack.ranged") && (criticalOperation === "double" || (Number.isInteger(numeric) && numeric > 0))) effect = { kind: "criticalRange", target, operation: criticalOperation, ...(criticalOperation === "widen" ? { widenBy: numeric } : {}), ...(appliesWhen ? { appliesWhen } : {}) };
     } else if (effectKind === "grant") effect = { kind: "grant", target, grant: damageType.trim() || "Custom capability" };
@@ -304,11 +350,13 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     if (!name.trim()) { sheet.fail("An ability needs a name."); return; }
     const id = editingId ?? draftId ?? nextId(`ability-${slug(name) || "custom"}`, (sheet.character.abilities ?? []).map((item) => item.id));
     const prior = sheet.character.abilities?.find((item) => item.id === id);
+    if (spellLikeSpellLevel.trim() && (!Number.isInteger(Number(spellLikeSpellLevel)) || Number(spellLikeSpellLevel) < 0)) { sheet.fail("Spell level must be a non-negative whole number."); return; }
+    if (spellLikeCasterLevel.trim() && (!Number.isInteger(Number(spellLikeCasterLevel)) || Number(spellLikeCasterLevel) < 0)) { sheet.fail("Caster level must be a non-negative whole number."); return; }
     const daily = !spellLike ? undefined : spellLikeFrequency === "onePerDay" ? 1 : spellLikeFrequency === "threePerDay" ? 3 : spellLikeFrequency === "custom" && usesPerDay.trim() ? Number(usesPerDay) : undefined;
     if (spellLike && spellLikeFrequency === "custom" && !usesPerDay.trim()) { sheet.fail("Enter the custom daily use limit."); return; }
     if (daily !== undefined && (!Number.isInteger(daily) || daily < 1)) { sheet.fail("Daily uses must be a positive whole number, or blank for unlimited uses."); return; }
     const effectiveActivation = spellLike && spellLikeFrequency === "constant" ? "passive" : activation;
-    const ability: AbilityInstance = { id, name: name.trim(), ...(description.trim() ? { description: description.trim() } : {}), activation: effectiveActivation, ...(effectiveActivation === "toggleable" ? { active: prior?.active ?? false } : {}), effects, ...(effectiveActivation !== "passive" && costs.length ? { costs } : {}), ...(spellLike ? { spellLike: true, spellLikeFrequency, ...(spellId ? { spellId } : {}) } : {}), ...(daily !== undefined ? { usesPerDay: daily, usesSpent: Math.min(prior?.usesSpent ?? 0, daily) } : {}) };
+    const ability: AbilityInstance = { id, name: name.trim(), ...(description.trim() ? { description: description.trim() } : {}), activation: effectiveActivation, ...(actionCost ? { actionCost } : {}), ...(effectiveActivation === "toggleable" ? { active: prior?.active ?? false } : {}), ...(prior?.roundsRemaining !== undefined ? { roundsRemaining: prior.roundsRemaining } : {}), effects, ...(effectiveActivation !== "passive" && costs.length ? { costs } : {}), ...(spellLike ? { spellLike: true, spellLikeFrequency, ...(spellId ? { spellId } : {}), ...(spellLikeSpellLevel.trim() ? { spellLikeSpellLevel: Number(spellLikeSpellLevel) } : {}), ...(spellLikeCasterLevel.trim() ? { spellLikeCasterLevel: Number(spellLikeCasterLevel) } : {}), spellLikeCastingAbility } : {}), ...(daily !== undefined ? { usesPerDay: daily, usesSpent: Math.min(prior?.usesSpent ?? 0, daily) } : {}) };
     const abilities = editingId ? (sheet.character.abilities ?? []).map((item) => item.id === editingId ? ability : item) : [...(sheet.character.abilities ?? []), ability];
     if (sheet.update({ abilities }, `${editingId ? "Updated" : "Added"} ${ability.name}`)) reset();
   };
@@ -327,11 +375,17 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
       setDraftId(id);
       return;
     }
-    const ability: AbilityInstance = { id, definitionId: definition.id, name: definition.name, ...(definition.description ? { description: definition.description } : {}), activation: definition.activation, ...(definition.activation === "toggleable" ? { active: false } : {}), effects: [] };
+    const ability: AbilityInstance = { id, definitionId: definition.id, name: definition.name, ...(definition.description ? { description: definition.description } : {}), activation: definition.activation, ...(definition.actionCost ? { actionCost: definition.actionCost } : {}), ...(definition.activation === "toggleable" ? { active: false } : {}), effects: [] };
     sheet.update({ abilities: [...(sheet.character.abilities ?? []), ability] }, `Added ${ability.name}`);
   };
-  const activate = async (ability: AbilityInstance) => {
-    const proposal = { character: sheet.character, abilityId: ability.id };
+  const activate = async (ability: AbilityInstance, fleeing = false) => {
+    const restrictions = sheet.engine.actionRestrictions();
+    const proposal = {
+      character: sheet.character,
+      abilityId: ability.id,
+      actionRestrictions: fleeing ? restrictions.filter((item) => item !== "fleeOnly") : restrictions,
+      ...(fleeing ? { fleeing: true } : {}),
+    };
     const prepared = prepareAbilityExecution(proposal, resourceFacts(sheet), abilityCatalog);
     if (!prepared.accepted) { sheet.fail(prepared.issues.map((issue) => issue.message).join("; ")); return; }
     const rechargeRollResults: Record<string, number> = {};
@@ -343,7 +397,10 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     }
     const result = commitAbilityActivation({ ...proposal, rechargeRollResults }, resourceFacts(sheet), abilityCatalog);
     if (!result.accepted) { sheet.fail(result.issues.map((issue) => issue.message).join("; ")); return; }
-    sheet.update(result.character, ability.activation === "toggleable" ? `${ability.name} ${result.ability.active ? "enabled" : "disabled"}` : `Used ${ability.name}`);
+    const resultCharacter = result.ability.active === false
+      ? { ...result.character, abilities: (result.character.abilities ?? []).map((item) => item.id === ability.id ? { ...item, roundsRemaining: undefined } : item) }
+      : result.character;
+    sheet.update(resultCharacter, ability.activation === "toggleable" ? `${ability.name} ${result.ability.active ? "enabled" : "disabled"}` : `Used ${ability.name}`);
     for (const plan of result.execution.rollPlans.filter((item) => item.id.startsWith("ability:")))
       await sheet.rollPlan(plan);
   };
@@ -351,40 +408,47 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     const abilities = (sheet.character.abilities ?? []).map((item) => item.id === ability.id ? { ...item, usesSpent: 0 } : item);
     sheet.update({ abilities }, `Refreshed daily uses for ${ability.name}`);
   };
+  const panicked = sheet.engine.actionRestrictions().includes("fleeOnly");
 
   return <section className="editor-subsection ability-resource-section" aria-label="Abilities">
     <h3>Abilities</h3>
+    {(sheet.character.abilities ?? []).map((ability) => {
+      const exhausted = ability.activation === "activated" && ability.usesPerDay !== undefined && (ability.usesSpent ?? 0) >= ability.usesPerDay;
+      const linkedSpell = ability.spellId ? { ...spellCatalog, ...(sheet.character.customSpells ?? {}) }[ability.spellId] : undefined;
+      const castsLinkedSpell = ability.spellLike && ability.spellId && ability.activation === "activated";
+      return <div className={`feature-row ${ability.activation === "passive" || ability.active ? "enabled" : ""}`} key={ability.id}>
+      <button className="toggle" aria-label={`${ability.activation === "activated" ? "Use" : "Toggle"} ability ${ability.name}`} aria-pressed={ability.active ?? false} disabled={ability.activation === "passive" || exhausted || Boolean(castsLinkedSpell)} onClick={() => { const fleeing = panicked && fleeingAbilityIds.includes(ability.id); if (fleeing) setFleeingAbilityIds((current) => current.filter((id) => id !== ability.id)); void activate(ability, fleeing); }}><span /></button>
+      <div><b>{ability.name}</b><small>{ability.actionCost ? `${ability.actionCost} action · ` : ""}{ability.spellLike ? `Spell-like${linkedSpell ? ` · ${linkedSpell.name}` : ""} · ${ability.spellLikeFrequency === "constant" ? "constant" : ability.spellLikeFrequency === "atWill" || ability.usesPerDay === undefined ? "at-will" : `${Math.max(0, ability.usesPerDay - (ability.usesSpent ?? 0))}/${ability.usesPerDay} uses today`} · ` : ""}{ability.usesPerDay !== undefined && !ability.spellLike ? `${Math.max(0, ability.usesPerDay - (ability.usesSpent ?? 0))}/${ability.usesPerDay} uses left · ` : ""}{ability.activation} · {(ability.effects.length ? ability.effects : ability.definitionId ? abilityCatalog[ability.definitionId]?.effects ?? [] : []).map(describeEffect).join(" · ") || "Descriptive ability"}{ability.costs?.length ? ` · costs ${ability.costs.map((cost) => `${cost.amount} ${sheet.character.resources?.find((item) => item.id === cost.resourceId)?.name ?? cost.resourceId} ${cost.timing ?? (ability.activation === "activated" ? "onUse" : "onActivate")}`).join(" + ")}` : ""}{castsLinkedSpell ? " · cast from Spells tab" : ""}</small></div>
+      {panicked && ability.activation !== "passive" && !castsLinkedSpell && <label className="inline-check"><input type="checkbox" checked={fleeingAbilityIds.includes(ability.id)} onChange={(event) => setFleeingAbilityIds((current) => event.target.checked ? [...new Set([...current, ability.id])] : current.filter((id) => id !== ability.id))} /> Mark next use to flee</label>}
+      {ability.activation === "toggleable" && <label className="field"><span>Rounds remaining</span><input aria-label={`${ability.name} rounds remaining`} type="number" min="0" step="1" value={ability.roundsRemaining ?? ""} onChange={(event) => { const value = event.target.value === "" ? undefined : Math.max(0, Math.floor(Number(event.target.value) || 0)); sheet.update({ abilities: (sheet.character.abilities ?? []).map((item) => item.id === ability.id ? { ...item, roundsRemaining: value } : item) }); }} /></label>}
+      <i>{ability.activation === "passive" ? "PASSIVE" : ability.activation === "activated" ? "USE" : ability.active ? "ON" : "OFF"}</i>
+      {ability.usesPerDay !== undefined && <div className="inline-actions"><button className="table-action" aria-label={`Restore one use of ${ability.name}`} disabled={(ability.usesSpent ?? 0) <= 0} onClick={() => sheet.update({ abilities: (sheet.character.abilities ?? []).map((item) => item.id === ability.id ? { ...item, usesSpent: Math.max(0, (item.usesSpent ?? 0) - 1) } : item) })}>Restore</button><button className="table-action" aria-label={`Refresh daily uses for ${ability.name}`} disabled={(ability.usesSpent ?? 0) <= 0} onClick={() => refreshDailyUses(ability)}>Refresh</button></div>}
+      <details className="feature-rules-notes"><summary>Manage</summary>{!ability.definitionId && <button className="table-action" aria-label={`Edit ability ${ability.name}`} onClick={() => load(ability)}>Edit</button>}<button className="table-action" aria-label={`Remove ability ${ability.name}`} onClick={() => sheet.update({ abilities: (sheet.character.abilities ?? []).filter((item) => item.id !== ability.id) })}>Remove</button></details>
+    </div>; })}
+    <details className="editor-subsection system-source-edit" ref={authoringRef}>
+    <summary>{editingId ? "Edit ability" : "Add or edit abilities"}</summary>
     <div className="catalog-add-row">
       <select aria-label="Catalog ability" value={catalogId} onChange={(event) => setCatalogId(event.target.value)}><option value="">Choose a catalog ability…</option>{catalogValues(abilityCatalog).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
       <button className="button quiet" disabled={!catalogId} onClick={() => addCatalog(false)}>+ Add catalog ability</button>
       <button className="button quiet" disabled={!catalogId} onClick={() => addCatalog(true)}>Clone → local edit</button>
     </div>
-    {(sheet.character.abilities ?? []).map((ability) => {
-      const exhausted = ability.activation === "activated" && ability.usesPerDay !== undefined && (ability.usesSpent ?? 0) >= ability.usesPerDay;
-      const linkedSpell = ability.spellId ? spellCatalog[ability.spellId] : undefined;
-      return <div className={`feature-row ${ability.activation === "passive" || ability.active ? "enabled" : ""}`} key={ability.id}>
-      <button className="toggle" aria-label={`${ability.activation === "activated" ? "Use" : "Toggle"} ability ${ability.name}`} aria-pressed={ability.active ?? false} disabled={ability.activation === "passive" || exhausted} onClick={() => void activate(ability)}><span /></button>
-      <div><b>{ability.name}</b><small>{ability.spellLike ? `Spell-like${linkedSpell ? ` · ${linkedSpell.name}` : ""} · ${ability.spellLikeFrequency === "constant" ? "constant" : ability.spellLikeFrequency === "atWill" || ability.usesPerDay === undefined ? "at-will" : `${Math.max(0, ability.usesPerDay - (ability.usesSpent ?? 0))}/${ability.usesPerDay} uses today`} · ` : ""}{ability.activation} · {(ability.effects.length ? ability.effects : ability.definitionId ? abilityCatalog[ability.definitionId]?.effects ?? [] : []).map(describeEffect).join(" · ") || "Descriptive ability"}{ability.costs?.length ? ` · costs ${ability.costs.map((cost) => `${cost.amount} ${sheet.character.resources?.find((item) => item.id === cost.resourceId)?.name ?? cost.resourceId} ${cost.timing ?? (ability.activation === "activated" ? "onUse" : "onActivate")}`).join(" + ")}` : ""}</small></div>
-      <i>{ability.activation === "passive" ? "PASSIVE" : ability.activation === "activated" ? "USE" : ability.active ? "ON" : "OFF"}</i>
-      {ability.usesPerDay !== undefined && <button className="table-action" aria-label={`Refresh daily uses for ${ability.name}`} onClick={() => refreshDailyUses(ability)}>Refresh</button>}
-      {!ability.definitionId && <button className="table-action" aria-label={`Edit ability ${ability.name}`} onClick={() => load(ability)}>Edit</button>}
-      <button className="table-action" aria-label={`Remove ability ${ability.name}`} onClick={() => sheet.update({ abilities: (sheet.character.abilities ?? []).filter((item) => item.id !== ability.id) })}>×</button>
-    </div>; })}
     <div className="feature-form ability-builder">
       <input aria-label="Ability name" placeholder="Ability name" value={name} onChange={(event) => setName(event.target.value)} />
       <input aria-label="Ability description" placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
       <select aria-label="Ability activation" value={activation} onChange={(event) => { const next = event.target.value as AbilityActivationType; setActivation(next); setCostTimingValue(next === "activated" ? "onUse" : "onActivate"); }}><option value="passive">Passive</option><option value="toggleable">Toggleable</option><option value="activated">Activated / one-shot</option></select>
+      <label>Action cost<select aria-label="Ability action cost" value={actionCost} onChange={(event) => setActionCost(event.target.value as typeof actionCost)}><option value="">No tracked action</option><option value="standard">Standard</option><option value="move">Move</option><option value="swift">Swift</option><option value="immediate">Immediate</option><option value="fullRound">Full round</option><option value="free">Free</option></select></label>
       <label className="inline-check"><input type="checkbox" checked={spellLike} onChange={(event) => setSpellLike(event.target.checked)} /> Spell-like ability</label>
       {spellLike && <>
         <label>Spell-like frequency<select aria-label="Spell-like frequency" value={spellLikeFrequency} onChange={(event) => { const next = event.target.value as typeof spellLikeFrequency; setSpellLikeFrequency(next); if (next === "constant") setActivation("passive"); else if (activation === "passive") setActivation("activated"); }}>{[["onePerDay", "1/day"], ["threePerDay", "3/day"], ["atWill", "At will"], ["constant", "Constant"], ["custom", "Custom daily uses"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <select aria-label="Linked spell reference" value={spellId} onChange={(event) => setSpellId(event.target.value)}><option value="">No linked spell reference</option>{catalogValues(spellCatalog).map((spell) => <option key={spell.id} value={spell.id}>{spell.name}</option>)}</select>
+        <select aria-label="Linked spell reference" value={spellId} onChange={(event) => setSpellId(event.target.value)}><option value="">No linked spell reference</option>{catalogValues({ ...spellCatalog, ...(sheet.character.customSpells ?? {}) }).map((spell) => <option key={spell.id} value={spell.id}>{spell.name}</option>)}</select>
+        {spellId && <><label>Spell level<input aria-label="Spell-like ability spell level" type="number" min="0" step="1" value={spellLikeSpellLevel} onChange={(event) => setSpellLikeSpellLevel(event.target.value)} placeholder="Use linked spell level" /></label><label>Caster level<input aria-label="Spell-like ability caster level" type="number" min="0" step="1" value={spellLikeCasterLevel} onChange={(event) => setSpellLikeCasterLevel(event.target.value)} placeholder="Use character level" /></label><label>Spell-like ability DC ability<select aria-label="Spell-like ability DC ability" value={spellLikeCastingAbility} onChange={(event) => setSpellLikeCastingAbility(event.target.value as AbilityId)}>{abilities.map((id) => <option key={id} value={id}>{abilityLabels[id]}</option>)}</select></label></>}
         {spellLikeFrequency === "custom" && <label>Uses per day<input aria-label="Spell-like ability uses per day" type="number" min="1" value={usesPerDay} onChange={(event) => setUsesPerDay(event.target.value)} /></label>}
       </>}
       <h4>Effects</h4>
       {effects.map((effect, index) => <div className="chip" key={index}><span>{describeEffect(effect)}</span><button aria-label={`Move effect ${index + 1} up`} onClick={() => move(index, -1)}>↑</button><button aria-label={`Move effect ${index + 1} down`} onClick={() => move(index, 1)}>↓</button><button aria-label={`Remove effect ${index + 1}`} onClick={() => setEffects((current) => current.filter((_, item) => item !== index))}>×</button></div>)}
       <select aria-label="Ability effect kind" value={effectKind} onChange={(event) => setEffectKind(event.target.value as EffectKind)}><option value="modifier">Numeric modifier</option><option value="replaceBase">Replace baseline</option><option value="multiply">Multiply</option><option value="minimum">Minimum</option><option value="maximum">Maximum</option><option value="grant">Grant</option><option value="criticalRange">Critical range</option><option value="damageDice">Additional damage dice</option></select>
       <select aria-label="Ability effect target" value={target} onChange={(event) => setTarget(event.target.value as EffectTargetId)}>{effectTargets.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      {effectKind === "damageDice" ? <><input aria-label="Ability damage dice" value={dice} onChange={(event) => setDice(event.target.value)} /><input aria-label="Ability damage type" placeholder="fire / precision / label" value={damageType} onChange={(event) => setDamageType(event.target.value)} /><select aria-label="Ability damage critical behavior" value={criticalBehavior} onChange={(event) => setCriticalBehavior(event.target.value as typeof criticalBehavior)}><option value="normal">Multiply on critical</option><option value="notMultiplied">Not multiplied</option></select></> : <>{effectKind === "criticalRange" && <select aria-label="Critical range operation" value={criticalOperation} onChange={(event) => setCriticalOperation(event.target.value as typeof criticalOperation)}><option value="widen">Widen by N</option><option value="double">Double base threat range</option></select>}{!(effectKind === "criticalRange" && criticalOperation === "double") && <input aria-label="Ability effect value" type="number" value={value} onChange={(event) => setValue(event.target.value)} />}{effectKind === "modifier" && <select aria-label="Ability effect bonus type" value={bonus} onChange={(event) => setBonus(event.target.value as BonusType)}>{bonusTypes.map((item) => <option key={item}>{item}</option>)}</select>}{effectKind === "grant" && <input aria-label="Ability granted capability" placeholder="Capability label" value={damageType} onChange={(event) => setDamageType(event.target.value)} />}</>}
+      {effectKind === "damageDice" ? <><input aria-label="Ability damage dice" value={dice} onChange={(event) => setDice(event.target.value)} /><input aria-label="Ability damage type" placeholder="fire / precision / label" value={damageType} onChange={(event) => setDamageType(event.target.value)} /><select aria-label="Ability damage critical behavior" value={criticalBehavior} onChange={(event) => setCriticalBehavior(event.target.value as typeof criticalBehavior)}><option value="auto">Use damage type default</option><option value="normal">Multiply on critical</option><option value="notMultiplied">Not multiplied</option></select></> : <>{effectKind === "criticalRange" && <select aria-label="Critical range operation" value={criticalOperation} onChange={(event) => setCriticalOperation(event.target.value as typeof criticalOperation)}><option value="widen">Widen by N</option><option value="double">Double base threat range</option></select>}{!(effectKind === "criticalRange" && criticalOperation === "double") && <input aria-label="Ability effect value" type="number" value={value} onChange={(event) => setValue(event.target.value)} />}{effectKind === "modifier" && <select aria-label="Ability effect bonus type" value={bonus} onChange={(event) => setBonus(event.target.value as BonusType)}>{bonusTypes.map((item) => <option key={item}>{item}</option>)}</select>}{effectKind === "grant" && <input aria-label="Ability granted capability" placeholder="Capability label" value={damageType} onChange={(event) => setDamageType(event.target.value)} />}</>}
       {effectKind === "modifier" && target === "ac" && <label>AC contexts<select multiple aria-label="AC applicability contexts" value={acContexts} onChange={(event) => setAcContexts(selectedValues(event) as typeof acContexts)}><option value="normal">Normal</option><option value="touch">Touch</option><option value="flatFooted">Flat-footed</option></select></label>}
       <label>Roll kinds<select multiple aria-label="Ability effect roll kinds" value={kinds} onChange={(event) => setKinds(selectedValues(event) as typeof kinds)}>{["attack", "damage", "healing", "maneuver", "save", "skill", "initiative"].map((item) => <option key={item}>{item}</option>)}</select></label>
       <label>Attack modes<select multiple aria-label="Ability effect modes" value={modes} onChange={(event) => setModes(selectedValues(event) as typeof modes)}><option value="melee">Melee</option><option value="ranged">Ranged</option></select></label>
@@ -407,6 +471,7 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
       <button className="button quiet" onClick={save}>{editingId ? "Save ability" : "+ Add ability"}</button>
       {editingId && <button className="button quiet" onClick={reset}>Cancel edit</button>}
     </div>
+    </details>
   </section>;
 }
 

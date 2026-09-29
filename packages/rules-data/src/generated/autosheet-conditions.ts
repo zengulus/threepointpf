@@ -5,6 +5,19 @@
 import type { FeatureCatalog } from "@threepointpf/rules-schema";
 
 export const generatedAutosheetConditionCatalog = {
+  "pf1e.paizo.bleed": {
+    "id": "pf1e.paizo.bleed",
+    "name": "Bleed",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 237,
+      "range": "A237:U237"
+    }
+  },
   "pf1e.paizo.blinded": {
     "id": "pf1e.paizo.blinded",
     "name": "Blinded",
@@ -20,6 +33,60 @@ export const generatedAutosheetConditionCatalog = {
           "touch",
           "flatFooted"
         ]
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.acrobatics",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.climb",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.disable-device",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.escape-artist",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.fly",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.ride",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.stealth",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.swim",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.sleight-of-hand",
+        "value": -4,
+        "bonusType": "penalty"
       }
     ],
     "source": {
@@ -29,6 +96,19 @@ export const generatedAutosheetConditionCatalog = {
       "category": "Conditions",
       "row": 238,
       "range": "A238:U238"
+    }
+  },
+  "pf1e.paizo.confused": {
+    "id": "pf1e.paizo.confused",
+    "name": "Confused",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 240,
+      "range": "A240:U240"
     }
   },
   "pf1e.paizo.cowering": {
@@ -56,6 +136,19 @@ export const generatedAutosheetConditionCatalog = {
       "range": "A241:U241"
     }
   },
+  "pf1e.paizo.dazed": {
+    "id": "pf1e.paizo.dazed",
+    "name": "Dazed",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 242,
+      "range": "A242:U242"
+    }
+  },
   "pf1e.paizo.dazzled": {
     "id": "pf1e.paizo.dazzled",
     "name": "Dazzled",
@@ -70,6 +163,12 @@ export const generatedAutosheetConditionCatalog = {
       {
         "kind": "modifier",
         "target": "attack.ranged",
+        "value": -1,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.perception",
         "value": -1,
         "bonusType": "penalty"
       }
@@ -87,7 +186,20 @@ export const generatedAutosheetConditionCatalog = {
     "id": "pf1e.paizo.deafened",
     "name": "Deafened",
     "description": "Initiative, Perception -4",
-    "effects": [],
+    "effects": [
+      {
+        "kind": "modifier",
+        "target": "initiative",
+        "value": -4,
+        "bonusType": "penalty"
+      },
+      {
+        "kind": "modifier",
+        "target": "skill.perception",
+        "value": -4,
+        "bonusType": "penalty"
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -144,6 +256,16 @@ export const generatedAutosheetConditionCatalog = {
         "kind": "multiply",
         "target": "speed.burrow",
         "factor": 0.5
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
       }
     ],
     "source": {
@@ -196,6 +318,16 @@ export const generatedAutosheetConditionCatalog = {
         "kind": "multiply",
         "target": "speed.burrow",
         "factor": 0.5
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
       }
     ],
     "source": {
@@ -205,6 +337,19 @@ export const generatedAutosheetConditionCatalog = {
       "category": "Conditions",
       "row": 246,
       "range": "A246:U246"
+    }
+  },
+  "pf1e.paizo.fascinated": {
+    "id": "pf1e.paizo.fascinated",
+    "name": "Fascinated",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 247,
+      "range": "A247:U247"
     }
   },
   "pf1e.paizo.fatigued": {
@@ -223,6 +368,16 @@ export const generatedAutosheetConditionCatalog = {
         "target": "ability.dex",
         "value": -2,
         "bonusType": "penalty"
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
       }
     ],
     "source": {
@@ -294,6 +449,16 @@ export const generatedAutosheetConditionCatalog = {
         "target": "ability.dex",
         "value": -4,
         "bonusType": "penalty"
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
       }
     ],
     "source": {
@@ -313,13 +478,13 @@ export const generatedAutosheetConditionCatalog = {
         "kind": "modifier",
         "target": "attack.melee",
         "value": 2,
-        "bonusType": "penalty"
+        "bonusType": "circumstance"
       },
       {
         "kind": "modifier",
         "target": "attack.ranged",
         "value": 2,
-        "bonusType": "penalty"
+        "bonusType": "circumstance"
       }
     ],
     "source": {
@@ -335,7 +500,18 @@ export const generatedAutosheetConditionCatalog = {
     "id": "pf1e.paizo.nauseated",
     "name": "Nauseated",
     "description": "cannot charge; cannot run",
-    "effects": [],
+    "effects": [
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -570,7 +746,18 @@ export const generatedAutosheetConditionCatalog = {
     "id": "pf1e.paizo.staggered",
     "name": "Staggered",
     "description": "charge speed ×0.5; cannot run",
-    "effects": [],
+    "effects": [
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0.5
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -605,11 +792,61 @@ export const generatedAutosheetConditionCatalog = {
       "range": "A260:U260"
     }
   },
+  "pf1e.paizo.light-encumbrance": {
+    "id": "pf1e.paizo.light-encumbrance",
+    "name": "Light Encumbrance",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 261,
+      "range": "A261:U261"
+    }
+  },
+  "pf1e.paizo.medium-encumbrance": {
+    "id": "pf1e.paizo.medium-encumbrance",
+    "name": "Medium Encumbrance",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 262,
+      "range": "A262:U262"
+    }
+  },
+  "pf1e.paizo.heavy-encumbrance": {
+    "id": "pf1e.paizo.heavy-encumbrance",
+    "name": "Heavy Encumbrance",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 263,
+      "range": "A263:U263"
+    }
+  },
   "pf1e.paizo.overencumbered": {
     "id": "pf1e.paizo.overencumbered",
     "name": "Overencumbered",
     "description": "cannot charge; cannot run",
-    "effects": [],
+    "effects": [
+      {
+        "kind": "multiply",
+        "target": "speed.charge",
+        "factor": 0
+      },
+      {
+        "kind": "multiply",
+        "target": "speed.run",
+        "factor": 0
+      }
+    ],
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Formula References",
@@ -617,6 +854,32 @@ export const generatedAutosheetConditionCatalog = {
       "category": "Conditions",
       "row": 264,
       "range": "A264:U264"
+    }
+  },
+  "pf1e.paizo.unchained-wound-system": {
+    "id": "pf1e.paizo.unchained-wound-system",
+    "name": "Unchained Wound System",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 265,
+      "range": "A265:U265"
+    }
+  },
+  "pf1e.paizo.negative-levels": {
+    "id": "pf1e.paizo.negative-levels",
+    "name": "Negative Levels",
+    "effects": [],
+    "source": {
+      "document": "Pathfinder Autosheet v6.2.1",
+      "sheet": "Formula References",
+      "system": "PF1e",
+      "category": "Conditions",
+      "row": 266,
+      "range": "A266:U266"
     }
   }
 } satisfies FeatureCatalog;

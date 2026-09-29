@@ -24,7 +24,7 @@ The workbook's formulas reduce each typed category as the highest positive value
 
 Skills combine ranks, governing ability modifier, optional class-skill bonus, miscellaneous and armor/size adjustments, then global/specific skill effects. Ranks remain ordinary authored `CharacterInput` facts, but the lifecycle profile can derive a per-slot budget from the winning skill-point chassis, validate an allocation, and retain a deliberate override rather than forcing UI code to infer those rules. Class-skill and variant-skill interpretation remains explicit content/policy rather than a class-name heuristic.
 
-The workbook carries land/fly/swim/burrow/climb effects and condition multipliers. v0 implements additive movement targets plus a uniform replacement operation for an intrinsic speed baseline; multipliers and caps remain future work. Attack entries are modeled as data: mode, attack ability, optional damage ability/multiplier, dice, weapon bonus and classification-only tags. The rules engine derives attack modifiers and damage modifiers, rather than recreating spreadsheet attack columns.
+The workbook carries land/fly/swim/burrow/climb effects and condition multipliers. Movement uses the shared effect pipeline: replacement establishes the intrinsic baseline, armor can apply the workbook speed table, additive modifiers are reduced, then matching multipliers, minimums, and maximums apply with provenance. For example, the imported Slow and Exhausted conditions halve every movement mode. Attack entries are modeled as data: mode, attack ability, optional damage ability/multiplier, dice, weapon bonus and classification-only tags. The rules engine derives attack modifiers and damage modifiers, rather than recreating spreadsheet attack columns.
 
 ## Replacement, grants and defense contexts
 
@@ -70,4 +70,4 @@ Clients request rolls by context and submit only raw faces. A future authoritati
 
 ## Deliberate discrepancies
 
-The new model does not preserve spreadsheet-only custom-effect row limits, combined bonus categories, lookup formulas, formula-reference cells, or the workbook's gestalt switch. Those are implementation mechanisms, not the domain model. This milestone keeps manual BAB/saves/HD as an explicit compatibility mode while advancement tracks and lifecycle policy provide the same baseline facts without introducing an `isGestalt` foundation or a separate builder character.
+The new model does not preserve spreadsheet-only custom-effect row limits, combined bonus categories, lookup formulas, or formula-reference cells. The workbook's Gestalt switch is represented by parallel advancement tracks: BAB and saves use the best track total, hit dice select the best class per level, and skill-point budgets use the best class progression total. The UI describes this topology as Gestalt, but the persisted character does not keep a separate checkbox. Manual BAB/saves/HD remain an explicit compatibility mode.

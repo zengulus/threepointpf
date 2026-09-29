@@ -18,11 +18,14 @@ are now explicit campaign-profile concerns and are summarized here.
    explicit server authority and authentication design.
 
 Settled by the runtime-mode pass, and no longer open: browser mode is the
-**default** backing mode, hosted mode is explicit, the published Pages build is
-explicitly browser-only and unauthenticated, samples are ordinary authored state with a pinned level 1
-fighter as the landing sheet, and user-facing presentation choices (dice skins,
-flourishes, sound, reduced motion, selected sample) live under their own storage
-keys and never enter character state.
+**default** backing mode for local/demo builds, while the collaborative Sites
+deployment explicitly builds in hosted mode. The Site uses local username and
+password accounts stored with characters in its D1 database; the separate static
+GitHub Pages build remains browser-only and unauthenticated. Samples are
+ordinary authored state with a pinned level 1 fighter as the local/demo landing
+sheet, and user-facing presentation choices (dice skins, flourishes, sound,
+reduced motion, selected sample) live under their own storage keys and never
+enter character state.
 
 Settled by the application-shell pass, and no longer open: `App` can receive a
 caller-selected `characterId`; `AppShell` owns one character-sheet controller,
@@ -95,71 +98,76 @@ feature instances remain compatible.
    guided player flow claims to prove legal builds.
 3. **HP and skill variants.** The profile makes maximum-first-level, fixed,
    rolled/caller-supplied, and manual HP gains explicit and can report a skill
-   budget/allocation with an override. It does not settle random-roll auditing,
-   fractional ranks, every class-skill/cap interpretation, retraining, or the
-   3.5/PF1e variants. Those remain local policy decisions, recorded rather than
-   silently guessed.
+   budget/allocation with an override. The lifecycle wizard now supports
+   Pathfinder and D&D 3.5 rank costs and class/cross-class caps, including
+   background-skill points. Random-roll auditing, retraining, and persisted
+   campaign-profile policy remain open.
 
 ## Rule semantics
 
 1. **Opposed maneuvers and maneuver legality.** The engine computes a contextual
-   CMB/CMD modifier and a maneuver outcome against a supplied CMD, but not the
-   opposed check, the size limit (you cannot trip a creature more than two sizes
-   larger) or the size of the modifier the *defender* applies. Options: keep it
-   at the modifiers plus an author reminder, or add a `ManeuverResolution` that
-   carries both contexts. Today a maneuver is a contextual CMB plan compared
-   against the caller's CMD and the table adjudicates the rest.
-2. **Automatic critical follow-up.** Additional damage dice now explicitly
-   declare whether they multiply, so precision damage can remain one sourced
-   copy while ordinary riders follow the weapon's authored multiplier. What is
-   still not modelled is automatically offering or resolving the critical
-   damage plan after a `criticalSuccess`; the caller decides when to roll that
-   variant.
+   CMB/CMD modifier and a maneuver outcome against CMD. A linked saved target now
+   supplies its derived CMD; Escape Grapple supports CMB and Escape Artist,
+   spends a standard action, and clears the Grappled condition on success. The
+   app still does not apply the target's Grappled state when an attacker starts
+   or maintains a grapple, enforce other maneuver-specific size limits beyond
+   the linked-target Trip size check, or model
+   the defender's maneuver modifiers as a second
+   opposed plan. These remain table-adjudicated until a `ManeuverResolution`
+   carries both character contexts and the selected maneuver's legal targets.
+2. **Critical damage selection.** Additional damage dice declare whether they
+   multiply, so precision damage can remain one sourced copy while ordinary
+   riders follow the weapon's authored multiplier. After a weapon attack
+   resolves as `criticalSuccess`, the matching attack control switches to its
+   critical-damage plan. The player chooses when to roll that damage; it is not
+   rolled automatically with the attack.
 3. **Multiple extra-attack sources.** Haste grants exactly one extra attack per
    full-attack action (decided, and covered by tests). Whether Rapid Shot, Haste
    and a future *speed* weapon stack, or whether extra attacks of the same class
    are exclusive, is authored per feature today because the answer is
    campaign-specific. If stacking becomes a rule, it needs an explicit
    extra-attack category on the effect rather than tag heuristics.
-4. **Damage, drain and absent abilities.** The ability-penalty floor
-   deliberately exempts baseline replacement so these mechanics stay
-   representable, but nothing yet models them. The open question is whether they
-   are a `replaceBase` on `ability.*` (today's escape hatch), a distinct
-   operation such as `reduceMax`, or damage tracked separately from the score.
-5. **Target defense is caller-supplied context.** A request may name the AC, CMD
-   or DC it is rolled against, and the server records and echoes it but cannot
-   verify it: a persisted target character is not loaded yet. Making defenses
-   authoritative needs a target-sheet lookup (or a campaign policy for
-   table-declared values), and until then a client can supply a defense that
-   favors itself. The mitigation in place is that a defense that cannot apply to
-   the roll family — a DC on an attack, an AC on a save, a non-touch AC on a
-   touch attack — is rejected.
+4. **Damage, drain and absent abilities.** The character now stores ability
+   damage and drain separately from base scores and temporary penalties. Both
+   reduce the derived score and all dependent rolls, can reduce a score to 0,
+   and carry separate provenance. Restoration remains player-tracked; the app
+   does not yet apply each ability's specific 0-score condition (such as
+   unconsciousness, paralysis, or death).
+5. **Target defense is client-resolved context.** The browser can link a saved
+   character, derive its AC/CMD/saves/touch AC/spell resistance, and refresh that
+   snapshot before rolling; players can still enter transient defenses or spell
+   overrides. The roll API records and echoes the selected defense but does not
+   resolve the target character itself, so a direct API caller can supply a
+   different numeric defense. Server-authoritative defenses need target lookup
+   in the API or a campaign policy for table-declared values. The API rejects a
+   defense that cannot apply to the roll family — a DC on an attack, an AC on a
+   save, or a non-touch AC on a touch attack.
 6. **Automatic-failure classification for attacks.** The current PF1e attack
    policy classifies a natural 1 as `criticalFailure`. That is a campaign
    naming choice: PF1e itself only says "automatic miss". If a second campaign
    should report a plain `failure`, it overrides the `attack` policy; the
    default stays as specified.
-7. **Cover, concealment and miss chance.** Not modeled. These are
-   attack-resolution facts rather than typed AC bonuses, so they most likely
-   belong in a future resolution context (attack against concealment, miss
-   chance percent) rather than as `ac` effects.
-8. **Denied Dexterity.** Flat-footed is a defense context, but "denied Dexterity
-   bonus" (feint, unseen attacker, some grapples) is not identical to it.
-   Whether that becomes another defense context, a roll-context flag, or both is
-   undecided.
+7. **Cover, concealment and miss chance.** Partial, standard, soft and improved
+   cover adjust target AC on weapon attacks; total cover blocks those attacks;
+   the roller can add the applicable cover bonus to a Reflex save. Cover is
+   selected by the player because the app has no combat geometry or line-of-effect
+   model. Players can set the applicable 1–100% miss chance (commonly 20% concealment or 50% total concealment) for weapon
+   and spell touch attacks; after beating AC, the roll checks a separate d100
+   that does not add to the attack total. Attack-of-opportunity restrictions
+   and other cover-negating effects remain unmodeled. Improved Precise Shot is a situational control that removes cover bonuses against ranged attacks except when the target has total cover.
+8. **Denied Dexterity.** The sheet derives and displays AC without positive
+   Dexterity or dodge bonuses, separately from flat-footed AC. Weapon attacks can link a saved character and use its derived normal, touch, flat-footed, or denied-Dexterity AC, with a refresh control for changed target state. Spell casts can also use the linked target’s touch AC, relevant save, and spell resistance, with entered overrides.
 9. **Situational flags.** Conditions contribute flags such as the `sight-based`
    requirement on Dazzled's Perception penalty, but there is no registry or
    taxonomy: any lowercase slug is valid. The open decision is whether flags
    become a closed catalog validated against `rules-data`, which would make
    homebrew portability cheaper but homebrew experimentation slower.
-10. **Action economy.** The modeled actions are still only `standardAttack`,
-    `fullAttack`, `maneuver`, `save` and `skillCheck`. Damage and initiative
-    plans exist and are requestable through `/roll-plan` (and rebuildable by
-    `/resolve-roll`), but they hang off no action of their own: initiative sits
-    outside the action model by nature, and a damage roll is requested per
-    weapon/step rather than by declaring "this hit was a critical, give me its
-    damage". Swift and immediate actions, readying, actions spanning a round,
-    and spellcasting action types wait on spellcasting.
+10. **Action economy.** The turn ledger tracks standard, move, swift/immediate,
+    full-round, and free actions for attacks, maneuvers, authored system entries,
+    abilities, and spells. Full attacks reserve their action and allow each
+    planned attack step once. Initiative remains outside the action ledger, and
+    weapon damage is requested per step after a hit. Ready actions and actions
+    that span rounds still need a table-defined execution flow.
 
 ## Product decisions
 
@@ -173,13 +181,12 @@ feature instances remain compatible.
     per-weapon shortcuts (which must always carry the action explicitly, as the
     request does now), is a UX decision with rules consequences.
 12. **How much of an outcome to show.** Rolls report the natural face, the
-    threat-range verdict and the semantic outcome. The sheet now has one optional
-    caller-entered Target DC that saves and skill checks use, so a DC-checked
-    roll resolves while a blank field leaves it unresolved rather than assuming a
-    number. Still open: whether the sheet should also take a target AC/CMD, remember a
-    last-used value per character, or keep the table's numbers out of the app,
-    and whether the attack roller should keep reporting "unresolved" until the
-    table supplies an AC.
+   threat-range verdict and the semantic outcome. The browser accepts caller-entered
+   target DC, AC, and CMD values when no saved target is linked; blank fields
+   prompt when the player starts a roll, and known values resolve the result.
+   These numbers are transient to the current browser session rather than saved
+   with the character. The browser derives linked-target defenses, but the API
+   still does not independently verify them (see decision 5).
 13. **Exclusion display volume.** Every filtered effect is reported with a
     reason, and the sheet shows them for the inspected target. If players need
     "why is my ray not getting Deadly Aim" without inspecting, the plan needs a
@@ -188,8 +195,11 @@ feature instances remain compatible.
     including a monster-style progression, travels with the character and uses
     the same lifecycle/evaluator pipeline as imported content. Homebrew can
     also express applicability, tags, action roles and critical-range widening,
-    but there is no editor for `appliesWhen`, flags, step roles, threat ranges,
-    or generic lifecycle choices; those are authored as data/JSON today.
+    and the ability editor exposes contextual filters while manual feature
+    modifiers can now be scoped by roll kind, attack mode, touch/full-attack
+    status, attack IDs, tags, and context flags. There is still no editor for
+    attack step roles, threat ranges, or generic lifecycle choices; those are
+    authored as data/JSON today.
     Whether that stays a power-user path or gains a form is a product choice,
     and it should follow decision 9 and the lifecycle-choice decision above.
 15. **Spellcasting source choice authoring.** The advancement model can bind a selected source ID to a regular progression feature choice and lifecycle selection. Remaining question: whether expert authoring should generate that linked feature-choice metadata from a simpler prestige editor instead of requiring content authors to keep the two references aligned.

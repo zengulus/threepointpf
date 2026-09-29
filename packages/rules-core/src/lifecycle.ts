@@ -189,6 +189,8 @@ export interface SkillAllocationPreview {
   winningChassis?: SlotSkillPointSource;
   available?: number;
   allocated: number;
+  /** Skill-point cost after class/cross-class rules are applied. */
+  budgetUsed?: number;
   remaining?: number;
   ranks: Record<string, number>;
 }
@@ -1541,11 +1543,25 @@ function skillBudget(
 function rankCap(
   profile: CampaignCharacterProfile,
   characterLevel: number,
-): number | undefined {
+  classSkill: boolean,
+): number {
   const cap = profile.skillAllocationPolicy.rankCap;
-  if (!cap) return undefined;
-  if (cap.kind === "fixed") return cap.value;
-  return characterLevel * (cap.multiplier ?? 1) + (cap.offset ?? 0);
+  const ruleset = profile.skillAllocationPolicy.ruleset ?? "pathfinder";
+  const classCap = !cap
+    ? characterLevel + (ruleset === "dnd35" ? 3 : 0)
+    : cap.kind === "fixed" ? cap.value : characterLevel * (cap.multiplier ?? 1) + (cap.offset ?? 0);
+  return !classSkill && ruleset === "dnd35" ? classCap / 2 : classCap;
+}
+
+function characterClassSkills(inspection: Inspection): Set<string> {
+  const ids = new Set<string>();
+  const consolidated = inspection.character.workbookOptions?.skillMode === "consolidated";
+  for (const slot of inspection.character.advancementSlots ?? [])
+    for (const track of slot.tracks) {
+      const progression = inspection.catalog[track.entry.progressionId];
+      for (const skill of (consolidated ? progression?.consolidatedClassSkills : progression?.classSkills) ?? []) ids.add(skill);
+    }
+  return ids;
 }
 
 function skillPolicyIssues(
@@ -1557,7 +1573,8 @@ function skillPolicyIssues(
   const previews: SkillAllocationPreview[] = [];
   const records = inspection.character.lifecycle?.skillAllocations ?? [];
   const characterLevel = inspection.advancement.slotCount;
-  const cap = rankCap(profile, characterLevel);
+  const classSkills = characterClassSkills(inspection);
+  const ruleset = profile.skillAllocationPolicy.ruleset ?? "pathfinder";
   for (const item of expected) {
     const source = inspection.advancement.skillPointSources.find(
       (candidate) => candidate.slotId === item.slotId,
@@ -1578,6 +1595,7 @@ function skillPolicyIssues(
       (total, value) => total + value,
       0,
     );
+    const budgetUsed = Object.entries(record.ranks).reduce((total, [skillId, ranks]) => total + ranks * (ruleset === "dnd35" && !classSkills.has(skillId) ? 2 : 1), 0);
     const backgroundSkills = workbookSkillMode(inspection.character.workbookOptions) === "background";
     const available = skillBudget(
       profile,
@@ -1590,8 +1608,9 @@ function skillPolicyIssues(
       level: item.level,
       slotId: item.slotId,
       ...(source ? { winningChassis: source } : {}),
-      ...(available !== undefined ? { available, remaining: available - allocated } : {}),
+      ...(available !== undefined ? { available, remaining: available - budgetUsed } : {}),
       allocated,
+      budgetUsed,
       ranks: record.ranks,
     });
     const scope = { slotId: item.slotId };
@@ -1603,31 +1622,35 @@ function skillPolicyIssues(
           scope,
         ),
       );
-    const backgroundAllocated = Object.entries(record.ranks)
-      .filter(([skillId]) => isAutosheetBackgroundSkill(skillId))
-      .reduce((total, [, ranks]) => total + ranks, 0);
-    const backgroundCredit = backgroundSkills ? Math.min(2, backgroundAllocated) : 0;
+    let backgroundRanksRemaining = backgroundSkills ? 2 : 0;
+    let backgroundCredit = 0;
+    for (const [skillId, ranks] of Object.entries(record.ranks)) {
+      if (!isAutosheetBackgroundSkill(skillId) || backgroundRanksRemaining <= 0) continue;
+      const creditedRanks = Math.min(ranks, backgroundRanksRemaining);
+      backgroundCredit += creditedRanks * (ruleset === "dnd35" && !classSkills.has(skillId) ? 2 : 1);
+      backgroundRanksRemaining -= creditedRanks;
+    }
     const ordinaryBudget = available === undefined ? undefined : available - (backgroundSkills ? 2 : 0);
-    if (ordinaryBudget !== undefined && allocated - backgroundCredit > ordinaryBudget)
+    if (ordinaryBudget !== undefined && budgetUsed - backgroundCredit > ordinaryBudget)
       issues.push(
         policyIssue(
           "skill-allocation-exceeds-budget",
-          `Level ${item.level} allocates ${allocated - backgroundCredit} ordinary skill ranks from a budget of ${ordinaryBudget}; up to 2 additional ranks are available for workbook background skills`,
+          `Level ${item.level} allocates ${budgetUsed - backgroundCredit} skill points to ordinary ranks from a budget of ${ordinaryBudget}; up to 2 additional points are available for workbook background skills`,
           scope,
         ),
       );
-    if (cap !== undefined)
-      for (const skillId of Object.keys(record.ranks)) {
+    for (const skillId of Object.keys(record.ranks)) {
         const total = inspection.character.skillRanks[skillId] ?? 0;
+        const cap = rankCap(profile, characterLevel, classSkills.has(skillId));
         if (total > cap)
           issues.push(
             policyIssue(
               "skill-rank-exceeds-cap",
-              `${skillId} has ${total} ranks, above this campaign's cap of ${cap}`,
+              `${skillId} has ${total} ranks, above this campaign's ${classSkills.has(skillId) ? "class-skill" : "cross-class"} cap of ${cap}`,
               { slotId: item.slotId, skillId },
             ),
           );
-      }
+    }
   }
   return { issues, previews };
 }

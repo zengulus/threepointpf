@@ -504,6 +504,7 @@ export const generatedAutosheetSkillCatalog = {
     "name": "Lore",
     "governingAbility": "int",
     "trainedOnly": true,
+    "armorCheckPenalty": true,
     "source": {
       "document": "Pathfinder Autosheet v6.2.1",
       "sheet": "Class Skills",

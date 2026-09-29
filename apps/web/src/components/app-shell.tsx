@@ -41,6 +41,7 @@ export function AppShell({
   onCharacterIdChange,
   characterRepository,
   mode: appMode,
+  playerView,
   onAuthenticationRequired,
 }: AppShellProps) {
   const dice = useDicePresentation();
@@ -78,7 +79,8 @@ export function AppShell({
           theme={theme}
           activeTab={activeTab}
           onActiveTabChange={setActiveTab}
-          onOpenWorkspace={openWorkspace}
+          onOpenWorkspace={playerView ? undefined : openWorkspace}
+          playerView={playerView}
         />
       ) : (
         <main className="workspace-mode" data-testid="workspace-mode">

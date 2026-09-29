@@ -67,6 +67,7 @@ function attackKind(
     return policy.natural1.classification === "criticalFailure"
       ? "criticalFailure"
       : "failure";
+  if (outcome.missedByConcealment) return "failure";
   if (outcome.critical === true) return "criticalSuccess";
   if (outcome.hit === true)
     return policy.natural20.classification === "criticalSuccess"
@@ -112,6 +113,7 @@ export function evaluateRollOutcome(
   plan: RollPlan,
   naturalFace: number | undefined,
   total: number,
+  faces?: readonly number[],
 ): RollOutcome {
   const policy = plan.outcomePolicy;
   // A roll with no declared check die has no natural-face semantics, so the
@@ -119,7 +121,17 @@ export function evaluateRollOutcome(
   const hasCheckDie = naturalFace !== undefined;
   const natural20 = naturalFace === 20;
   const natural1 = naturalFace === 1;
-  const defense = plan.context.target?.defense;
+  const baseDefense = plan.context.target?.defense;
+  const coverBonus = policy.kind === "attack" && baseDefense?.kind === "ac" && baseDefense.cover
+    && !(baseDefense.ignoreNonTotalCover && plan.context.mode === "ranged")
+    ? baseDefense.cover === "soft" && plan.context.mode !== "ranged"
+      ? 0
+      : baseDefense.cover === "partial" ? 2
+        : baseDefense.cover === "improved" ? 8 : 4
+    : 0;
+  const defense = baseDefense && coverBonus
+    ? { ...baseDefense, value: baseDefense.value + coverBonus }
+    : baseDefense;
   const range = plan.criticalRange;
   const inCriticalRange =
     range && naturalFace !== undefined
@@ -151,15 +163,31 @@ export function evaluateRollOutcome(
   }
   outcome.automaticHit = natural20 && policy.natural20.automatic;
   outcome.automaticMiss = natural1 && policy.natural1.automatic;
-  outcome.hit = outcome.automaticHit
+  const hitAgainstDefense = outcome.automaticHit
     ? true
     : outcome.automaticMiss
       ? false
       : defense
         ? total >= defense.value
         : undefined;
+  outcome.hit = hitAgainstDefense;
+  const missChance = defense?.missChance;
+  if (hitAgainstDefense === true && missChance !== undefined) {
+    const groupIndex = plan.dice.findIndex((group) => group.purpose === "missChance");
+    let faceIndex = 0;
+    for (let index = 0; index < groupIndex; index += 1)
+      faceIndex += plan.dice[index]!.count;
+    const percentileFace = groupIndex >= 0 ? faces?.[faceIndex] : undefined;
+    if (percentileFace === undefined)
+      throw new Error("Roll plan " + plan.id + " needs a d100 miss-chance face after hitting AC");
+    outcome.missChanceRoll = percentileFace;
+    outcome.missedByConcealment = percentileFace <= missChance;
+    if (outcome.missedByConcealment) outcome.hit = false;
+  }
   outcome.critical = outcome.automaticMiss
     ? false
+    : outcome.missedByConcealment
+      ? false
     : inCriticalRange === undefined
       ? undefined
       : !inCriticalRange
@@ -177,9 +205,19 @@ export function evaluateRollOutcome(
 
 /** Resolves raw faces against a plan. Identical plan plus identical faces always produce the same result. */
 export function resolveRollPlan(plan: RollPlan, faces: readonly number[]): ResolvedRoll {
+  if (plan.outcomePolicy.kind === "attack" && plan.context.target?.defense?.cover === "total")
+    throw new Error("A target with total cover cannot be attacked");
   validateFaces(plan, faces);
   validatePrimaryCheckDie(plan);
-  const total = faces.reduce((sum, face) => sum + face, 0) + plan.modifier;
+  let faceIndex = 0;
+  let diceTotal = 0;
+  for (const group of plan.dice) {
+    for (let die = 0; die < group.count; die += 1) {
+      const face = faces[faceIndex++]!;
+      if (group.addsToTotal !== false) diceTotal += face;
+    }
+  }
+  const total = diceTotal + plan.modifier;
   const naturalFace = primaryCheckFaceOf(plan, faces);
   return {
     planId: plan.id,
@@ -188,7 +226,7 @@ export function resolveRollPlan(plan: RollPlan, faces: readonly number[]): Resol
     modifier: plan.modifier,
     total,
     ...(naturalFace !== undefined ? { naturalFace } : {}),
-    outcome: evaluateRollOutcome(plan, naturalFace, total),
+    outcome: evaluateRollOutcome(plan, naturalFace, total, faces),
   };
 }
 
@@ -198,6 +236,10 @@ export function formatRollOutcome(outcome: RollOutcome): string {
   if (outcome.natural20) parts.push("natural 20");
   else if (outcome.natural1) parts.push("natural 1");
   if (outcome.automaticHit || outcome.automaticSuccess) parts.push("automatic");
+  if (outcome.missChanceRoll !== undefined) {
+    const chance = outcome.defense?.missChance ?? 0;
+    parts.push("miss chance " + chance + "% · d100 " + outcome.missChanceRoll + " · " + (outcome.missedByConcealment ? "missed" : "clear"));
+  }
   // A natural-face classification is the face fact itself, so it is not
   // repeated as a second label ("natural 1 · natural1").
   if (outcome.kind !== "natural20" && outcome.kind !== "natural1")

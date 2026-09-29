@@ -30,7 +30,7 @@ export function AdvancementEditor({
             <span className="eyebrow">ADVANCEMENT</span>
             <h2>Ordered progression tracks</h2>
           </div>
-          <span className="helper">N-track / no gestalt flag</span>
+          <span className="helper">One track per class per level · multiple tracks use Gestalt totals</span>
         </div>
         <p className="advancement-copy">
           A class level is character-global while each BAB/save increment

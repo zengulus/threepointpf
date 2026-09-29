@@ -74,6 +74,8 @@ export function classifyRollPresentation(
       combat,
       reason: "resolved as a critical success",
     };
+  if (outcome.missedByConcealment)
+    return { event: "none", combat, reason: "the attack was stopped by concealment" };
   if (outcome.kind === "criticalFailure")
     return {
       event: "critical-failure",

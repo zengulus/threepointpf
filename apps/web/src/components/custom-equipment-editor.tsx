@@ -21,8 +21,8 @@ export function CustomEquipmentEditor({
   const [target, setTarget] = useState<EffectTargetId>("speed.land");
   const [maxDex, setMaxDex] = useState("");
   const [checkPenalty, setCheckPenalty] = useState("0");
-  const [slow, setSlow] = useState(false);
   const [materialType, setMaterialType] = useState("Plate/Chain");
+  const [armorWeightCategory, setArmorWeightCategory] = useState("1");
   const [spellFailure, setSpellFailure] = useState("0");
   const submit = () => {
     if (!name.trim()) return;
@@ -51,10 +51,10 @@ export function CustomEquipmentEditor({
         equipped: true,
         effects: [effect],
         ...(kind !== "other" ? { materialType, arcaneSpellFailureChance: Math.min(1, Math.max(0, Number(spellFailure) / 100)) } : {}),
+        ...(kind === "armor" ? { armorWeightCategory: Number(armorWeightCategory) } : {}),
         ...(kind !== "other"
           ? {
               armorCheckPenalty: Number(checkPenalty),
-              reduceLandSpeed: slow,
               ...(maxDex.trim() ? { maxDexterity: Number(maxDex) } : {}),
             }
           : {}),
@@ -115,6 +115,7 @@ export function CustomEquipmentEditor({
         ) : (
           <>
             <label className="field"><span>Material compatibility</span><select aria-label="Custom armor material compatibility" value={materialType} onChange={(event) => setMaterialType(event.target.value)}><option value="Plate/Chain">Plate / chain</option><option value="Leather">Leather</option><option value="Wood">Wood</option><option value="-">Any material type</option></select></label>
+            {kind === "armor" && <label className="field"><span>Armor weight category</span><select aria-label="Custom armor weight category" value={armorWeightCategory} onChange={(event) => setArmorWeightCategory(event.target.value)}><option value="1">Light</option><option value="2">Medium</option><option value="3">Heavy</option></select></label>}
             <Field
               label="Maximum Dexterity (blank = no limit)"
               value={maxDex}
@@ -126,14 +127,6 @@ export function CustomEquipmentEditor({
               onChange={setCheckPenalty}
             />
             <Field label="Arcane spell failure (%)" type="number" value={spellFailure} onChange={setSpellFailure} />
-            <label>
-              <input
-                type="checkbox"
-                checked={slow}
-                onChange={(event) => setSlow(event.target.checked)}
-              />{" "}
-              Reduce land speed for armor
-            </label>
           </>
         )}
       </div>
