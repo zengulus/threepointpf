@@ -141,6 +141,17 @@ Discord message was sent to verify the new layout. The production Site still
 has no campaign, character, or connected channel; a full production player
 journey and remaining roll families are open.
 
+Progress log (later on 2026-09-30): Site version 287 deployed from source
+commit `a1c9cb6cf791b4f5618bfc68112a1cd1560ae870`. The character sheet's
+mobile tabs now form a wrapped grid instead of a clipped horizontal row. A
+local hosted player session at 390px viewport width and 200% text size showed
+all tabs, recent recorded rolls, and no document-width overflow. The Site
+build and production deployment passed. This verifies the tab layout only;
+the full mobile play journey, keyboard and reduced-motion review, remaining
+roll families, resource atomicity, and authenticated production journey are
+still open. The approved Discord test quota was one message, and no additional
+live Discord message was sent.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
