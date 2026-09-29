@@ -176,6 +176,25 @@ Site build passed. This addition does not spend a spell slot or resource;
 casting, ability activation, recharge, and their atomic state changes remain
 unfinished for trusted hosted play.
 
+Progress log (later on 2026-09-30): GitHub `main` now contains a source-only
+snapshot of the hosted Site plus this plan. The integration omitted 415 tracked
+generated files and historical deployment archives from the Site checkout;
+the hosted build regenerates what it needs. A clean install, hosted build,
+browser-only Pages demo build and subpath check passed. The full unit suite
+passed 426/426 after updating stale workbook/lifecycle/action-economy tests and
+correcting an actual Heroism rule bug: Heroism no longer grants initiative.
+The Pages workflow again has working `test`, `build:demo`, and `check:demo`
+commands. The deployed Site uses its existing source-branch history, so future
+agents should implement on GitHub `main`, synchronize reviewed runtime changes
+into the Site checkout, and publish the exact tested Site source SHA. Keep the
+two trees aligned until one verified publishing workflow can use GitHub main
+directly.
+
+Site version 290 deployed from source commit
+`31be525068a43a7477fc174a558d291100b6bde7` with the same Heroism
+initiative correction. The specific rule test and Site build passed, and
+production deployment succeeded. No live Discord message was sent.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
