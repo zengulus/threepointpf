@@ -222,6 +222,13 @@ hosted client build passed. On Windows, generated Autosheet freshness checks now
 ignore checkout-only CRLF differences; CI and the generator remain strict about
 all other content.
 
+Site version 292 deployed successfully from source commit
+`daae2f6421030417006082482fa54811e7dba6dd` with these hosted safeguards.
+The Site Worker build passed, as did 426/426 root unit tests and both hosted
+client browser tests (including no save/no roll for a rejected recharge-backed
+ability). The GitHub Pages demo workflow passed. This release does not enable
+roll-backed resource actions or complete the atomic server contract.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
