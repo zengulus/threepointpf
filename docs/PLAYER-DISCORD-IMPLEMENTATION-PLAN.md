@@ -114,6 +114,16 @@ server intents; resource spending is not yet atomic with rolls. A live player
 journey and mobile/accessibility QA remain outstanding. Continue to treat this
 as a limited-access testing release, not a trusted-play launch.
 
+Progress log (later on 2026-09-30): Site version 284 deployed from source
+commit `c44faaf913329f3e8ca75d824691c750670237ca`. Authorized `GET /api/rolls`
+returns the latest 20 stored results for a character. The hosted sheet lists
+them after reload, refreshes their delivery status while open, and exposes
+per-roll retry. A fresh local Worker/D1 smoke run verified assigned-player
+history access and anonymous/unassigned-player denial, alongside the existing
+roll concurrency and revision checks. The Site build and deployment passed.
+Older-history pagination and the remaining roll families/resource atomicity
+are still open. No real Discord channel is connected.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
