@@ -152,6 +152,18 @@ roll families, resource atomicity, and authenticated production journey are
 still open. The approved Discord test quota was one message, and no additional
 live Discord message was sent.
 
+Progress log (later on 2026-09-30): Site version 288 deployed from source
+commit `e33e22752e5e265888f6cec6f6d2c2ff982ba911`. The player sheet now
+puts character creation, duplicate, import, export, and roster backup inside
+an accessible collapsed **Character actions** disclosure. The already-visible
+**My characters** picker remains the single character switcher in Player mode;
+DM and browser-demo management controls retain their previous layout. The
+unused tabletop workspace entry is hidden in the player sheet. A local hosted
+player session verified the closed and open states, visible creation action,
+and no page-width overflow at 390px and 200% text size. Build and deployment
+passed. This is presentation work; it does not close the remaining backend,
+mobile interaction, or production-authenticated verification gaps.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
