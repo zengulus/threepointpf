@@ -34,20 +34,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Enable Corepack
-        run: corepack enable
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.4.1
       - name: Install
-        run: corepack pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Test
-        run: corepack pnpm test
+        run: pnpm test
       - name: Build the demo
         env:
           VITE_APP_MODE: browser
-        run: corepack pnpm build:demo
+        run: pnpm build:demo
       # The build above is the artifact that gets published, so it is served from
       # a real subpath and asked for its own assets before it is uploaded.
       - name: The built demo resolves from the project path
-        run: corepack pnpm check:demo
+        run: pnpm check:demo
       # A file in the repository cannot enable Pages, and "Pages is on" is not the
       # same as "Pages publishes this workflow": a repository can have a live
       # Pages site that is built from a branch, in which case this workflow's
