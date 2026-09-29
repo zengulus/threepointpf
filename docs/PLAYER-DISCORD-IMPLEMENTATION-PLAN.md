@@ -164,6 +164,18 @@ and no page-width overflow at 390px and 200% text size. Build and deployment
 passed. This is presentation work; it does not close the remaining backend,
 mobile interaction, or production-authenticated verification gaps.
 
+Progress log (later on 2026-09-30): Site version 289 deployed from source
+commit `3ced6d94ecf3a55f69b61019248deb1017deb4a2`. Concentration checks for
+saved spellcasting sources and spell-like abilities now use a typed hosted
+request. The server rebuilds the plan from the saved character and records
+the result through the existing authenticated roll/outbox path; the client
+compares the rebuilt plan with the displayed one before submission. A fresh
+local Worker/D1 smoke run verified a real recorded concentration check and
+rejected unknown source IDs and forged modifiers. Shared/client tests and the
+Site build passed. This addition does not spend a spell slot or resource;
+casting, ability activation, recharge, and their atomic state changes remain
+unfinished for trusted hosted play.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
