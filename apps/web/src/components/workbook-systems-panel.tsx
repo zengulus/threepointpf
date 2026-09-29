@@ -200,6 +200,8 @@ export function WorkbookSystemsPanel({ sheet }: { sheet: CharacterSheet }) {
     })) , ...(action.state !== currentActions ? { turnActions: action.state } : {}) });
   };
   const useEntry = async (source: CharacterSystemSource, entry: CharacterSystemSource["entries"][number], current: ReturnType<typeof deriveCharacterSystems>[number]) => {
+    if (sheet.mode === "hosted" && entry.roll)
+      return sheet.fail("This system action needs an atomic server roll before it can be used in hosted play. No use or resource was spent.");
     const pendingDice = diceExpressions[entry.id];
     if (pendingDice && !/^\d+d\d+$/i.test(pendingDice.trim())) return sheet.fail(`Enter dice for ${entry.name} as 1d6 or 2d8.`);
     if (sheet.engine.actionRestrictions().includes("noPhysicalActions") && (source.kind === "maneuvers" || entry.roll?.kind === "weaponAttack" || entry.roll?.kind === "combatManeuver")) return sheet.fail("This condition prevents physical actions.");

@@ -211,6 +211,17 @@ flows; they do not replace the real Worker/D1 permission and delivery tests or
 an authenticated production player journey. The preview uses a dedicated port
 without reusing another server, so the mode under test is the mode just built.
 
+Progress log (later on 2026-09-30): the hosted client now rejects roll-backed
+spell casts, ability activations, system entries, and automatic start-of-turn
+condition rolls before changing character state. This is an interim integrity
+barrier: it prevents a slot, use, resource, or turn from being saved when a
+synthetic roll is subsequently rejected, but those actions remain unavailable
+for trusted hosted play until the atomic intents below are implemented. The
+browser demo keeps its existing behavior. The full 426-test unit suite and the
+hosted client build passed. On Windows, generated Autosheet freshness checks now
+ignore checkout-only CRLF differences; CI and the generator remain strict about
+all other content.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
@@ -533,6 +544,49 @@ supported. Existing `RollPlanRequest` covers only some families. Add typed actio
 intents and source IDs for the rest; do not let them bypass server execution.
 Resource/slot costs and resulting state changes must commit once with the event.
 Standalone non-roll state changes may remain in the revision-aware save flow.
+
+#### Remaining action inventory and atomic contract
+
+The current hosted route supports ordinary saves, skills, maneuvers, attacks,
+damage, initiative, and concentration. These client entry points still need
+typed, server-rebuilt actions; forwarding their `RollPlan` is not acceptable:
+
+| UI entry point | State and rolls that must be one action |
+| --- | --- |
+| `SpellcastingPanel.cast` | Prepared allocation or slot, turn action, duration, possible grappled concentration, arcane failure, spell resistance, target save, attack/damage or healing, and spell-like ability costs. Roll branches depend on earlier results. |
+| `AbilityEditor.activate` | Daily use, turn action, one or more resource costs, recharge dice, effects, and ability roll plans. Toggle-only changes without dice may use the save queue. |
+| `WorkbookSystemsPanel.useEntry` | Entry use/expended flag, pool cost, turn action, skill/maneuver/weapon/damage/healing rolls and optional bonus dice. |
+| `TurnActionTracker.startTurn` | Round/duration advancement, bleed dice and damage, confused behavior and possible self-damage. |
+| `QuickResourceControls` | A recharge-roll resource spend and the resulting timer; ordinary spend/restore without dice can use the save queue. |
+| `LifecycleWizard` | Optional rolled hit points and accepted level-up state; a stand-alone preview roll must not masquerade as a committed level-up. |
+
+Implement a versioned **action intent** with an opaque client action UUID and
+saved character revision. The intent carries only source IDs and bounded table
+context (for example target defense or save bonus), never a plan, face, modifier,
+total, or proposed character snapshot. Rebuild every plan and resource change
+from the saved character and catalogs in the Worker. A cast or system action may
+yield zero, one, or several ordered roll events; the response needs the ordered
+results and final character/revision so the sheet presents exactly what committed.
+Store an action event with `(actor_id, client_action_id)` uniqueness and a
+canonical request hash. In one D1 transaction, guard active-role permission and
+the expected character revision, apply the final snapshot once, insert the
+action and all roll events, and insert a pinned Discord delivery for each roll.
+On identical concurrent submissions, return the winning action's stored
+results; reject a reused ID with different content. A stale or unauthorized
+action must create no event, spend, delivery, or displayed result. The HTTP
+repository must accept the server-returned snapshot/revision without issuing a
+second save. Persist a pending action ID in the browser before dispatch so a
+lost response can recover the same committed action after reload. Conditional
+branches (miss, successful save, spell resistance, concentration failure) must
+be resolved in order on the server, and Discord messages must share the action
+reference while retaining distinct roll references.
+
+Test each family against local D1 with two sessions, including duplicate
+requests, revision races, forged IDs/context, resource exhaustion, a lost HTTP
+response, and a failed Discord delivery. Re-enable each hosted UI entry point
+only after its typed action and transaction have passed these checks. The
+current preflight rejection is temporary and must not be counted as Stage D
+completion.
 
 Acceptance:
 

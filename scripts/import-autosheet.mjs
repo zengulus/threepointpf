@@ -2020,7 +2020,9 @@ async function checkOutputs(outputs) {
       stale.push(path.relative(repositoryRoot, outputPath));
       continue;
     }
-    if (actual !== expected)
+    // Git may check out tracked generated files with CRLF on Windows. Their
+    // content is fresh when only the platform line endings differ.
+    if (actual.replace(/\r\n/g, "\n") !== expected.replace(/\r\n/g, "\n"))
       stale.push(path.relative(repositoryRoot, outputPath));
   }
   if (stale.length)

@@ -388,6 +388,10 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     };
     const prepared = prepareAbilityExecution(proposal, resourceFacts(sheet), abilityCatalog);
     if (!prepared.accepted) { sheet.fail(prepared.issues.map((issue) => issue.message).join("; ")); return; }
+    if (sheet.mode === "hosted" && prepared.execution.rollPlans.length) {
+      sheet.fail("This ability needs an atomic server action before it can be used in hosted play. No use or resource was spent.");
+      return;
+    }
     const rechargeRollResults: Record<string, number> = {};
     for (const plan of prepared.execution.rollPlans.filter((item) => item.id.startsWith("resource:"))) {
       const rolled = await sheet.rollPlan(plan);
@@ -397,6 +401,10 @@ function AbilityEditor({ sheet }: { sheet: CharacterSheet }) {
     }
     const result = commitAbilityActivation({ ...proposal, rechargeRollResults }, resourceFacts(sheet), abilityCatalog);
     if (!result.accepted) { sheet.fail(result.issues.map((issue) => issue.message).join("; ")); return; }
+    if (sheet.mode === "hosted" && result.execution.rollPlans.length) {
+      sheet.fail("This ability needs an atomic server action before it can be used in hosted play. No use or resource was spent.");
+      return;
+    }
     const resultCharacter = result.ability.active === false
       ? { ...result.character, abilities: (result.character.abilities ?? []).map((item) => item.id === ability.id ? { ...item, roundsRemaining: undefined } : item) }
       : result.character;

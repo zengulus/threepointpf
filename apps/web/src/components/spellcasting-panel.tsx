@@ -169,6 +169,16 @@ export function SpellcastingPanel({ sheet }: { sheet: CharacterSheet }) {
       ? castSpellLike(sheet.engine, abilityId, { targetName: targetLabel, ...(panicked && fleeingUse ? { fleeing: true } : {}), ...(targetCharacterId ? { targetCharacterId } : {}), ...(touchAc !== undefined ? { targetTouchAc: touchAc } : {}), ...(targetMissChance ? { targetMissChance } : {}) }, spells)
       : castSpell(sheet.engine, { sourceId, spellId, preparedAllocationId, targetName: targetLabel, ...(panicked && fleeingUse ? { fleeing: true } : {}), ...(targetCharacterId ? { targetCharacterId } : {}), ...(touchAc !== undefined ? { targetTouchAc: touchAc } : {}), ...(targetMissChance ? { targetMissChance } : {}) }, spells);
     if (!result.accepted) return sheet.fail(result.issues.map((issue) => issue.message).join(" "));
+    const manualSrBeforeCast = Number(targetSpellResistance);
+    const targetSrBeforeCast = targetSpellResistance.trim() && Number.isFinite(manualSrBeforeCast) ? manualSrBeforeCast : sheet.linkedTargetSpellResistance ?? 0;
+    const needsRecordedRoll = Boolean(
+      abilityId || grappled || result.execution.arcaneSpellFailurePlan || result.execution.rollPlans.length ||
+      result.execution.saveSuccessRollPlans.length ||
+      (requiredSave?.save && requiredSave.result !== "none" && requiredSave.result !== "harmless") ||
+      (result.spell.spellResistance && targetSrBeforeCast > 0),
+    );
+    if (sheet.mode === "hosted" && needsRecordedRoll)
+      return sheet.fail("This spell needs an atomic server cast before it can be used in hosted play. No slot or use was spent.");
     let abilityRollPlans: RollPlan[] = [];
     if (abilityId && abilityProposal && abilityPreparation?.accepted) {
       const rechargeRollResults: Record<string, number> = {};

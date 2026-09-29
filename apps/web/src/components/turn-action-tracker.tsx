@@ -33,6 +33,10 @@ export function TurnActionTracker({ sheet, onOpenSpells }: { sheet: CharacterShe
       };
       const bleedFeatures = (sheet.character.features ?? []).filter((item) => item.enabled && item.definitionId === "pf1e.paizo.bleed" && item.startOfTurnDamage);
       const confusedFeatures = (sheet.character.features ?? []).filter((item) => item.enabled && item.definitionId === "pf1e.paizo.confused" && (item.roundsRemaining === undefined || item.roundsRemaining > 1));
+      if (sheet.mode === "hosted" && (bleedFeatures.length || confusedFeatures.length)) {
+        sheet.fail("This turn needs server-recorded condition rolls before it can advance in hosted play. The turn was not changed.");
+        return;
+      }
       const accepted = sheet.update({
         turnActions: {},
         features: (sheet.character.features ?? []).map((item) => ({ ...(item.enabled ? tick(item, item.name, "enabled") : item), turnResolution: undefined, turnActionRestrictions: undefined })),
