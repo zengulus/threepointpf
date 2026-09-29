@@ -17,7 +17,7 @@ async function call(path, { method = "GET", body, cookie } = {}) {
     const text = await response.text();
     // Wrangler can reload after local D1 writes. Roll POSTs are safe to retry
     // because their clientRequestId is stable, and roll GETs are read-only.
-    if (path.startsWith("/api/rolls") && response.status === 503 && text.startsWith("Your worker restarted mid-request") && attempt < 2) {
+    if ((path.startsWith("/api/rolls") || path.startsWith("/api/resource-spends")) && response.status === 503 && text.startsWith("Your worker restarted mid-request") && attempt < 2) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       continue;
     }
@@ -42,6 +42,8 @@ const fixture = JSON.parse(readFileSync(new URL("./fixtures/simple-character.jso
 fixture.spellcastingSources = [{ id: "arcane", name: "Arcane", mode: "spontaneous", castingAbility: "int",
   spellListId: "arcane", spellListAccess: "list", bonusSlots: "none", knownSpellIds: [],
   progression: [{ level: 1, casterLevel: 1, maximumSpellLevel: 1, slots: { "1": 1 } }] }];
+fixture.resources = [{ id: "breath", name: "Breath Weapon", maximum: { kind: "fixed", value: 2 },
+  refresh: { kind: "rechargeRoll", dice: { count: 1, sides: 4 } } }];
 status("create", await call(`/api/characters/${fixture.id}`, { method: "PUT", cookie: dm.cookie, body: { character: fixture } }), 200);
 status("add A to campaign", await call("/api/campaigns/demo-campaign/members", { method: "PUT", cookie: dm.cookie, body: { accountId: playerA.data.account.id, role: "player" } }), 200);
 status("add B to campaign", await call("/api/campaigns/demo-campaign/members", { method: "PUT", cookie: dm.cookie, body: { accountId: playerB.data.account.id, role: "player" } }), 200);
@@ -74,6 +76,36 @@ const concentration = await call("/api/rolls", { method: "POST", cookie: a.cooki
 status("record concentration", concentration, 201);
 if (concentration.data.plan.id !== `spellcasting:${fixture.id}:arcane:concentration` || concentration.data.result.faces.length !== 1)
   throw new Error("concentration was not rebuilt and recorded from the saved casting source");
+const spend = { version: 1, clientRequestId: randomUUID(), characterId: fixture.id, resourceId: "breath", expectedRevision: 1 };
+status("anonymous resource spend denied", await call("/api/resource-spends", { method: "POST", body: spend }), 401);
+status("other player resource spend denied", await call("/api/resource-spends", { method: "POST", cookie: b.cookie, body: spend }), 404);
+status("forged recharge total denied", await call("/api/resource-spends", { method: "POST", cookie: a.cookie, body: { ...spend, total: 4 } }), 400);
+status("unknown recharge source denied", await call("/api/resource-spends", { method: "POST", cookie: a.cookie, body: { ...spend, resourceId: "forged", clientRequestId: randomUUID() } }), 422);
+const [spent, duplicateSpend] = await Promise.all([
+  call("/api/resource-spends", { method: "POST", cookie: a.cookie, body: spend }),
+  call("/api/resource-spends", { method: "POST", cookie: a.cookie, body: spend }),
+]);
+if (![200, 201].includes(spent.status) || ![200, 201].includes(duplicateSpend.status))
+  throw new Error(`concurrent resource spend: ${spent.status} ${JSON.stringify(spent.data)}; ${duplicateSpend.status} ${JSON.stringify(duplicateSpend.data)}`);
+if (spent.data.rollId !== duplicateSpend.data.rollId || spent.data.result.total !== duplicateSpend.data.result.total)
+  throw new Error("duplicate resource spend did not recover the same roll");
+const spentCharacter = await call(`/api/characters/${fixture.id}`, { cookie: a.cookie });
+status("read resource after spend", spentCharacter, 200);
+const breath = spentCharacter.data.character.resourceStates?.find((item) => item.resourceId === "breath");
+if (spentCharacter.data.revision !== 2 || breath?.spent !== 1 || breath?.roundsUntilRefresh !== spent.data.result.total ||
+  spent.data.revision !== 2 || spent.data.character.resourceStates?.find((item) => item.resourceId === "breath")?.spent !== 1)
+  throw new Error("recharge roll and resource mutation did not commit together");
+status("different resource under reused request ID denied", await call("/api/resource-spends", { method: "POST", cookie: a.cookie,
+  body: { ...spend, resourceId: "other" } }), 409);
+status("stale new resource spend denied", await call("/api/resource-spends", { method: "POST", cookie: a.cookie,
+  body: { ...spend, clientRequestId: randomUUID() } }), 409);
+const secondSpend = await call("/api/resource-spends", { method: "POST", cookie: a.cookie,
+  body: { ...spend, clientRequestId: randomUUID(), expectedRevision: 2 } });
+status("second resource spend", secondSpend, 201);
+if (secondSpend.data.revision !== 3 || secondSpend.data.character.resourceStates?.find((item) => item.resourceId === "breath")?.spent !== 2)
+  throw new Error("second resource spend did not use the new revision");
+status("exhausted resource rejected", await call("/api/resource-spends", { method: "POST", cookie: a.cookie,
+  body: { ...spend, clientRequestId: randomUUID(), expectedRevision: 3 } }), 422);
 const read = await call(`/api/rolls/${first.data.rollId}`, { cookie: a.cookie });
 status("read own roll", read, 200);
 if (read.data.rollId !== first.data.rollId) throw new Error("stored roll changed");
@@ -82,7 +114,7 @@ status("anonymous history denied", await call(historyPath), 401);
 status("other player history denied", await call(historyPath, { cookie: b.cookie }), 404);
 const history = await call(historyPath, { cookie: a.cookie });
 status("read own history", history, 200);
-if (history.data.rolls.length !== 2 || !history.data.rolls.some((roll) => roll.rollId === first.data.rollId) ||
+if (history.data.rolls.length !== 4 || !history.data.rolls.some((roll) => roll.rollId === first.data.rollId) ||
   !history.data.rolls.some((roll) => roll.rollId === concentration.data.rollId))
   throw new Error("history did not contain both recorded results");
 status("other player cannot read roll", await call(`/api/rolls/${first.data.rollId}`, { cookie: b.cookie }), 404);
@@ -91,10 +123,10 @@ const drained = await call("/api/discord/drain", { method: "POST", cookie: a.coo
 status("empty outbox drain", drained, 200);
 if (drained.data.processed !== 0) throw new Error("an unconnected delivery was selected for sending");
 status("reused request ID with different action", await call("/api/rolls", { method: "POST", cookie: a.cookie, body: { ...request, action: { ...action, saveId: "will" } } }), 409);
-const updated = await call(`/api/characters/${fixture.id}`, { method: "PUT", cookie: a.cookie, body: { character: { ...fixture, name: "After roll" }, revision: 1 } });
+const updated = await call(`/api/characters/${fixture.id}`, { method: "PUT", cookie: a.cookie, body: { character: { ...fixture, name: "After roll" }, revision: 3 } });
 status("update character", updated, 200);
 status("stale new roll denied", await call("/api/rolls", { method: "POST", cookie: a.cookie, body: { ...request, clientRequestId: randomUUID() } }), 409);
 const recovered = await call("/api/rolls", { method: "POST", cookie: a.cookie, body: request });
 status("retry after revision change", recovered, 200);
 if (recovered.data.rollId !== first.data.rollId) throw new Error("retry did not recover the original roll");
-console.log("Hosted roll API smoke passed: permissions, history, concentration, forged input, concurrency, idempotency, and stale revision.");
+console.log("Hosted roll API smoke passed: permissions, history, concentration, atomic recharge spending, forged input, concurrency, idempotency, and stale revision.");

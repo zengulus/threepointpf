@@ -63,12 +63,19 @@ export function HostedAccountApp({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<"campaign" | "settings" | "users">("campaign");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const setHostedAccount = (next: Account | null) => {
+    try {
+      if (next) sessionStorage.setItem("threepointpf.hosted.active-account-id", next.id);
+      else sessionStorage.removeItem("threepointpf.hosted.active-account-id");
+    } catch { /* Session storage is optional; server permissions still apply. */ }
+    setAccount(next);
+  };
 
   useEffect(() => {
     let active = true;
     api<AuthResponse>("/api/auth").then((state) => {
       if (!active) return;
-      setAccount(state.account);
+      setHostedAccount(state.account);
       setBootstrapAvailable(state.bootstrapAvailable ?? false);
     }).catch((cause: unknown) => {
       if (active) setError(cause instanceof Error ? cause.message : "The campaign account service is unavailable.");
@@ -126,10 +133,10 @@ export function HostedAccountApp({ children }: { children: ReactNode }) {
         if (previousDmIndex >= 0) migratingAccounts[previousDmIndex] = { ...migratingAccounts[previousDmIndex]!, username, name, salt, hash };
         const result = await api<{ account: Account; imported?: { accounts: number; characters: number } }>("/api/auth", { method: "POST", body: JSON.stringify({ action: "bootstrap", username, name, salt, hash, ...(migratingAccounts.length ? { legacyAccounts: migratingAccounts, legacyCharacters: previous.legacyCharacters, currentAccountId } : previous.legacyCharacters.length ? { legacyCharacters: previous.legacyCharacters } : {}) }) });
         if (hasLegacyData && result.imported) clearLegacyBrowserData();
-        setAccount(result.account); setBootstrapAvailable(false);
+        setHostedAccount(result.account); setBootstrapAvailable(false);
       } else {
         const result = await api<{ account: Account }>("/api/auth", { method: "POST", body: JSON.stringify({ action: "login", username, password }) });
-        setAccount(result.account);
+        setHostedAccount(result.account);
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Sign-in failed.");
@@ -163,7 +170,7 @@ export function HostedAccountApp({ children }: { children: ReactNode }) {
     try {
       const result = await api<{ account: Account }>(`/api/accounts/${encodeURIComponent(target.id)}`, { method: "PATCH", body: JSON.stringify({ role }) });
       setAccounts((items) => items.map((item) => item.id === target.id ? result.account : item));
-      if (target.id === account?.id) setAccount(result.account);
+      if (target.id === account?.id) setHostedAccount(result.account);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "The role could not be changed."); }
   }
 
@@ -195,7 +202,7 @@ export function HostedAccountApp({ children }: { children: ReactNode }) {
     try {
       const next: ActiveRole = account.activeRole === "dm" ? "player" : "dm";
       const result = await api<{ account: Account }>("/api/auth", { method: "POST", body: JSON.stringify({ action: "switch-role", activeRole: next }) });
-      setAccount(result.account);
+      setHostedAccount(result.account);
       setPage("campaign");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not switch roles."); }
     finally { setSwitchingRole(false); }
@@ -205,7 +212,7 @@ export function HostedAccountApp({ children }: { children: ReactNode }) {
     setError("");
     try {
       await api("/api/auth", { method: "POST", body: JSON.stringify({ action: "logout" }) });
-      setAccount(null); setPage("campaign"); setBootstrapAvailable(false);
+      setHostedAccount(null); setPage("campaign"); setBootstrapAvailable(false);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not sign out."); }
   }
 

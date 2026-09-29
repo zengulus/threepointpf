@@ -3,8 +3,12 @@ import { rulesCatalogs } from "@threepointpf/rules-data";
 import type { CharacterInput } from "@threepointpf/rules-schema";
 import {
   createCharacterRollPlan,
+  CharacterApiError,
+  hostedResourceSpendRequestSchema,
   rollPlanRequestSchema,
   type HostedRollResponse,
+  type HostedResourceSpendResponse,
+  type HostedResourceSpendRequest,
   type RollPlanRequest,
 } from "@threepointpf/shared";
 
@@ -112,6 +116,76 @@ export async function recordHostedRoll(
   if (!response.ok) throw new Error(payload.error?.message ?? "The roll could not be recorded.");
   if (payload.version !== 1 || payload.characterId !== character.id || !payload.rollId || !payload.result || !payload.plan)
     throw new Error("The roll service returned an invalid result. Reload before rolling again.");
+  return payload;
+}
+
+function resourceSpendStorageKey(): string {
+  let accountId = "unscoped";
+  try { accountId = globalThis.sessionStorage?.getItem("threepointpf.hosted.active-account-id") ?? "unscoped"; }
+  catch { /* Storage can be unavailable; server authorization remains mandatory. */ }
+  return `threepointpf.pending-resource-spend.v1.${encodeURIComponent(accountId)}`;
+}
+
+export function hasPendingHostedResourceSpend(characterId: string, resourceId: string): boolean {
+  try {
+    const raw = globalThis.sessionStorage?.getItem(resourceSpendStorageKey());
+    if (!raw) return false;
+    const parsed = hostedResourceSpendRequestSchema.safeParse(JSON.parse(raw));
+    return parsed.success && parsed.data.characterId === characterId && parsed.data.resourceId === resourceId;
+  } catch { return false; }
+}
+
+export async function recordHostedResourceSpend(
+  characterId: string,
+  resourceId: string,
+  revision: number | undefined,
+  request: typeof fetch = fetch,
+): Promise<HostedResourceSpendResponse> {
+  // The same browser tab may sign in as a different player; keep recovery IDs
+  // separate so one account never replays another account's unconfirmed action.
+  const key = resourceSpendStorageKey();
+  let pending: HostedResourceSpendRequest | null = null;
+  try {
+    const raw = globalThis.sessionStorage?.getItem(key);
+    if (raw) {
+      const parsed = hostedResourceSpendRequestSchema.safeParse(JSON.parse(raw));
+      if (parsed.success) pending = parsed.data;
+      else globalThis.sessionStorage?.removeItem(key);
+    }
+  } catch { /* Private browsing may disable storage; the in-flight retry still uses one body. */ }
+  if (pending && (pending.characterId !== characterId || pending.resourceId !== resourceId))
+    throw new Error("A previous resource spend is unconfirmed. Recover it from the same resource control before spending another.");
+  if (!pending && (!revision || !Number.isInteger(revision)))
+    throw new Error("The saved character revision is unavailable. Reload before spending.");
+  const intent = pending ?? hostedResourceSpendRequestSchema.parse({
+    version: 1, clientRequestId: crypto.randomUUID(), characterId, resourceId, expectedRevision: revision,
+  });
+  const body = JSON.stringify(intent);
+  try { globalThis.sessionStorage?.setItem(key, body); } catch { /* In-flight retry remains idempotent. */ }
+  const send = () => request("/api/resource-spends", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body,
+  });
+  let response: Response;
+  try { response = await send(); }
+  catch { response = await send(); }
+  const payload = await response.json().catch(() => ({})) as HostedResourceSpendResponse & { error?: { message?: string } };
+  if (!response.ok) {
+    const definitive = [400, 403, 404, 409, 422, 429].includes(response.status);
+    if (definitive)
+      try { globalThis.sessionStorage?.removeItem(key); } catch { /* Ignore unavailable storage. */ }
+    const code = response.status === 401 ? "unauthenticated" : response.status === 403 ? "forbidden"
+      : response.status === 404 ? "not-found" : response.status === 409 ? "conflict"
+      : definitive ? "validation" : "server";
+    throw new CharacterApiError(code, payload.error?.message ?? "The resource spend could not be recorded.", response.status);
+  }
+  if (payload.version !== 1 || payload.characterId !== characterId || payload.clientRequestId !== intent.clientRequestId ||
+      !payload.rollId || !payload.result || payload.plan?.id !== `resource:${characterId}:${resourceId}:recharge` ||
+      payload.character?.id !== characterId || !Number.isInteger(payload.revision))
+    throw new Error("The resource service returned an invalid result. Reload before spending again.");
+  try { globalThis.sessionStorage?.removeItem(key); } catch { /* Ignore unavailable storage. */ }
   return payload;
 }
 

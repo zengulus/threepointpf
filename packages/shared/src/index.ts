@@ -35,6 +35,8 @@ export interface CharacterRepository {
   list(): Promise<CharacterSummary[]>;
   /** Hosted persistence revision; absent in browser mode. */
   getRevision?(id: string): CharacterRevision | undefined;
+  /** Accept a server-committed action without writing the snapshot a second time. */
+  acceptServerMutation?(character: CharacterInput, expectedRevision: number, revision: number): CharacterInput;
 }
 
 export type CharacterRevision = string | number;
@@ -297,6 +299,14 @@ export class HttpCharacterRepository implements CharacterRepository {
     return this.revisions.get(id);
   }
 
+  acceptServerMutation(input: CharacterInput, expectedRevision: number, revision: number): CharacterInput {
+    const character = normalizeAuthoredCharacter(parseCharacterInput(input), this.rules);
+    if (!Number.isInteger(revision) || revision !== expectedRevision + 1 || this.revisions.get(character.id) !== expectedRevision)
+      throw new CharacterApiError("conflict", "The character changed during this action. Reload before editing again.", 409);
+    this.revisions.set(character.id, revision);
+    return character;
+  }
+
   constructor(options: HttpCharacterRepositoryOptions = {}) {
     this.request = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.rules = baseRulesOptions(options.rules);
@@ -467,6 +477,16 @@ export const hostedRollRequestSchema = z.object({
 });
 export type HostedRollRequest = z.infer<typeof hostedRollRequestSchema>;
 
+/** One resource spend whose recharge dice and state change commit together. */
+export const hostedResourceSpendRequestSchema = z.object({
+  version: z.literal(1),
+  clientRequestId: z.string().uuid(),
+  characterId: z.string().min(1).max(128),
+  expectedRevision: z.number().int().positive(),
+  resourceId: z.string().min(1).max(128),
+}).strict();
+export type HostedResourceSpendRequest = z.infer<typeof hostedResourceSpendRequestSchema>;
+
 export type HostedRollDeliveryState =
   | "not_configured" | "pending" | "sending" | "sent" | "retryable_failed"
   | "permanent_failed" | "delivery_unknown" | "cancelled";
@@ -486,6 +506,11 @@ export interface HostedRollResponse {
     nextAttemptAtMs?: number | null;
     safeErrorCode?: string | null;
   };
+}
+
+export interface HostedResourceSpendResponse extends HostedRollResponse {
+  character: CharacterInput;
+  revision: number;
 }
 
 /**

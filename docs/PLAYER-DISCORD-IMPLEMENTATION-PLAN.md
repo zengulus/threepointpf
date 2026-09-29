@@ -229,6 +229,20 @@ client browser tests (including no save/no roll for a rejected recharge-backed
 ability). The GitHub Pages demo workflow passed. This release does not enable
 roll-backed resource actions or complete the atomic server contract.
 
+Progress log (later on 2026-09-30): a typed `POST /api/resource-spends` now
+handles one recharge-backed resource use. The Worker rebuilds the recharge plan
+from the saved character, generates secure faces, derives the spent state and
+timer, and uses one D1 batch to advance the revision, record the immutable
+roll, and queue its Discord delivery. The hosted sheet accepts the returned
+snapshot/revision without a second save, presents the stored result, and retains
+an unconfirmed request ID in session storage for retry after response loss or
+reload. A fresh real Worker/D1 test verified two simultaneous identical
+requests yield one roll and one spend, alongside player denial, forged-total
+denial, stale revision, exhaustion, and retry behavior. The hosted browser
+test confirmed the counter survives reload without a PUT, and 429/429 unit
+tests passed. Other spell, ability, system, and turn actions remain gated until
+their multi-roll atomic intents exist. No live Discord message was sent.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user

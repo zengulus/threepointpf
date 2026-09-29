@@ -28,6 +28,7 @@ import type {
 import { catalogValues, clone, describeEffect, nextId, slug } from "../lib/format";
 import { abilities, abilityLabels, bonusTypes, effectTargets } from "../lib/options";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
+import { hasPendingHostedResourceSpend } from "../lib/hosted-roll";
 
 type EffectKind = Effect["kind"];
 
@@ -67,6 +68,10 @@ async function mutateResource(sheet: CharacterSheet, operation: "spend" | "resto
   try {
     const facts = resourceFacts(sheet);
     const definition = sheet.character.resources?.find((item) => item.id === id);
+    if (operation === "spend" && definition?.refresh.kind === "rechargeRoll" && sheet.mode === "hosted") {
+      await sheet.spendRechargeResource(id);
+      return;
+    }
     let rechargeTotal: number | undefined;
     if (operation === "spend" && definition?.refresh.kind === "rechargeRoll") {
       const rolled = await sheet.rollPlan(createRechargeRollPlan(sheet.character, definition));
@@ -97,6 +102,7 @@ export function QuickResourceControls({ sheet, resourceId }: { sheet: CharacterS
   }, [sheet.character.id]);
   const resource = sheet.derived.resources.find((item) => item.id === resourceId);
   if (!resource) return null;
+  const recovering = sheet.mode === "hosted" && hasPendingHostedResourceSpend(sheet.character.id, resourceId);
   const update = async (operation: "spend" | "restore") => {
     if (busyRef.current) return;
     busyRef.current = true;
@@ -111,7 +117,7 @@ export function QuickResourceControls({ sheet, resourceId }: { sheet: CharacterS
     }
   };
   return <span className="summary-resource-controls" aria-label={`Adjust ${resource.name}`}>
-    <button type="button" aria-label={`Spend one ${resource.name}`} title={`Spend one ${resource.name}`} disabled={busy || resource.remaining === 0} onClick={() => void update("spend")}>−1</button>
+    <button type="button" aria-label={recovering ? `Recover previous ${resource.name} spend` : `Spend one ${resource.name}`} title={recovering ? `Recover the unconfirmed ${resource.name} spend` : `Spend one ${resource.name}`} disabled={busy || resource.remaining === 0 && !recovering} onClick={() => void update("spend")}>{recovering ? "↺" : "−1"}</button>
     <button type="button" aria-label={`Restore one ${resource.name}`} title={`Restore one ${resource.name}`} disabled={busy || resource.spent <= 0} onClick={() => void update("restore")}>+1</button>
   </span>;
 }

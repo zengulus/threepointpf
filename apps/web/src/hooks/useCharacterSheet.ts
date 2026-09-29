@@ -43,7 +43,7 @@ import {
   slug,
 } from "../lib/format";
 import { activeCatalog, repositoryFor } from "../lib/repository";
-import { CharacterApiError, type CharacterRepository, type HostedRollResponse } from "@threepointpf/shared";
+import { CharacterApiError, type CharacterRepository, type HostedResourceSpendResponse, type HostedRollResponse } from "@threepointpf/shared";
 import {
   defaultSample,
   sampleCharacter,
@@ -64,7 +64,7 @@ import {
 import { useDiscordRollSettings } from "./useDiscordRollSettings";
 import { publishCompletedRoll } from "../lib/discord-roll-publishing";
 import { formatRollResultNotice } from "../lib/roll-result";
-import { hostedDeliveryNotice, recordHostedRoll } from "../lib/hosted-roll";
+import { hostedDeliveryNotice, recordHostedResourceSpend, recordHostedRoll } from "../lib/hosted-roll";
 import { copyWithNewCharacterId, exportCharacterLibrarySnapshot, importCharacterLibrarySnapshot, importCharacterSnapshot } from "../lib/character-portability";
 
 /**
@@ -1603,6 +1603,60 @@ export function useCharacterSheetController({
       if (activeSaves.current === 0) setIsSaving(false);
     }
   };
+  const spendRechargeResource = async (resourceId: string) => {
+    if (mode !== "hosted") return false;
+    const activeCharacterId = characterRef.current.id;
+    if (isDirtyRef.current && !await save()) {
+      setIntegrationNotice("Save your changes before spending this resource.");
+      return false;
+    }
+    await saveQueue.current;
+    if (characterRef.current.id !== activeCharacterId || isDirtyRef.current) {
+      setIntegrationNotice("The character changed before this resource could be spent. Review and save your changes first.");
+      return false;
+    }
+    const expectedRevision = Number(repo.getRevision?.(activeCharacterId));
+    const editGeneration = editRevision.current;
+    const loadGeneration = loadRevision.current;
+    let recorded: HostedResourceSpendResponse;
+    try {
+      recorded = await recordHostedResourceSpend(activeCharacterId, resourceId, expectedRevision);
+    } catch (failure) {
+      notifyAuthenticationRequired(failure);
+      const definitive = failure instanceof CharacterApiError && [400, 403, 404, 409, 422, 429].includes(failure.status ?? 0);
+      setIntegrationNotice((definitive ? "Resource was not spent. " : "Resource spend was not confirmed. Retry the same control to recover it. ") + errorText(failure));
+      return false;
+    }
+    if (characterRef.current.id !== activeCharacterId || loadRevision.current !== loadGeneration) return true;
+    setLastRoll({ plan: recorded.plan, resolved: recorded.result });
+    setLastHostedRoll(recorded);
+    setRollHistory((previous) => [recorded, ...previous.filter((item) => item.rollId !== recorded.rollId)].slice(0, 20));
+    try { dice.present(recorded.plan, recorded.result, { characterName: recorded.characterName }); }
+    catch { /* The stored result remains visible without the dice renderer. */ }
+    if (editRevision.current !== editGeneration || isDirtyRef.current) {
+      setIntegrationNotice("Resource spend recorded, but newer edits are unsaved. Export your draft or reload before saving again.");
+      return true;
+    }
+    if (recorded.revision === expectedRevision) {
+      // A lost first response was recovered after the page already loaded the
+      // committed snapshot. There is no new revision to apply or save.
+      setNotice(`${recorded.plan.label}: ${recorded.result.total} rounds until refresh`);
+      setIntegrationNotice(`${hostedDeliveryNotice(recorded.delivery)} Previous spend recovered; roll reference: ${recorded.rollId.slice(0, 8)}.`);
+      return true;
+    }
+    try {
+      if (!repo.acceptServerMutation) throw new Error("This repository cannot accept a recorded resource spend.");
+      const saved = repo.acceptServerMutation(recorded.character, expectedRevision, recorded.revision);
+      characterRef.current = saved;
+      setCharacter(saved);
+      setError(null);
+      setNotice(`${recorded.plan.label}: ${recorded.result.total} rounds until refresh`);
+      setIntegrationNotice(`${hostedDeliveryNotice(recorded.delivery)} Roll reference: ${recorded.rollId.slice(0, 8)}.`);
+    } catch (failure) {
+      setIntegrationNotice("Resource spend recorded, but the sheet needs a reload before more edits. " + errorText(failure));
+    }
+    return true;
+  };
   useEffect(() => {
     if (mode !== "hosted" || !isDirty) return;
     const expectedCharacterId = characterId;
@@ -1874,6 +1928,7 @@ export function useCharacterSheetController({
     rollHistory,
     retryHostedDelivery,
     rollPlan,
+    spendRechargeResource,
     rollInitiative,
     rollSave,
     rollSkill,

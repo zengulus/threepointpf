@@ -35,6 +35,17 @@ describe("HttpCharacterRepository", () => {
     expect(fetcher.mock.calls[1]?.[0]).toBe(`/api/characters/${levelOneFighter.id}`);
   });
 
+  it("accepts a committed action snapshot without a second save", async () => {
+    const fetcher = vi.fn(async () => response({ character: levelOneFighter, revision: 1 }));
+    const repository = new HttpCharacterRepository({ fetch: fetcher as typeof fetch, rules: rulesCatalogs });
+    await repository.load(levelOneFighter.id);
+    const next = { ...levelOneFighter, name: "After action" };
+    expect(repository.acceptServerMutation(next, 1, 2).name).toBe("After action");
+    expect(repository.getRevision(levelOneFighter.id)).toBe(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(() => repository.acceptServerMutation(next, 1, 2)).toThrow(/changed during this action/);
+  });
+
   it("rejects malformed server character data", async () => {
     const repository = new HttpCharacterRepository({ fetch: vi.fn(async () => response({ character: { id: "bad" } })) as typeof fetch });
     await expect(repository.load("bad")).rejects.toMatchObject({ code: "protocol" });

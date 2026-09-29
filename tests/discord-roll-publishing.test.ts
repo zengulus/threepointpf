@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveRollPlan } from "@threepointpf/dice";
-import { RulesEngine } from "@threepointpf/rules-core";
+import { RulesEngine, createRechargeRollPlan } from "@threepointpf/rules-core";
 import { rulesCatalogs } from "@threepointpf/rules-data";
 import type { CharacterInput } from "@threepointpf/rules-schema";
 import {
@@ -140,6 +140,16 @@ describe("Discord roll payloads", () => {
       "Captain Hook · Ref abc123",
     ]);
     expect(failure.split("\n")[1]).toBe("🔴 **Total 16 vs DC 17 · Failure**");
+  });
+
+  it("labels a resource recharge result as rounds rather than damage", () => {
+    const hero = character();
+    const plan = createRechargeRollPlan(hero, { id: "breath", name: "Breath Weapon",
+      maximum: { kind: "fixed", value: 1 }, refresh: { kind: "rechargeRoll", dice: { count: 1, sides: 4 } } });
+    const lines = formatDiscordRollMessage(hero.name, plan, resolveRollPlan(plan, [3]), "resource-roll").split("\n");
+    expect(lines[0]).toBe("**Breath Weapon recharge**");
+    expect(lines[1]).toBe("🎲 **Recharge 3 rounds**");
+    expect(lines[2]).toBe("Dice 3 · Modifier +0");
   });
 
   it("posts compact JSON and exposes credential-safe failure messages", async () => {

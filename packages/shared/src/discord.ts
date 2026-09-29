@@ -34,7 +34,10 @@ export function formatDiscordRollMessage(
   const negative = resolved.outcome.success === false || resolved.outcome.hit === false;
   const marker = positive ? "🟢" : negative ? "🔴" : "🎲";
   const outcome = plan.outcomePolicy.kind !== "plain" ? outcomeLabel(plan, resolved) : "";
-  const total = `${plan.context.kind === "damage" ? "Damage" : "Total"} ${resolved.total}${comparedWith}${outcome ? ` · ${outcome}` : ""}`;
+  const recharge = plan.id.startsWith(`resource:${plan.characterId}:`) && plan.id.endsWith(":recharge");
+  const total = recharge
+    ? `Recharge ${resolved.total} round${resolved.total === 1 ? "" : "s"}`
+    : `${plan.context.kind === "damage" ? "Damage" : "Total"} ${resolved.total}${comparedWith}${outcome ? ` · ${outcome}` : ""}`;
   const shownFaces = resolved.faces.slice(0, 24).join(", ");
   const omittedFaces = resolved.faces.length > 24 ? `, +${resolved.faces.length - 24} more` : "";
   const dice = resolved.naturalFace === undefined

@@ -1,11 +1,12 @@
 # Hosted roll API (in progress)
 
-The hosted Site stores a roll before returning it. The current server route
-supports the six existing `RollPlanRequest` families: save, attack, maneuver,
-skill, damage, and initiative. The hosted sheet uses this route when its
+The hosted Site stores a roll before returning it. The ordinary roll route
+supports save, attack, maneuver, skill, damage, initiative, and concentration.
+The hosted sheet uses this route when its
 displayed plan exactly matches a plan rebuilt from the saved character and a
-strict action intent. Synthetic bonus dice, spell, ability, recharge, and other
-contextual rolls still require typed server action intents before the feature
+strict action intent. A separate typed route now handles one recharge-backed
+resource spend. Synthetic bonus dice, spell, ability, and other contextual
+rolls still require typed server action intents before the feature
 is ready for trusted play. They fail visibly in hosted mode rather than using
 local dice as a campaign result.
 
@@ -46,6 +47,22 @@ lost. A matching retry returns the stored roll even after a later character edit
 the same request ID with different content returns 409. New intentional rolls
 must use new UUIDs.
 
+`POST /api/resource-spends` accepts the same authentication, request ID, and
+revision fields, plus a `resourceId` identifying one saved resource with a
+`rechargeRoll` refresh rule. It never accepts dice or a proposed resource
+state. The Worker rebuilds its recharge plan, rolls secure faces, derives the
+new spent count and refresh timer, then uses one D1 batch to update the
+revision-guarded character, record the immutable roll, and queue its Discord
+delivery. The roll insert is conditional on the preceding update's `changes()`
+result; a duplicate or stale request cannot record an unspent roll. The
+response includes the recorded roll, the current saved character snapshot, and
+revision so the sheet updates without a second PUT. A matching retry reuses
+the original roll even if another edit followed it. The browser keeps an
+unconfirmed request ID in session storage so retrying the same resource after
+a lost response or reload cannot silently create another spend. If newer local
+edits arrived while the action was in flight, the sheet preserves the draft
+and asks for a reload instead of overwriting it.
+
 An unconnected campaign records `delivery.state = "not_configured"`. A connected
 campaign records `pending`, pinned to that connection ID and version. A
 best-effort Worker `waitUntil` call starts delivery after the roll is committed.
@@ -77,18 +94,18 @@ separate action from rolling again; ambiguous delivery requires the player to
 check the channel and explicitly accept a possible duplicate. History
 lists the latest 20 authorized rolls for a character, refreshes while the sheet
 is open, and survives reload. Older-history pagination, full roll-family
-coverage, and atomic resource spending remain unfinished. Do not treat
+coverage, and atomic spell/ability/system/turn actions remain unfinished. Do not treat
 `pending` as sent.
 
-Discord messages put the action name and character first, then a prominent
-green success or red failure line with total versus the declared AC/CMD/DC.
-Dice, modifier, and roll reference follow below. Rolls without a resolved
-success/failure use a neutral dice marker.
+Discord messages put the roll type first, then a prominent green success or
+red failure line with total versus the declared AC/CMD/DC. Dice, modifier,
+character, and roll reference follow below. A recharge result uses a neutral
+dice marker and labels its total in rounds.
 
 Local verification uses `tests/hosted-roll-api-smoke.mjs` against a fresh
 Wrangler/D1 database with migrations `0000` through `0006`. It covers permission
 denial, forged input, concurrent duplicate requests, immutable retry recovery,
-and stale revision rejection. `tests/discord-delivery.test.mjs` uses Miniflare D1
+stale revision rejection, and concurrent recharge spending. `tests/discord-delivery.test.mjs` uses Miniflare D1
 and a fake Discord fetcher for lease, rate-limit, timeout, connection-pin, and
 confirmed-message behavior. The local database and test bundle are ignored
 under `work/`.

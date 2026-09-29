@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveRollPlan } from "@threepointpf/dice";
-import { RulesEngine, concentrationRollPlan, spellLikeConcentrationRollPlan } from "@threepointpf/rules-core";
+import { RulesEngine, concentrationRollPlan, createRechargeRollPlan, spellLikeConcentrationRollPlan } from "@threepointpf/rules-core";
 import { rulesCatalogs } from "@threepointpf/rules-data";
 import type { CharacterInput } from "@threepointpf/rules-schema";
 import { createCharacterRollPlan, rollPlanRequestSchema } from "@threepointpf/shared";
-import { hostedActionForPlan, recordHostedRoll } from "../apps/web/src/lib/hosted-roll";
+import { hostedActionForPlan, recordHostedResourceSpend, recordHostedRoll } from "../apps/web/src/lib/hosted-roll";
 
 const character: CharacterInput = {
   id: "hosted-test", name: "Hosted Hero",
@@ -51,6 +51,48 @@ describe("hosted sheet roll boundary", () => {
     const second = request.mock.calls[1]![1] as RequestInit;
     expect(first.body).toBe(second.body);
     expect(JSON.parse(String(first.body))).toMatchObject({ expectedRevision: 3, action: { kind: "save", saveId: "will" } });
+  });
+
+  it("keeps a recharge spend request ID across a lost response and a later retry", async () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal("sessionStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, value); },
+      removeItem: (key: string) => { values.delete(key); },
+    });
+    try {
+      values.set("threepointpf.hosted.active-account-id", "player-a");
+      const resource = { id: "breath", name: "Breath Weapon", maximum: { kind: "fixed" as const, value: 1 },
+        refresh: { kind: "rechargeRoll" as const, dice: { count: 1, sides: 4 } } };
+      const plan = createRechargeRollPlan(character, resource);
+      const result = resolveRollPlan(plan, [3]);
+      const request = vi.fn().mockRejectedValueOnce(new Error("lost response"))
+        .mockRejectedValueOnce(new Error("still lost"));
+      await expect(recordHostedResourceSpend(character.id, resource.id, 1, request)).rejects.toThrow("still lost");
+      const pending = [...values.entries()].find(([key]) => key.includes("pending-resource-spend"))?.[1];
+      expect(pending).toBeTruthy();
+      const response = { version: 1, rollId: "one-spend", clientRequestId: JSON.parse(pending!).clientRequestId,
+        characterId: character.id, characterName: character.name, characterRevision: 1,
+        createdAt: new Date().toISOString(), plan, result, delivery: { state: "not_configured" },
+        character: { ...character, resources: [resource], resourceStates: [{ resourceId: resource.id, spent: 1, roundsUntilRefresh: 3 }] }, revision: 2 };
+      values.set("threepointpf.hosted.active-account-id", "player-b");
+      const otherAccountRequest = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+        const otherId = JSON.parse(String(init?.body)).clientRequestId;
+        return new Response(JSON.stringify({ ...response, clientRequestId: otherId }), { status: 201 });
+      });
+      await recordHostedResourceSpend(character.id, resource.id, 1, otherAccountRequest as typeof fetch);
+      expect(JSON.parse(String((otherAccountRequest.mock.calls[0]![1] as RequestInit).body)).clientRequestId)
+        .not.toBe(response.clientRequestId);
+      expect([...values.entries()].find(([key]) => key.includes("pending-resource-spend"))?.[1]).toBe(pending);
+      values.set("threepointpf.hosted.active-account-id", "player-a");
+      request.mockResolvedValueOnce(new Response(JSON.stringify(response), { status: 200 }));
+      const recovered = await recordHostedResourceSpend(character.id, resource.id, 2, request);
+      expect(recovered.rollId).toBe("one-spend");
+      expect((request.mock.calls[2]![1] as RequestInit).body).toBe(pending);
+      expect([...values.keys()].filter((key) => key.includes("pending-resource-spend"))).toHaveLength(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("rebuilds concentration from an owned casting source or spell-like ability", () => {
