@@ -203,6 +203,14 @@ The focused formatter tests and Site build passed. The previously authorized
 single live test message was not repeated; existing Discord messages do not
 change when the formatter changes.
 
+The browser test harness now creates its own local DM per demo test and uses
+the current turn, editor disclosure, and character-import controls. The
+browser-only suite passed 35/35 locally, and the API-mocked hosted sheet test
+passed 1/1 after a separate hosted build. These checks validate the client
+flows; they do not replace the real Worker/D1 permission and delivery tests or
+an authenticated production player journey. The preview uses a dedicated port
+without reusing another server, so the mode under test is the mode just built.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
@@ -655,21 +663,21 @@ Essential integrated journeys:
 7. Logout/login as a different player exposes no prior player's cached sheet.
 8. Browser demo still creates/imports/exports/saves and rolls without the API.
 
-Repository commands available at planning time:
+Repository commands:
 
 ```sh
-corepack pnpm test
-corepack pnpm build
-corepack pnpm build:demo
-corepack pnpm check:demo
-corepack pnpm test:e2e
-corepack pnpm --filter @threepointpf/web build:hosted
-corepack pnpm test:e2e:hosted
+pnpm test
+pnpm build
+pnpm build:demo
+pnpm check:demo
+pnpm test:e2e
+pnpm --filter @threepointpf/web build:hosted
+pnpm test:e2e:hosted
 ```
 
 Select appropriate subsets during development. Build the intended mode before
-running its E2E suite; current Playwright uses a preview server on port 4173 with
-reuse enabled, so ensure an old demo server is not mistaken for hosted mode.
+running its E2E suite; current Playwright starts its own preview server on port
+4178 and does not reuse an existing listener.
 Add/document separate real-backend test commands. Follow the opened Site's own
 build workflow for its Worker; the root static build does not verify deployment.
 

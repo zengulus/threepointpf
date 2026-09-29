@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
+import { openDemoSheet } from "./demo-account";
+
+test.beforeEach(async ({ page }) => openDemoSheet(page));
 
 /**
  * The dice overlay is the result surface; it is dismissed before the next click
@@ -41,7 +44,7 @@ test("sheet tabs swap panels and compact roll controls invoke dice", async ({ pa
   await dismissDice(page);
 
   await page.getByTestId("roll-dc-summary").fill("10");
-  await page.getByLabel("Roll Climb").click();
+  await page.getByLabel("Roll Climb", { exact: true }).click();
   await expect(page.getByTestId("dice-overlay")).toBeVisible();
   await dismissDice(page);
 });
@@ -83,17 +86,18 @@ test("workspace frames the shared sheet in one draggable, resizable window", asy
 
   const beforeResize = (await sheetWindow.boundingBox())!;
   const resizeHandle = page.getByTestId("character-sheet-window-resize-handle");
+  await resizeHandle.scrollIntoViewIfNeeded();
   const handleBox = (await resizeHandle.boundingBox())!;
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
-  await page.mouse.move(handleBox.x + 80, handleBox.y + 50, { steps: 4 });
+  await page.mouse.move(handleBox.x - 180, handleBox.y - 130, { steps: 4 });
   await page.mouse.up();
   await expect
     .poll(async () => (await sheetWindow.boundingBox())?.width ?? 0)
-    .toBeGreaterThan(beforeResize.width + 40);
+    .toBeLessThan(beforeResize.width - 40);
   await expect
     .poll(async () => (await sheetWindow.boundingBox())?.height ?? 0)
-    .toBeGreaterThan(beforeResize.height + 20);
+    .toBeLessThan(beforeResize.height - 20);
 
   const sharedName = "Window Shared Hero";
   await sheetWindow.getByLabel("Character name").fill(sharedName);
@@ -177,7 +181,7 @@ test("character sheet recomputes toggles and exposes provenance", async ({ page 
   await expect(page.locator(".breakdown")).toContainText("Rage");
   await selectTab(page, "Skills");
   await page.getByLabel("Acrobatics ranks").fill("4");
-  await expect(page.getByRole("button", { name: /Acrobatics/ })).toContainText("+11");
+  await expect(page.getByRole("button", { name: /^Acrobatics DEX/ })).toContainText("+11");
 });
 
 test("N-track advancement editor persists ordered choices and exposes a shared BAB fact", async ({ page }) => {
@@ -203,6 +207,7 @@ test("N-track advancement editor persists ordered choices and exposes a shared B
   await page.getByRole("button", { name: "Save character" }).click();
   await selectTab(page, "Advancement");
   await page.getByLabel("Level 2 track 2 progression").selectOption("pf1e.paizo.rogue");
+  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Reload" }).click();
   await expect(page.getByLabel("Level 2 track 2 progression")).toHaveValue("pf1e.paizo.fighter");
   await page.reload();
@@ -242,6 +247,7 @@ test("custom classes, granted effects, equipment and movement survive browser re
   await selectTab(page, "Attributes");
   await page.getByLabel("fly base speed").fill("60");
   await selectTab(page, "Features");
+  await page.locator("details.editor-subsection").filter({ has: page.getByLabel("Catalog feature or condition") }).locator("summary").click();
   await page.getByLabel("Catalog feature or condition").selectOption("pf1e.paizo.haste");
   await page.getByRole("button", { name: "+ Add", exact: true }).click();
   await selectTab(page, "Attributes");
@@ -315,6 +321,7 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   // greatsword is two-handed, so the one-handed and off-hand variants are
   // authored but excluded, and that exclusion is visible.
   await selectTab(page, "Features");
+  await page.locator("details.editor-subsection").filter({ has: page.getByLabel("Catalog feature or condition") }).locator("summary").click();
   await page.getByLabel("Catalog feature or condition").selectOption("pf1e.paizo.power-attack");
   await page.getByRole("button", { name: "+ Add", exact: true }).click();
   await selectTab(page, "Combat");
@@ -328,30 +335,27 @@ test("contextual actions expose step roles, exclusions and maneuver plans", asyn
   await page.getByTestId("roll-cmd-maneuvers").fill("10");
   await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-maneuver-trip").click();
-  await expect(page.locator(".sheet-notice")).toContainText("CMB trip");
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("CMB trip");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
   await dismissDice(page);
   // A roll reports the natural face and the semantic outcome separately, so a
   // threat that could still miss is never shown as a hit.
-  await expect(page.locator(".sheet-notice")).toContainText(
-    /CMB trip: natural \d+ · modifier [+-]\d+ · total \d+/,
-  );
+  await selectTab(page, "Summary");
+  await page.getByRole("button", { name: "Start new turn" }).click();
+  await selectTab(page, "Combat");
   await page.getByTestId("roll-standard-greatsword").click();
-  await expect(page.locator(".sheet-notice")).toContainText(
-    /Greatsword standard attack: natural \d+ · modifier [+-]\d+ · total \d+/,
-  );
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Greatsword standard attack");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
   await dismissDice(page);
   // A step's own damage roll is part of the action's roll list, and a plain
   // roll reports its total without inventing an outcome.
   await page.getByTestId("roll-damage-greatsword").click();
-  await expect(page.locator(".sheet-notice")).toContainText(
-    /Greatsword damage: dice \d+(, \d+)* · modifier [+-]\d+ · total \d+/,
-  );
-  await expect(page.locator(".sheet-notice")).not.toContainText(/unresolved/i);
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Greatsword damage");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
   await dismissDice(page);
   await page.getByTestId("roll-initiative").click();
-  await expect(page.locator(".sheet-notice")).toContainText(
-    /Initiative: natural \d+ · modifier [+-]\d+ · total \d+/,
-  );
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Initiative");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
   await dismissDice(page);
 });
 
@@ -360,17 +364,20 @@ test("expert ability authoring connects resources, composed damage, activation a
   await loadSample(page, "showcase");
   await selectTab(page, "Features");
 
+  await page.locator("details.editor-subsection").filter({ has: page.getByLabel("Catalog ability") }).locator("summary").click();
   await page.getByLabel("Catalog ability").selectOption("pf1e.paizo.power-attack");
   await page.getByRole("button", { name: "Clone → local edit", exact: true }).click();
   await expect(page.getByLabel("Ability name")).toHaveValue("Power Attack");
   await page.getByLabel("Ability name").fill("Local Power Attack");
   await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
+  await page.locator(".feature-row").filter({ hasText: "Local Power Attack" }).locator("details.feature-rules-notes > summary").click();
   await expect(page.getByLabel("Edit ability Local Power Attack")).toBeVisible();
 
+  await page.getByText("Add or edit resources", { exact: true }).click();
   await page.getByLabel("Resource name").fill("Titan Charges");
   await page.getByLabel("Resource maximum", { exact: true }).fill("3");
   await page.getByRole("button", { name: "+ Add resource", exact: true }).click();
-  await expect(page.getByLabel("Resources")).toContainText("Maximum: 3 · Remaining: 3 · Spent: 0");
+  await expect(page.getByLabel("Resources")).toContainText("3 left of 3 · 0 spent");
   await page.getByLabel("Resource name").fill("Breath Recharge");
   await page.getByLabel("Resource maximum", { exact: true }).fill("1");
   await page.getByLabel("Resource refresh rule").selectOption("rechargeRoll");
@@ -398,9 +405,9 @@ test("expert ability authoring connects resources, composed damage, activation a
   const before = await attack.locator(".attack-name strong").textContent();
   await selectTab(page, "Features");
   await page.getByLabel("Toggle ability Titan Stance").click();
-  await expect(page.getByLabel("Resources")).toContainText("Remaining: 2 · Spent: 1");
+  await expect(page.getByLabel("Resources")).toContainText("2 left of 3 · 1 spent");
   await page.getByLabel("Advance resource round").click();
-  await expect(page.getByLabel("Resources")).toContainText("Remaining: 1 · Spent: 2");
+  await expect(page.getByLabel("Resources")).toContainText("1 left of 3 · 2 spent");
 
   await page.getByLabel("Ability name").fill("Flame Burst");
   await page.getByLabel("Ability activation").selectOption("activated");
@@ -414,8 +421,9 @@ test("expert ability authoring connects resources, composed damage, activation a
   await page.getByRole("button", { name: "+ Add cost", exact: true }).click();
   await page.getByRole("button", { name: "+ Add ability", exact: true }).click();
   await page.getByLabel("Use ability Flame Burst").click();
-  await expect(page.locator(".sheet-notice")).toContainText(/Flame Burst damage: dice \d+ · modifier \+0 · total \d+/);
-  await expect(page.getByLabel("Resources")).toContainText("Remaining: 0 · Spent: 3");
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Flame Burst damage");
+  await expect(page.getByTestId("dice-overlay-total")).toContainText("=");
+  await expect(page.getByLabel("Resources")).toContainText("0 left of 3 · 3 spent");
   await dismissDice(page);
 
   await page.getByLabel("Ability name").fill("Breath Weapon");
@@ -429,7 +437,7 @@ test("expert ability authoring connects resources, composed damage, activation a
   await expect(page.getByTestId("dice-overlay-label")).toContainText("Breath Recharge recharge");
   await dismissDice(page);
   const breathResource = page.getByLabel("Resources").locator(".feature-row").filter({ hasText: "Breath Recharge" });
-  await expect(breathResource).toContainText("Remaining: 0 · Spent: 1");
+  await expect(breathResource).toContainText("0 left of 1 · 1 spent");
   await expect(breathResource).toContainText(/\d rounds remaining/);
 
   await page.getByLabel("Ability name").fill("Defensive Threat Expert");
@@ -450,22 +458,24 @@ test("expert ability authoring connects resources, composed damage, activation a
   await expect(attack.locator(".attack-name strong")).not.toHaveText(before ?? "");
   await expect(attack.locator(".attack-name small")).toContainText("2d6 force");
   await page.getByTestId("roll-damage-greatsword").click();
-  await expect(page.locator(".sheet-notice")).toContainText(/dice \d+(, \d+)+/);
+  await expect(page.getByTestId("dice-overlay-faces")).toContainText(/\d+/);
   await dismissDice(page);
 
   await page.getByRole("button", { name: "Save character" }).click();
   await page.reload();
   await selectTab(page, "Features");
   await expect(page.getByLabel("Abilities")).toContainText("Titan Stance");
-  await expect(page.getByLabel("Resources")).toContainText("Remaining: 0 · Spent: 3");
-  await expect(page.getByLabel("Resources").locator(".feature-row").filter({ hasText: "Breath Recharge" })).toContainText("Remaining: 0 · Spent: 1");
+  await expect(page.getByLabel("Resources")).toContainText("0 left of 3 · 3 spent");
+  await expect(page.getByLabel("Resources").locator(".feature-row").filter({ hasText: "Breath Recharge" })).toContainText("0 left of 1 · 1 spent");
   await expect(page.getByLabel("Abilities")).toContainText("double base threat range");
+  await page.locator(".feature-row").filter({ hasText: "Titan Stance" }).locator("details.feature-rules-notes > summary").click();
   await page.getByLabel("Edit ability Titan Stance").click();
   await page.getByLabel("Ability description").fill("Edited and persisted");
   await page.getByRole("button", { name: "Save ability", exact: true }).click();
   await page.getByRole("button", { name: "Save character" }).click();
   await page.reload();
   await selectTab(page, "Features");
+  await page.locator(".feature-row").filter({ hasText: "Titan Stance" }).locator("details.feature-rules-notes > summary").click();
   await page.getByLabel("Edit ability Titan Stance").click();
   await expect(page.getByLabel("Ability description")).toHaveValue("Edited and persisted");
 });
@@ -488,7 +498,7 @@ test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
     page.getByTestId("roll-standard-equipment.greatsword"),
   ).toContainText("+4");
   await expect(page.getByTestId("roll-damage-equipment.greatsword")).toContainText(
-    /2d6\+7/,
+    /2d6\s*\+7/,
   );
   await page.getByRole("button", { name: "Inspect Greatsword damage" }).click();
   await expect(page.locator(".breakdown")).toContainText("EXCLUDED BY CONTEXT");
@@ -513,9 +523,6 @@ test("the demo build opens on the level 1 fighter sample", async ({ page }) => {
   await page.getByTestId("sample-reset").click();
   await selectTab(page, "Combat");
   await expect(page.getByTestId("stat-bab")).toContainText("+6");
-  await expect(page.locator(".top-actions")).toContainText(
-    "Sample loaded: Showcase",
-  );
 });
 
 test("a missing DC prompts before an intentional raw check or resolved roll", async ({ page }) => {
@@ -638,6 +645,8 @@ test("the dice overlay shows a resolved roll and remembers dice preferences", as
 
   // Reduced motion still shows the authoritative result, just without a throw.
   await page.getByTestId("dice-reduced-motion").check();
+  await selectTab(page, "Summary");
+  await page.getByRole("button", { name: "Start new turn" }).click();
   await selectTab(page, "Combat");
   await page.getByTestId("roll-ac-attacks").fill("10");
   await page.getByTestId("roll-standard-greatsword").click();

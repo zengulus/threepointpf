@@ -1,4 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
+import { openDemoSheet } from "./demo-account";
+
+test.beforeEach(async ({ page }) => openDemoSheet(page));
 
 /**
  * The dice appearance is applied inside the renderer's own Three.js scene, so it
@@ -50,6 +53,11 @@ async function noFlourishes(page: Page) {
 async function rollStandardGreatsword(page: Page) {
   await selectTab(page, "Combat");
   await page.getByTestId("roll-ac-attacks").fill("10");
+  if (await page.getByTestId("roll-standard-greatsword").isDisabled()) {
+    await selectTab(page, "Summary");
+    await page.getByRole("button", { name: "Start new turn" }).click();
+    await selectTab(page, "Combat");
+  }
   await page.getByTestId("roll-standard-greatsword").click();
 }
 

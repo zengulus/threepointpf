@@ -5,6 +5,9 @@ test("@hosted hosted sheet loads, edits, saves, and reloads through the same-ori
   let character = structuredClone(levelOneFighter);
   let revision = 1;
   const requested: string[] = [];
+  await page.route("**/api/auth", async (route) => {
+    await route.fulfill({ json: { account: { id: "test-dm", username: "testdm", name: "Test DM", role: "dm", activeRole: "dm" } } });
+  });
   await page.route("**/api/characters**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());

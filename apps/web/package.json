@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "node ../../scripts/copy-dice-assets.mjs && vite",
     "build": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && vite build",
-    "build:pages": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && VITE_APP_MODE=browser vite build --base=./",
-    "build:hosted": "node ../../scripts/copy-dice-assets.mjs && tsc -p tsconfig.json && VITE_APP_MODE=hosted vite build",
+    "build:pages": "node ../../scripts/build-web-mode.mjs browser",
+    "build:hosted": "node ../../scripts/build-web-mode.mjs hosted",
     "preview": "vite preview"
   },
   "dependencies": {

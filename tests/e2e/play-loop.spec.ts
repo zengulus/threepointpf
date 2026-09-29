@@ -1,4 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openDemoSheet } from "./demo-account";
+
+test.beforeEach(async ({ page }) => openDemoSheet(page));
 
 async function selectTab(page: Page, name: string) {
   const tab = page.getByRole("tab", { name, exact: true });
@@ -67,7 +70,7 @@ test("spontaneous spell casts use and persist source-owned slots", async ({ page
   await selectTab(page, "Spells");
   await expect(page.getByRole("heading", { name: "Arcane E2E" })).toBeVisible();
   const firstLevelSlots = page.locator(".spell-slot-table tr").filter({ has: page.getByRole("rowheader", { name: "1", exact: true }) });
-  await expect(firstLevelSlots.getByRole("cell").last()).toHaveText("0");
+  await expect(firstLevelSlots.getByRole("cell").last()).toContainText("0 / 1 left");
 });
 
 test("prepared spell allocations expend independently and refresh with their source", async ({ page }) => {
@@ -81,7 +84,8 @@ test("prepared spell allocations expend independently and refresh with their sou
   await page.getByRole("button", { name: "Add custom spell" }).click();
   await page.getByLabel("Add spell to Prepared E2E").selectOption("local.prepared-bolt");
   await page.getByRole("button", { name: "Add to spellbook" }).click();
-  await page.getByRole("button", { name: "Prepare first spellbook entry" }).click();
+  await page.getByRole("combobox", { name: "Choose spell to prepare for Prepared E2E" }).selectOption("local.prepared-bolt");
+  await page.getByRole("button", { name: "Prepare selected spell" }).click();
   await page.getByRole("button", { name: "Cast prepared" }).click();
   await expect(page.getByTestId("dice-overlay-label")).toContainText("Prepared Bolt");
   await dismissDice(page);
@@ -111,11 +115,11 @@ test("two spontaneous sources keep their own spell slots", async ({ page }) => {
   await first.getByRole("button", { name: "Cast", exact: true }).click();
   await dismissDice(page);
   const secondLevelOne = second.locator(".spell-slot-table tr").filter({ has: page.getByRole("rowheader", { name: "1", exact: true }) });
-  await expect(secondLevelOne.getByRole("cell").last()).toHaveText("1");
+  await expect(secondLevelOne.getByRole("cell").last()).toContainText("1 / 1 left");
   await second.getByRole("button", { name: "Cast", exact: true }).click();
   await dismissDice(page);
   const firstLevelOne = first.locator(".spell-slot-table tr").filter({ has: page.getByRole("rowheader", { name: "1", exact: true }) });
-  await expect(firstLevelOne.getByRole("cell").last()).toHaveText("0");
+  await expect(firstLevelOne.getByRole("cell").last()).toContainText("0 / 1 left");
 });
 
 test("Summary and Combat use paired action plans for ordinary weapon play", async ({
@@ -254,6 +258,9 @@ test("initiative, saves, skills, target defenses and every modeled maneuver stay
     "reposition",
     "steal",
   ]) {
+    await selectTab(page, "Summary");
+    await page.getByRole("button", { name: "Start new turn" }).click();
+    await selectTab(page, "Combat");
     await page.getByTestId(`roll-maneuver-${maneuver}`).click();
     await expect(page.getByTestId("dice-overlay-target")).toContainText("vs CMD 10");
     await dismissDice(page);

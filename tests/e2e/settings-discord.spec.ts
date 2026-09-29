@@ -1,4 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openDemoSheet } from "./demo-account";
+
+test.beforeEach(async ({ page }) => openDemoSheet(page));
 
 const webhook = [
   "https://discord.com/api/webhooks",
@@ -116,7 +119,7 @@ test("Discord settings are masked, local-only, testable, and best-effort for rol
   reply = "rejected";
   await page.getByLabel("Roll initiative").click();
   await expect(page.getByTestId("dice-overlay")).toBeVisible();
-  await expect(page.locator(".sheet-notice")).toContainText("Initiative");
+  await expect(page.getByTestId("dice-overlay-label")).toContainText("Initiative");
   await expect(page.locator(".sheet-integration-notice")).toContainText(
     "local roll is still available",
   );
