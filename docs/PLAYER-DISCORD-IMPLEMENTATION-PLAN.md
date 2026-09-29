@@ -243,6 +243,12 @@ test confirmed the counter survives reload without a PUT, and 429/429 unit
 tests passed. Other spell, ability, system, and turn actions remain gated until
 their multi-roll atomic intents exist. No live Discord message was sent.
 
+Breakpoint: Sites version 293 deployed from source commit
+`30e66482614ce57d4b347318e3dc73b816d71cdf`; the root feature commit is
+`71f199e`. Root build, Site build, 429 unit tests, four hosted browser tests,
+and the real Worker/D1 resource-spend smoke passed. See
+`docs/IMPLEMENTATION-BREAKPOINT.md` for the exact handoff and next action.
+
 ## 1. Objective and agreed direction
 
 Players primarily use the website, with completed rolls sent to Discord. The user
