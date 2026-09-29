@@ -204,10 +204,9 @@ const features: FeatureDefinition[] = [
       ...attacks(2, "morale"),
       ...saves(2, "morale"),
       modifier("skill.all", 2, "morale"),
-      modifier("initiative", 2, "morale"),
     ],
     104,
-    "+2 morale to attack rolls, saves, skill checks, and initiative.",
+    "+2 morale to attack rolls, saves, and skill checks.",
     "Main Sheet",
   ),
   feature(

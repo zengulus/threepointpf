@@ -1,5 +1,13 @@
 # 3.PF character sheet
 
+## Hosted campaign Site
+
+The account-backed campaign Site is [3.PF Character Sheet](https://threepointpf-character-sheet.nathmcdm.chatgpt.site/). Players use the website to open assigned characters and send recorded rolls to a DM-connected Discord channel. Co-DMs can switch between DM and Player modes; Player mode is enforced by the server. The current production release is for limited testing while the remaining roll families, atomic resource spending, and a full authenticated production journey are completed.
+
+The hosted application source, Worker routes, D1 migrations, tests, and build tools now live in this repository. The [player and Discord implementation plan](docs/PLAYER-DISCORD-IMPLEMENTATION-PLAN.md) records the deployed Site revision, completed work, security limits, and remaining acceptance gates. `.openai/hosting.json` identifies the existing Site; preserve its project ID and audience when publishing.
+
+For a fresh checkout, run `pnpm install --frozen-lockfile`, `pnpm test`, and `pnpm build`. The public GitHub Pages demo remains a separate browser-only build: `pnpm build:demo` followed by `pnpm check:demo`.
+
 A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics — including the domain-only character lifecycle — live in `rules-core`; imported and authored content is injected by callers.
 
 ## ▶️ [Live demo](https://zengulus.github.io/threepointpf/)

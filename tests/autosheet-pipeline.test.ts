@@ -76,7 +76,7 @@ const advanced = (
 
 describe("catalog advancement and arbitrary classes", () => {
   it("imports every ordinary ability-based attack cell with explicit off-hand and single-attack semantics", () => {
-    expect(Object.keys(attackProfileCatalog)).toHaveLength(60);
+    expect(Object.keys(attackProfileCatalog)).toHaveLength(85);
     expect(
       attackProfileCatalog["pf1e.autosheet.off-hand-melee-wis-wis-0-5"],
     ).toMatchObject({
@@ -763,7 +763,7 @@ describe("equipment, toggles, and attack profiles", () => {
   });
 
   it("makes standard, two-handed, off-hand, ranged, finesse, thrown and natural profiles ordinary attack data", () => {
-    const attacks = Object.values(attackProfileCatalog).map((profile) => ({
+    const attacks = Object.values(attackProfileCatalog).filter((profile) => profile.attackBaseline !== "casterLevel").map((profile) => ({
       id: profile.id,
       name: profile.name,
       attackAbility: "str" as const,

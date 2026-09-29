@@ -507,6 +507,7 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
     const plan = rules.createActionPlan({
       action: "fullAttack",
       attackIds: ["primary", "off-hand"],
+      offHandAttackCount: 1,
     });
     expect(plan.attacks.map((attack) => attack.role)).toEqual([
       "primary",
@@ -515,10 +516,10 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
     const steps = plan.attacks.map((attack) =>
       attack.steps.map((step) => step.role),
     );
-    // BAB 8 → one iterative; the extra attack belongs to the action, not to
-    // every weapon.
+    // BAB 8 grants a main-hand iterative. One selected off-hand attack gets
+    // one swing; the Haste extra belongs to the action, not each weapon.
     expect(steps[0]).toEqual(["primary", "extra", "iterative"]);
-    expect(steps[1]).toEqual(["primary", "iterative"]);
+    expect(steps[1]).toEqual(["primary"]);
     expect(
       plan.attacks.flatMap((attack) =>
         attack.steps.filter((step) => step.role === "extra"),

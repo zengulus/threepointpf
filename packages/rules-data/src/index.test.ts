@@ -49,8 +49,8 @@ describe("Autosheet generated rules data", () => {
     expect(agent?.chart).toHaveLength(5);
     expect(agent?.chart?.[0]).toEqual({ level: 1, bab: 0, saves: { fortitude: 1, reflex: 0, will: 1 } });
     expect(agent?.chart?.[1]).toEqual({ level: 2, bab: 1, saves: { fortitude: 1, reflex: 1, will: 1 } });
-    expect(progressionCatalog["pf1e.paizo.mystery-cultist"]?.classSkills).toBeUndefined();
-    expect(progressionCatalog["pf1e.paizo.sentinel"]?.classSkills).toBeUndefined();
+    expect(progressionCatalog["pf1e.paizo.mystery-cultist"]?.classSkills).toContain("diplomacy");
+    expect(progressionCatalog["pf1e.paizo.sentinel"]?.classSkills).toContain("climb");
   });
 
   it("exposes the classic skill metadata and the imported class-skill sets", () => {
@@ -74,7 +74,7 @@ describe("Autosheet generated rules data", () => {
   });
 
   it("imports armor tables without confusing zero caps, blanks, and weight categories", () => {
-    expect(Object.keys(autosheetEquipmentCatalog)).toHaveLength(45);
+    expect(Object.keys(autosheetEquipmentCatalog)).toHaveLength(56);
     expect(autosheetEquipmentCatalog["pf1e.autosheet.chain-shirt"]).toMatchObject({ armorCheckPenalty: -2, maxDexterity: 4, arcaneSpellFailureChance: 0.2, source: { sheet: "Formula References", row: 169 } });
     expect(autosheetEquipmentCatalog["pf1e.autosheet.half-plate"]).toMatchObject({ maxDexterity: 0, reduceLandSpeed: true });
     expect(autosheetEquipmentCatalog["pf1e.autosheet.buckler"]?.maxDexterity).toBeUndefined();
@@ -84,12 +84,12 @@ describe("Autosheet generated rules data", () => {
 
   it("records source bounds, safe omissions, and deterministic generated freshness", () => {
     const report = JSON.parse(readFileSync(reportPath, "utf8"));
-    expect(report.input.sha256).toBe("bf1fe035fe70688b0c7406308252a6c10013d2ce3220c7f21241fb55233d71b8");
+    expect(report.input.sha256).toBe("f68d978aec205057a4a2e90489505ba395ed9344fbb9da42987b6e0e2e1b6e16");
     expect(report.summary).toMatchObject({
       safelyParseableClassChartRows: 259,
       generatedProgressions: 259,
-      generatedEquipmentDefinitions: 45,
-      progressionsWithClassSkills: 257,
+      generatedEquipmentDefinitions: 56,
+      progressionsWithClassSkills: 259,
       explicitPrestigeCharts: 89,
       classChartCategories: {
         Base: 28,
@@ -110,11 +110,11 @@ describe("Autosheet generated rules data", () => {
     ]));
     expect(report.input.workbook.sheets).toHaveLength(8);
     expect(report.input.workbook.sheets).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "Spells, Spheres and other stuff", importStatus: "excluded" }),
+      expect.objectContaining({ name: "Spells, Spheres and other stuff", importStatus: "partial" }),
       expect.objectContaining({ name: "Formula References", importStatus: "partial", bounds: "A1:AF323" }),
       expect.objectContaining({ name: "Changelog", state: "hidden", bounds: "A1:C1006" }),
     ]));
-    expect(report.unsupportedRows.filter((row: { kind: string }) => row.kind === "missing-class-skills").map((row: { name: string }) => row.name)).toEqual(["Mystery Cultist", "Sentinel"]);
+    expect(report.unsupportedRows.filter((row: { kind: string }) => row.kind === "missing-class-skills")).toEqual([]);
     expect(() => execFileSync(process.execPath, [importScript, "--check"], { cwd: repositoryRoot, stdio: "pipe" })).not.toThrow();
   });
 });

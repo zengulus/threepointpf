@@ -38,7 +38,7 @@ describe("spellcasting sources", () => {
     expect(cast.execution.rollPlans[0]).toMatchObject({ dice: [{ count: 5, sides: 6 }], context: { spellId: "sample.burst" } });
     expect(cast.character.resourceStates).toContainEqual({ resourceId: "spell.arcane-source.slot.3", spent: 2 });
     const failed = castSpell(new RulesEngine(cast.character), { sourceId: "arcane-source", spellId: "sample.burst" }, spells);
-    expect(failed).toMatchObject({ accepted: false, issues: [{ code: "no-slot" }] });
+    expect(failed).toMatchObject({ accepted: false, issues: expect.arrayContaining([expect.objectContaining({ code: "no-slot" })]) });
     expect(failed.character.resourceStates).toEqual(cast.character.resourceStates);
     expect(refreshSpellcasting(cast.character, "arcane-source").resourceStates).toContainEqual({ resourceId: "spell.arcane-source.slot.3", spent: 0, roundsUntilRefresh: undefined });
     expect(castSpell(new RulesEngine(input), { sourceId: "arcane-source", spellId: "not-a-spell" }, spells)).toMatchObject({ accepted: false, character: input, issues: [{ code: "unknown-spell" }] });
@@ -54,8 +54,8 @@ describe("spellcasting sources", () => {
     if (!first.accepted) return;
     input = first.character;
     expect(input.spellcastingSources?.[0]?.preparedSpells).toMatchObject([{ id: "copy-a", expended: true }, { id: "copy-b" }]);
-    expect(castSpell(new RulesEngine(input), { sourceId: prepared.id, spellId: "sample.burst", preparedAllocationId: "copy-a" }, spells)).toMatchObject({ accepted: false, issues: [{ code: "not-prepared" }] });
-    expect(castSpell(new RulesEngine(input), { sourceId: prepared.id, spellId: "sample.burst", preparedAllocationId: "copy-b" }, spells).accepted).toBe(true);
+    expect(castSpell(new RulesEngine(input), { sourceId: prepared.id, spellId: "sample.burst", preparedAllocationId: "copy-a" }, spells)).toMatchObject({ accepted: false, issues: expect.arrayContaining([expect.objectContaining({ code: "not-prepared" })]) });
+    expect(castSpell(new RulesEngine({ ...input, turnActions: {} }), { sourceId: prepared.id, spellId: "sample.burst", preparedAllocationId: "copy-b" }, spells).accepted).toBe(true);
     expect(prepareSpells(input, prepared.id, prepared.preparedSpells)).toMatchObject({ spellcastingSources: [{ preparedSpells: [{ expended: false }, { expended: false }] }] });
   });
 

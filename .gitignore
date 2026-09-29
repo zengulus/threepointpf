@@ -14,3 +14,7 @@ playwright-report/
 work/
 .sites-runtime/
 .wrangler/
+.next/
+public/campaign/
+stage/
+site*.tar.gz

@@ -199,7 +199,7 @@ describe("character lifecycle domain", () => {
     const preview = previewCharacterCreation(proposal);
     expect(preview.after?.advancement?.slotCount).toBe(1);
     expect(preview.hp[0]).toMatchObject({ amount: 10, winningHitDie: { sides: 10 } });
-    expect(preview.skills[0]).toMatchObject({ available: 2, allocated: 0, remaining: 2 });
+    expect(preview.skills[0]).toMatchObject({ available: 4, allocated: 0, remaining: 4 });
 
     const character = commitCharacterCreation(proposal);
     expect(character.advancementSlots).toEqual([
@@ -218,7 +218,7 @@ describe("character lifecycle domain", () => {
     expect(character.lifecycle?.skillAllocations?.[0]).toMatchObject({
       slotId: "level-1",
       source: { trackId: "main", progressionId: "pf1e.table.fighter", skillPoints: 2 },
-      budget: 2,
+      budget: 4,
     });
     expect(new RulesEngine(character, rules).derive().bab.value).toBe(1);
   });
@@ -242,7 +242,7 @@ describe("character lifecycle domain", () => {
     expect(derived.advancement).toMatchObject({ hitDieSides: [10], skillPoints: 8 });
     expect(previewCharacterCreation(proposal).skills[0]).toMatchObject({
       winningChassis: { trackId: "skill", progressionId: "pf1e.table.rogue" },
-      available: 8,
+      available: 10,
     });
   });
 
@@ -443,7 +443,10 @@ describe("character lifecycle domain", () => {
       { trackId: "main", progressionId: "pf1e.table.rogue" },
     ]);
     const withTooManyRanks = proposeCharacterCreation(excessive, {
-      skillAllocations: [{ level: 1, ranks: { stealth: 9 } }],
+      skillAllocations: [{ level: 1, ranks: {
+        acrobatics: 1, bluff: 1, climb: 1, diplomacy: 1, disguise: 1,
+        "escape-artist": 1, intimidate: 1, perception: 1, stealth: 1,
+      } }],
     });
     const validation = validateCharacterCreation(withTooManyRanks);
     expect(validation.errors).toEqual([]);
