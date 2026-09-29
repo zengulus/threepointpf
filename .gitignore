@@ -9,4 +9,5 @@ playwright-report/
 .env
 .env.*
 !.env.example
+work/
 .openai/hosting.json
