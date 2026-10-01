@@ -100,6 +100,8 @@ export { applyDamage, applyHealing, setTemporaryHp, clearTemporaryHp, mitigateDa
 export type { NoteDerivedDefenses } from "./health.js";
 export type { DamageMitigation } from "./health.js";
 export { deriveCharacterSystems, autosheetTalentRanks } from "./sheet-systems.js";
+export { isRollFreeManeuverBoost, resolveManeuverBoostActivation } from "./maneuver-boosts.js";
+export type { ManeuverBoostTransition } from "./maneuver-boosts.js";
 export type { DerivedCharacterSystem } from "./sheet-systems.js";
 export type { RulesRuntime, EquipmentEntry, ResultOptions } from "./runtime.js";
 export {

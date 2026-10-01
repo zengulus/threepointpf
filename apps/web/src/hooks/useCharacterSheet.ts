@@ -5,7 +5,7 @@ import {
   type ResolvedRoll,
   type RollPlan,
 } from "@threepointpf/dice";
-import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, deriveNoteDefenses, mitigateDamage, resolveTurnAction, setTemporaryHp, unchainedWoundPenalty } from "@threepointpf/rules-core";
+import { RulesEngine, applyDamage, applyHealing, clearTemporaryHp, deriveNoteDefenses, mitigateDamage, resolveManeuverBoostActivation, resolveTurnAction, setTemporaryHp, unchainedWoundPenalty } from "@threepointpf/rules-core";
 import {
   attackFromProfile,
   attackProfileCatalog,
@@ -593,6 +593,15 @@ export function useCharacterSheetController({
   const fail = (message: string) => {
     setError(message);
     setNotice("Change not applied");
+  };
+  const setManeuverBoostActive = (sourceId: string, entryId: string, active: boolean) => {
+    const current = characterRef.current;
+    const result = resolveManeuverBoostActivation(current, sourceId, entryId, active, rulesCatalogs);
+    if (result.error) {
+      fail(result.error);
+      return false;
+    }
+    return result.character === current || apply(result.character);
   };
   const notifyAuthenticationRequired = (failure: unknown) => {
     if (failure instanceof CharacterApiError && failure.code === "unauthenticated") onAuthenticationRequired?.();
@@ -1908,6 +1917,7 @@ export function useCharacterSheetController({
     rollWithoutTarget,
     dismissTargetPrompt,
     update,
+    setManeuverBoostActive,
     takeDamage,
     heal,
     grantTemporaryHp,
