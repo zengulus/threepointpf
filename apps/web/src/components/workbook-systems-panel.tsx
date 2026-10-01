@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { applicabilityOf, autosheetTalentRanks, deriveCharacterSystems, resolveTurnAction, sourceContribution, unchainedWoundPenalty, plainOutcomePolicy } from "@threepointpf/rules-core";
+import { applicabilityOf, autosheetTalentRanks, deriveCharacterSystems, isRollFreeManeuverBoost, resolveTurnAction, sourceContribution, unchainedWoundPenalty, plainOutcomePolicy } from "@threepointpf/rules-core";
 import { autosheetSphereCategoryCatalog, progressionCatalog } from "@threepointpf/rules-data";
 import { characterSystemKinds, veilChakras, type BonusType, type CharacterSystemKind, type CharacterSystemEntry, type CharacterSystemSource, type Effect, type EffectApplicability, type EffectTargetId, type RollPlan, type VeilChakra } from "@threepointpf/rules-schema";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
@@ -202,6 +202,7 @@ export function WorkbookSystemsPanel({ sheet }: { sheet: CharacterSheet }) {
   const useEntry = async (source: CharacterSystemSource, entry: CharacterSystemSource["entries"][number], current: ReturnType<typeof deriveCharacterSystems>[number]) => {
     if (sheet.mode === "hosted" && entry.roll)
       return sheet.fail("This system action needs an atomic server roll before it can be used in hosted play. No use or resource was spent.");
+    if (isRollFreeManeuverBoost(source, entry)) return sheet.setManeuverBoostActive(source.id, entry.id, true);
     const pendingDice = diceExpressions[entry.id];
     if (pendingDice && !/^\d+d\d+$/i.test(pendingDice.trim())) return sheet.fail(`Enter dice for ${entry.name} as 1d6 or 2d8.`);
     if (sheet.engine.actionRestrictions().includes("noPhysicalActions") && (source.kind === "maneuvers" || entry.roll?.kind === "weaponAttack" || entry.roll?.kind === "combatManeuver")) return sheet.fail("This condition prevents physical actions.");
@@ -283,7 +284,7 @@ export function WorkbookSystemsPanel({ sheet }: { sheet: CharacterSheet }) {
   const entryAction = (source: CharacterSystemSource, entry: CharacterSystemEntry, current: ReturnType<typeof deriveCharacterSystems>[number]) => {
     const isStance = source.kind === "maneuvers" && isStanceEntry(entry);
     if (isStance && !entry.roll) return null;
-    const disabled = Boolean(entry.expended && !entry.active) || source.kind === "maneuvers" && (isStance ? !entry.active : !entry.readied) || entry.usesPerDay !== undefined && (entry.usesSpent ?? 0) >= entry.usesPerDay;
+    const disabled = Boolean(entry.expended && !entry.active) || isRollFreeManeuverBoost(source, entry) && Boolean(entry.active || entry.expended || entry.known === false) || source.kind === "maneuvers" && (isStance ? !entry.active : !entry.readied) || entry.usesPerDay !== undefined && (entry.usesSpent ?? 0) >= entry.usesPerDay;
     const label = entry.roll?.kind === "combatManeuver" ? `Attempt ${entry.roll.maneuver} vs CMD`
       : entry.roll?.kind === "skillCheck" ? `Roll ${entry.roll.skillId}`
       : entry.roll?.kind === "weaponAttack" ? "Use attack"
@@ -348,7 +349,7 @@ export function WorkbookSystemsPanel({ sheet }: { sheet: CharacterSheet }) {
               <div className="system-entry-state">
                 <label className="system-entry-toggle"><input type="checkbox" checked={entry.known !== false} onChange={(event) => update(source.id, { entries: source.entries.map((item) => item.id === entry.id ? { ...item, known: event.target.checked, ...(event.target.checked ? {} : { active: false, roundsRemaining: undefined }) } : item) })} /> Known</label>
                 <label className="system-entry-toggle"><input type="checkbox" checked={entry.readied ?? false} onChange={(event) => update(source.id, { entries: source.entries.map((item) => item.id === entry.id ? { ...item, readied: event.target.checked } : item) })} /> Readied</label>
-                {(entry.effects?.length || isStance) && <label className="system-entry-toggle"><input type="checkbox" checked={entry.active ?? false} disabled={(entry.known === false && !entry.active) || (!isStance && source.kind === "maneuvers" && !entry.readied && !entry.active)} onChange={(event) => isStance ? setEntryActive(source, entry.id, event.target.checked) : update(source.id, { entries: source.entries.map((item) => item.id === entry.id ? { ...item, active: event.target.checked, ...(event.target.checked ? { expended: true } : { roundsRemaining: undefined }) } : item) })} />{isStance ? "Active stance" : "Active effect"}</label>}
+                {(entry.effects?.length || isStance) && <label className="system-entry-toggle"><input type="checkbox" checked={entry.active ?? false} disabled={(entry.known === false && !entry.active) || (!isStance && source.kind === "maneuvers" && !entry.readied && !entry.active) || (isRollFreeManeuverBoost(source, entry) && Boolean(entry.expended) && !entry.active)} onChange={(event) => isStance ? setEntryActive(source, entry.id, event.target.checked) : isRollFreeManeuverBoost(source, entry) ? sheet.setManeuverBoostActive(source.id, entry.id, event.target.checked) : update(source.id, { entries: source.entries.map((item) => item.id === entry.id ? { ...item, active: event.target.checked, ...(event.target.checked ? { expended: true } : { roundsRemaining: undefined }) } : item) })} />{isStance ? "Active stance" : "Active effect"}</label>}
               </div>
               <div className="system-entry-use">{entry.usesPerDay !== undefined && <span className="helper">{Math.max(0, entry.usesPerDay - (entry.usesSpent ?? 0))}/{entry.usesPerDay} uses left</span>}{entry.resourceCost ? <span className="helper">Cost {entry.resourceCost}</span> : null}{entryAction(source, entry, current)}{(entry.usesSpent ?? 0) > 0 && <button className="table-action" aria-label={`Restore one use of ${entry.name}`} onClick={() => restoreEntry(source, entry)}>Restore</button>}</div>
             </div>
