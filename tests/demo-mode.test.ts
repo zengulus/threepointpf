@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { InMemoryCharacterRepository, LocalStorageCharacterRepository } from "@threepointpf/shared";
 import { repositoryFor, sheetMode } from "../apps/web/src/lib/repository";
 import { sheetModeFor, sheetModeFromEnv } from "../apps/web/src/lib/sheet-mode";
+import { loadSelectedSampleId, sampleStorageKey } from "../apps/web/src/lib/sheet-session";
 import { levelOneFighter } from "../apps/web/src/lib/sample-characters";
 
 const originalStorage = (globalThis as { localStorage?: unknown }).localStorage;
@@ -38,4 +39,11 @@ describe("explicit browser and hosted modes", () => {
   it("hosted mode has an HTTP repository boundary", () => {
     expect(repositoryFor("hosted")).toHaveProperty("load");
   });
+});
+
+it("ignores a retired sample preference without mutating browser storage", () => {
+  const setItem = vi.fn();
+  const storage = { getItem: (key: string) => key === sampleStorageKey ? "charlie" : null, setItem };
+  expect(loadSelectedSampleId(storage)).toBe("level-1-fighter");
+  expect(setItem).not.toHaveBeenCalled();
 });

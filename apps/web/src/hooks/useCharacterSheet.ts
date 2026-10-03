@@ -177,49 +177,6 @@ function draftForCharacterId(characterId: string): CharacterInput {
   return { ...draft, id: characterId, name: "Unnamed character" };
 }
 
-/** Carry additive authored defaults from a sample into older saved copies. */
-function migrateSampleDefaults(saved: CharacterInput, sample: ReturnType<typeof sampleForCharacterId>): CharacterInput {
-  if (!sample) return saved;
-  let changed = false;
-  let inventory = saved.inventory;
-  let abilities = saved.abilities;
-  // Equipment!G5:G6 incorrectly contains the level-20 WBL amount. Charlie is
-  // level 3, so migrate that seeded value to the 3,000 gp level-3 amount.
-  if (sample.id === "charlie" && (inventory?.gold === 880000 || inventory?.startingGold === 880000)) {
-    inventory = { ...(inventory ?? {}), gold: sample.character.inventory?.gold ?? 3000 };
-    delete inventory.startingGold;
-    changed = true;
-  } else if (sample.id === "charlie" && inventory?.gold === 3000 && inventory.startingGold === 3000) {
-    // An earlier correction duplicated the same wealth as both purse and budget.
-    inventory = { ...inventory };
-    delete inventory.startingGold;
-    changed = true;
-  }
-  const savedAbilityIds = new Set((saved.abilities ?? []).map((ability) => ability.id));
-  const missingSampleAbilities = (sample.character.abilities ?? []).filter((ability) => !savedAbilityIds.has(ability.id));
-  if (missingSampleAbilities.length) {
-    abilities = [...(saved.abilities ?? []), ...clone(missingSampleAbilities)];
-    changed = true;
-  }
-  const systems = (saved.systems ?? []).map((system) => {
-    const authored = sample.character.systems?.find((item) => item.id === system.id);
-    // Charlie's old sample encoded the pool/capacity mix-up as a +2 pool
-    // adjustment. Remove that known fixture value when loading saved copies.
-    if (sample.id === "charlie" && system.id === "charlie-rajah-veilweaving" && system.resourceMaximumBonus === 2 && authored?.resourceMaximumBonus === undefined) {
-      const corrected = { ...system };
-      delete corrected.resourceMaximumBonus;
-      changed = true;
-      return corrected;
-    }
-    if (system.resourceMaximumBonus !== undefined || authored?.resourceMaximumBonus === undefined) return system;
-    changed = true;
-    return { ...system, resourceMaximumBonus: authored.resourceMaximumBonus };
-  });
-  return changed
-    ? { ...saved, ...(inventory !== saved.inventory ? { inventory } : {}), ...(abilities !== saved.abilities ? { abilities } : {}), systems }
-    : saved;
-}
-
 /**
  * The reusable sheet controller. Authored state, rules evaluation and roll
  * planning live here; chrome and the dice overlay are deliberately outside it.
@@ -460,10 +417,8 @@ export function useCharacterSheetController({
           throw new Error(
             "Saved character identity does not match the selected character",
           );
-        const migrationSample = sample ?? (saved.attacks?.some((attack) => attack.id === "izanamis-nodachi")
-          ? sampleCharacter("charlie")
-          : undefined);
-        const migrated = migrateSampleDefaults(saved, migrationSample);
+        // Saved characters are authoritative; retired samples never rewrite them.
+        const migrated = saved;
         new RulesEngine(migrated, rulesCatalogs).derive();
         characterRef.current = migrated;
         setCharacter(migrated);

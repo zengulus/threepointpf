@@ -17,6 +17,12 @@ const engineFor = (character = levelOneFighter) =>
   new RulesEngine(parseCharacterInput(character), rulesCatalogs);
 
 describe("the sample registry", () => {
+  it("keeps retired personal characters out of the sample registry", () => {
+    expect(sampleCharacters.map((sample) => sample.id)).toEqual(["level-1-fighter", "showcase"]);
+    expect(sampleForCharacterId("sample-charlie-runecarved-human")).toBeUndefined();
+    expect(() => sampleCharacter("charlie")).toThrow(/Unknown sample character/);
+  });
+
   it("opens on the level 1 fighter", () => {
     expect(defaultSampleId).toBe("level-1-fighter");
     expect(defaultSample().label).toBe("Level 1 fighter");
