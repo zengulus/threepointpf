@@ -3,21 +3,21 @@ import { isRollFreeManeuverBoost, resolveManeuverBoostActivation, RulesEngine } 
 import { rulesCatalogs } from "@threepointpf/rules-data";
 import { parseCharacterInput, type CharacterInput, type CharacterSystemEntry, type FeatureActionRestriction } from "@threepointpf/rules-schema";
 import { InMemoryCharacterRepository } from "@threepointpf/shared";
-import { charlieCharacter } from "../apps/web/src/lib/charlie-character";
+import { maneuverCharacter } from "./fixtures/maneuver-character";
 
-const sourceId = "charlie-stalker-maneuvers";
-const entryId = "charlie-maneuver-strength-hell";
+const sourceId = "test-maneuvers";
+const entryId = "test-boost";
 const sourceOf = (character: CharacterInput) => character.systems!.find((source) => source.id === sourceId)!;
 const boostOf = (character: CharacterInput) => sourceOf(character).entries.find((entry) => entry.id === entryId)!;
 function readyCharacter(patch: Partial<CharacterSystemEntry> = {}) {
-  const character = structuredClone(charlieCharacter);
+  const character = structuredClone(maneuverCharacter);
   Object.assign(boostOf(character), { readied: true }, patch);
   return character;
 }
 const transition = (character: CharacterInput, active = true) => resolveManeuverBoostActivation(character, sourceId, entryId, active, rulesCatalogs);
 
 describe("roll-free maneuver boost activation", () => {
-  it("activates the existing Strength of Hell effects and spends exactly one swift action and use", () => {
+  it("activates the existing Test boost effects and spends exactly one swift action and use", () => {
     const before = readyCharacter();
     const snapshot = structuredClone(before);
     const result = transition(before);
@@ -27,9 +27,9 @@ describe("roll-free maneuver boost activation", () => {
     expect(result.character.turnActions).toEqual({ swiftSpent: true });
     const beforeEngine = new RulesEngine(before, rulesCatalogs);
     const afterEngine = new RulesEngine(result.character, rulesCatalogs);
-    expect(afterEngine.createAttackRollPlan("izanamis-nodachi").modifier).toBe(beforeEngine.createAttackRollPlan("izanamis-nodachi").modifier + 2);
+    expect(afterEngine.createAttackRollPlan("test-blade").modifier).toBe(beforeEngine.createAttackRollPlan("test-blade").modifier + 2);
     expect(afterEngine.derive().ac.value).toBe(beforeEngine.derive().ac.value - 2);
-    expect(afterEngine.effects).toContainEqual(expect.objectContaining({ kind: "damageDice", target: "damage.melee", dice: { count: 1, sides: 6 }, label: "Strength of Hell" }));
+    expect(afterEngine.effects).toContainEqual(expect.objectContaining({ kind: "damageDice", target: "damage.melee", dice: { count: 1, sides: 6 }, label: "Test boost" }));
     expect(boostOf(result.character).effects).toEqual(boostOf(before).effects);
   });
 
@@ -113,7 +113,7 @@ describe("roll-free maneuver boost activation", () => {
     expect(attempted.error).toContain("expended");
     expect(attempted.character).toBe(newTurn);
     const afterEngine = new RulesEngine(ended, rulesCatalogs);
-    expect(afterEngine.effects.some((effect) => effect.kind === "damageDice" && effect.label === "Strength of Hell")).toBe(false);
+    expect(afterEngine.effects.some((effect) => effect.kind === "damageDice" && effect.label === "Test boost")).toBe(false);
   });
 
   it("allows deactivation even while actions are blocked", () => {
