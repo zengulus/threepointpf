@@ -10,7 +10,7 @@ test("creation skill options update budgets, confirm rank resets, and survive re
   await dialog.getByLabel("Six ability scores in order").fill("15 14 13 12 10 8");
   await dialog.getByRole("button", { name: "Apply scores" }).click();
   await dialog.getByRole("button", { name: "2. Progression" }).click();
-  await dialog.getByLabel("Class / progression progression").selectOption("pf1e.paizo.fighter");
+  await dialog.getByLabel("Class / progression progression", { exact: true }).selectOption("pf1e.paizo.fighter");
   const allocator = dialog.locator(".lifecycle-skill-allocation");
   await expect(allocator).toContainText("Available skill points: 5");
   await dialog.getByLabel("Creation skill variant").selectOption("classic");
