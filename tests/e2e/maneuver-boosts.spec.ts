@@ -1,15 +1,19 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openDemoSheet } from "./demo-account";
+import { maneuverCharacter } from "../fixtures/maneuver-character";
 
-const characterKey = "threepointpf.character.sample-charlie-runecarved-human";
-const boostId = "charlie-maneuver-strength-hell";
-const boostCard = (page: Page) => page.locator(".system-entry-card").filter({ has: page.locator(".system-entry-title b", { hasText: /^Strength of Hell$/ }) });
+const characterKey = "threepointpf.character.test-maneuver-character";
+const boostId = "test-boost";
+const boostCard = (page: Page) => page.locator(".system-entry-card").filter({ has: page.locator(".system-entry-title b", { hasText: /^Test boost$/ }) });
 async function tab(page: Page, name: string) {
   await page.getByRole("tab", { name, exact: true }).click();
 }
-async function openCharlie(page: Page) {
+async function openManeuverCharacter(page: Page) {
+  await page.addInitScript((character) => {
+    if (!localStorage.getItem(`threepointpf.character.${character.id}`)) localStorage.setItem(`threepointpf.character.${character.id}`, JSON.stringify(character));
+    localStorage.setItem("threepointpf.sheet.character", character.id);
+  }, maneuverCharacter);
   await openDemoSheet(page);
-  await page.getByTestId("sample-character").selectOption("charlie");
   await tab(page, "Spells");
   await expect(boostCard(page)).toBeVisible();
 }
@@ -21,7 +25,7 @@ async function saveState(page: Page) {
 
 for (const control of ["Use", "Active effect"] as const) {
   test(`${control} atomically activates a boost, persists it, and cannot bypass recovery`, async ({ page }) => {
-    await openCharlie(page);
+    await openManeuverCharacter(page);
     const card = boostCard(page);
     await expect(card.getByRole("button", { name: "Use", exact: true })).toBeDisabled();
     await expect(card.getByRole("checkbox", { name: "Active effect" })).toBeDisabled();
@@ -55,16 +59,16 @@ for (const control of ["Use", "Active effect"] as const) {
     await page.getByRole("button", { name: "Start new turn" }).click();
     await tab(page, "Spells");
     await expect(card.getByRole("checkbox", { name: "Active effect" })).toBeDisabled();
-    await card.getByRole("button", { name: "Restore one use of Strength of Hell" }).click();
+    await card.getByRole("button", { name: "Restore one use of Test boost" }).click();
     await card.getByRole("button", { name: "Use", exact: true }).click();
     await expect(card.getByRole("checkbox", { name: "Active effect" })).toBeChecked();
   });
 }
 
 test("a spent swift action blocks both boost controls and stance switching remains exclusive", async ({ page }) => {
-  await openCharlie(page);
-  const aura = page.locator(".system-entry-card").filter({ has: page.locator(".system-entry-title b", { hasText: /^Aura of Misfortune$/ }) });
-  const glare = page.locator(".system-entry-card").filter({ has: page.locator(".system-entry-title b", { hasText: /^Black Seraph's Glare$/ }) });
+  await openManeuverCharacter(page);
+  const aura = page.locator(".system-entry-card").filter({ has: page.locator(".system-entry-title b", { hasText: /^Test stance one$/ }) });
+  const glare = page.locator(".system-entry-card").filter({ has: page.locator(".system-entry-title b", { hasText: /^Test stance two$/ }) });
   await aura.getByRole("checkbox", { name: "Active stance" }).check();
   const card = boostCard(page);
   await card.getByRole("checkbox", { name: "Readied", exact: true }).check();
