@@ -10,8 +10,9 @@ export default defineConfig({
       "@threepointpf/shared": new URL("./packages/shared/src/index.ts", import.meta.url).pathname,
     },
   },
+  esbuild: { jsx: "automatic" },
   test: {
-    include: ["packages/**/*.test.ts", "tests/**/*.test.ts"],
+    include: ["packages/**/*.test.ts", "tests/**/*.test.{ts,tsx}", "apps/web/tests/**/*.test.{ts,tsx}"],
     environment: "node",
   },
 });
