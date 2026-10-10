@@ -100,7 +100,7 @@ export class FakeVector3 {
     );
   }
 
-  applyQuaternion(q: FakeQuaternion): this {
+  applyQuaternion(q: Pick<FakeQuaternion, "x" | "y" | "z" | "w">): this {
     const { x, y, z } = this;
     const tx = 2 * (q.y * z - q.z * y);
     const ty = 2 * (q.z * x - q.x * z);

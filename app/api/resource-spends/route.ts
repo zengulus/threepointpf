@@ -59,8 +59,8 @@ export async function POST(request: Request) {
   if (row.revision !== input.expectedRevision) return error("conflict", "This character changed. Reload before spending.", 409);
 
   let characterAfter: CharacterInput;
-  let plan;
-  let result;
+  let plan: ReturnType<typeof createRechargeRollPlan>;
+  let result: ReturnType<typeof resolveRollPlan>;
   try {
     const character = parseCharacterInput(JSON.parse(row.snapshot));
     const resource = character.resources?.find((item) => item.id === input.resourceId);

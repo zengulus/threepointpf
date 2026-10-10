@@ -45,6 +45,11 @@ expectStatus("hash replay rejected", hashReplay, 401);
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/simple-character.json", import.meta.url), "utf8"));
 const created = await call(`/api/characters/${fixture.id}`, { method: "PUT", cookie: dm.cookie, body: { character: fixture } });
 expectStatus("DM creates character", created, 200);
+for (const webhookUrl of [null, 42, {}, []]) {
+  expectStatus("malformed Discord URL rejected before setup", await call("/api/campaigns/demo-campaign/discord", {
+    method: "PUT", cookie: dm.cookie, body: { webhookUrl },
+  }), 400);
+}
 expectStatus("add A to campaign", await call("/api/campaigns/demo-campaign/members", { method: "PUT", cookie: dm.cookie, body: { accountId: playerA.data.account.id, role: "player" } }), 200);
 expectStatus("add B to campaign", await call("/api/campaigns/demo-campaign/members", { method: "PUT", cookie: dm.cookie, body: { accountId: playerB.data.account.id, role: "player" } }), 200);
 expectStatus("A cannot read before assignment", await call(`/api/characters/${fixture.id}`, { cookie: a.cookie }), 404);

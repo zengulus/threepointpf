@@ -34,7 +34,7 @@ import {
   type SceneTextureLike,
   type SurfaceMaterialFactoryLike,
 } from "../apps/web/src/lib/dice-look";
-import { asCanvas } from "./helpers/fake-three";
+import { asCanvas, fakeCanvas, type FakeCanvas2D } from "./helpers/fake-three";
 
 /**
  * The surface and the die colours are both written into objects the renderer
@@ -118,6 +118,10 @@ class FakeCanvasTexture implements SceneTextureLike {
   needsUpdate = true;
   wrapS = 0;
   wrapT = 0;
+  generateMipmaps = false;
+  minFilter = 0;
+  magFilter = 0;
+  anisotropy = 1;
   disposed = 0;
   repeat = {
     x: 1,
@@ -219,7 +223,7 @@ interface RecordingCanvas {
   getContext(): RecordingContext;
 }
 
-interface RecordingContext {
+interface RecordingContext extends FakeCanvas2D {
   globalAlpha: number;
   fillStyle: unknown;
   strokeStyle: unknown;
@@ -252,7 +256,8 @@ interface RecordingContext {
 }
 
 function recordingCanvas(): RecordingCanvas {
-  const context = {
+  const context: RecordingContext = {
+    ...fakeCanvas().context,
     globalAlpha: 1,
     fillStyle: null,
     strokeStyle: null,
@@ -294,7 +299,7 @@ function recordingCanvas(): RecordingCanvas {
     drawImage(image, dx, dy, width, height) {
       record(context, `image ${dx},${dy},${width},${height}`);
     },
-  } as unknown as RecordingContext;
+  };
   const canvas: RecordingCanvas = {
     width: 0,
     height: 0,
@@ -581,8 +586,10 @@ describe("surface textures own their repetition and lifetime", () => {
   it("reports a texture that cannot express a repeat instead of guessing", () => {
     expect(applyTextureRepeat(null, 4)).toBe(false);
     expect(applyTextureRepeat({}, 4)).toBe(false);
-    expect(applyTextureRepeat({ repeat: {} }, 4)).toBe(false);
-    expect(applyTextureRepeat({ repeat: {} }, 0)).toBe(false);
+    // Upstream JavaScript can hand us an invalid repeat shape. Cross that
+    // untyped runtime boundary deliberately to verify defensive rejection.
+    expect(Reflect.apply(applyTextureRepeat, undefined, [{ repeat: {} }, 4])).toBe(false);
+    expect(Reflect.apply(applyTextureRepeat, undefined, [{ repeat: {} }, 0])).toBe(false);
   });
 
   it("bakes the repetition into the canvas when the texture cannot repeat", () => {
@@ -617,6 +624,7 @@ describe("surface textures own their repetition and lifetime", () => {
   it("declines rather than faking a map when there is no canvas at all", () => {
     class NoRepeatTexture implements SceneTextureLike {
       canvas: unknown;
+      needsUpdate = false;
       constructor(canvas: unknown) {
         this.canvas = canvas;
       }
