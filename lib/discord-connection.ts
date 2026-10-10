@@ -6,7 +6,7 @@ function base64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
-function unbase64(value: string): Uint8Array {
+function unbase64(value: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
 
@@ -20,7 +20,7 @@ export function parseDiscordWebhook(value: unknown): { url: string; id: string }
 }
 
 async function aesKey(value: string): Promise<CryptoKey> {
-  let bytes: Uint8Array;
+  let bytes: Uint8Array<ArrayBuffer>;
   try { bytes = unbase64(value); } catch { throw new Error("Discord encryption key is unavailable."); }
   if (bytes.length !== 32) throw new Error("Discord encryption key is unavailable.");
   return crypto.subtle.importKey("raw", bytes, "AES-GCM", false, ["encrypt", "decrypt"]);

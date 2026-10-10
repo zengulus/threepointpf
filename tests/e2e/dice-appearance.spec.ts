@@ -672,7 +672,7 @@ async function sampleTableTexture(
       const found = { mean, residual: residual / samples, distance };
       if (!best || found.distance < best.distance) best = found;
     }
-    return best ?? { mean: [0, 0, 0], residual: 0, distance: 255 };
+    return best ?? { mean: [0, 0, 0] as [number, number, number], residual: 0, distance: 255 };
   }, tint);
   return {
     renderedResidual,

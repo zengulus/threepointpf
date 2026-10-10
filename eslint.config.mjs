@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated output and local QA/recovery copies are not source files.
+    "**/dist/**",
+    "work/**",
+    ".sites-runtime/**",
+    ".wrangler/**",
+    "public/campaign/**",
+    "apps/web/public/dice/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],

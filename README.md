@@ -39,20 +39,40 @@ A repository can have Pages enabled and still not publish this workflow: a branc
 
 ## Run and verify
 
+### Unit and component tests
+
+From the repository root, `pnpm test` (or `npm test` after installing with pnpm)
+runs the full Vitest suite once. The default configuration discovers both
+`.test.ts` and `.test.tsx` files in `packages/`, `tests/`, and `apps/web/tests/`, including all UI
+regressions. Use `pnpm test tests/resource-authoring-ui.test.tsx` for a focused
+check; no temporary Vitest configuration is needed.
+
+Tests use Node by default; component tests opt into jsdom with their file header.
+The UI renderer and React aliases deliberately resolve to the React 18 frontend
+in `apps/web`, rather than the hosting shell's React 19. Testing Library is
+declared in both locations so root test imports remain type-checkable and the
+frontend renderer's peer dependencies match. Discovery and React-runtime guard
+tests protect this setup. The standalone `.mjs` backend checks and Playwright
+browser tests remain separate from this unit/component command.
+
 ```bash
-corepack pnpm install
+corepack pnpm install:ci   # frozen pnpm workspace install, including dev tools
+corepack pnpm typecheck    # rebuilds workspace declarations, then checks the full tree
 corepack pnpm test
 corepack pnpm build
 corepack pnpm build:demo
-corepack pnpm --filter @threepointpf/web build:hosted # static hosted-mode frontend
 corepack pnpm check:demo      # serves the demo from /threepointpf/ and fetches its assets
 corepack pnpm rules:check-autosheet
 corepack pnpm exec playwright install chromium
-corepack pnpm test:e2e
+corepack pnpm test:e2e     # browser-mode suite, including local DM setup
+corepack pnpm --filter @threepointpf/web build:hosted
+corepack pnpm test:e2e:hosted # hosted API contract suite
 corepack pnpm dev
 ```
 
-CI runs installation, unit/integration tests, build, generated-data freshness, Deno checks, and Chromium smoke tests. Browser tests use the production build, so build first.
+The repository pins pnpm in `package.json`; use Corepack to honor that version. `install:ci` also supports `npm run install:ci`, which delegates to the pinned pnpm rather than running `npm ci` against `workspace:*` dependencies.
+
+CI runs installation, unit/integration tests, builds, generated-data freshness, and Chromium smoke tests. Browser tests use `apps/web/dist`: run `build:demo` before `test:e2e`, then `build:hosted` before `test:e2e:hosted`. The latter intercepts the same-origin Character API to verify the frontend contract; backend checks remain separate. The Playwright server uses the frontend’s installed Vite, so no global Vite is needed. By default Playwright uses its installed Chromium. If browser downloads are unavailable and Chromium is already installed locally, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its absolute executable path.
 
 ## Character lifecycle API
 

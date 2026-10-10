@@ -24,14 +24,14 @@ export async function PUT(request: Request, context: Context) {
   if (!id || id.length > 128) return error("validation", "Choose a campaign.", 400);
   if (!await mayManageCampaign(actor, id)) return error("not-found", "Campaign not found.", 404);
   const body = await readObject(request, 1500);
-  if (!body) return error("validation", "Enter a Discord webhook URL.", 400);
+  if (!body || typeof body.webhookUrl !== "string") return error("validation", "Enter a Discord webhook URL.", 400);
   const secret = env.DISCORD_WEBHOOK_ENCRYPTION_KEY;
   if (!secret) return error("server", "Discord setup is unavailable. Ask the site owner to configure it.", 503);
   let details: Awaited<ReturnType<typeof inspectDiscordWebhook>>;
   let encrypted: string;
   try {
     details = await inspectDiscordWebhook(body.webhookUrl);
-    encrypted = await encryptDiscordWebhook(body.webhookUrl as string, id, secret);
+    encrypted = await encryptDiscordWebhook(body.webhookUrl, id, secret);
   } catch (cause) {
     return error("validation", cause instanceof Error ? cause.message : "Could not verify this Discord webhook.", 400);
   }
