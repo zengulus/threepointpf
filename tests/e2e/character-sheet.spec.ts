@@ -381,7 +381,8 @@ test("expert ability authoring connects resources, composed damage, activation a
   await page.getByLabel("Resource name").fill("Breath Recharge");
   await page.getByLabel("Resource maximum", { exact: true }).fill("1");
   await page.getByLabel("Resource refresh rule").selectOption("rechargeRoll");
-  await page.getByLabel("Resource refresh rounds").fill("4");
+  await expect(page.getByLabel("Resource recharge dice count")).toHaveValue("1");
+  await page.getByLabel("Resource recharge die sides").fill("4");
   await page.getByRole("button", { name: "+ Add resource", exact: true }).click();
 
   await page.getByLabel("Ability name").fill("Titan Stance");
