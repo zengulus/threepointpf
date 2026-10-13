@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { CharacterInput, CharacterRecord } from "@threepointpf/rules-schema";
 import { featureCatalog } from "@threepointpf/rules-data";
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
@@ -5,6 +6,24 @@ import { Field } from "./primitives";
 
 export function TextBlock({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <label className="field character-record-field"><span>{label}</span><textarea rows={3} value={value} onChange={(event) => onChange(event.target.value)} /></label>;
+}
+
+function LineListBlock({ label, values, onChange }: { label: string; values: string[]; onChange: (values: string[]) => void }) {
+  const value = values.join("\n");
+  const [draft, setDraft] = useState<{ text: string; canonical: string } | null>(null);
+  // Keep in-progress spaces and blank lines visible without putting them in the
+  // character snapshot. A replacement value supersedes the local typing draft.
+  if (draft && draft.canonical !== value) setDraft(null);
+  return <label className="field character-record-field"><span>{label}</span><textarea rows={3}
+    value={draft?.canonical === value ? draft.text : value}
+    onChange={(event) => {
+      const text = event.target.value;
+      const next = text.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+      setDraft({ text, canonical: next.join("\n") });
+      onChange(next);
+    }}
+    onBlur={() => setDraft(null)}
+  /></label>;
 }
 
 const listFields = [
@@ -38,7 +57,7 @@ export function CharacterIdentityPanel({ sheet }: { sheet: CharacterSheet }) {
       {([["alignment", "Alignment"], ["race", "Race"], ["deity", "Deity"], ["age", "Age"], ["height", "Height"], ["weight", "Weight"], ["gender", "Gender"], ["homeland", "Homeland"]] as const).map(([key, label]) => <Field key={key} label={label} value={record[key] ?? ""} onChange={(value) => set({ [key]: value })} />)}
       <label className="field"><span>Age category</span><select aria-label="Age category" value={record.ageCategory ?? ""} onChange={(event) => selectAgeCategory(event.target.value)}><option value="">Not specified</option>{record.ageCategory && !ageDefinitions.some((definition) => definition.name.slice("Age: ".length).toLowerCase() === record.ageCategory?.toLowerCase()) && <option value={record.ageCategory}>{record.ageCategory} (custom)</option>}{ageDefinitions.map((definition) => <option key={definition.id} value={definition.name.slice("Age: ".length)}>{definition.name.slice("Age: ".length)}</option>)}</select><small>Age-category ability adjustments follow the Autosheet chart.</small></label>
     </div>
-    <div className="form-grid character-record-lists">{listFields.map(([key, label]) => <TextBlock key={key} label={label + " (one per line)"} value={(record[key] ?? []).join("\n")} onChange={(value) => set({ [key]: value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) })} />)}</div>
+    <div className="form-grid character-record-lists">{listFields.map(([key, label]) => <LineListBlock key={`${sheet.character.id}:${key}`} label={label + " (one per line)"} values={record[key] ?? []} onChange={(values) => set({ [key]: values })} />)}</div>
     <div className="workbook-rule-options">
       <label className="field"><span>Skill variant</span><select aria-label="Skill variant" value={skillMode} onChange={(event) => { const value = event.target.value as NonNullable<NonNullable<CharacterInput["workbookOptions"]>["skillMode"]>; sheet.update({ workbookOptions: { ...workbookOptions, skillMode: value, backgroundSkills: value === "background" || value === "ultimate-psionics-background" } }); }}><option value="background">Background Skills</option><option value="ultimate-psionics-background">Ultimate Psionics + Background Skills</option><option value="consolidated">Consolidated Skills</option><option value="classic">Classic Skills</option></select><small>Consolidated Skills uses the workbook’s 12 skill groups and its half-rank-per-level budget.</small></label>
       <label className="checkbox-field"><input type="checkbox" checked={workbookOptions.woundThresholds ?? false} onChange={(event) => sheet.update({ workbookOptions: { ...workbookOptions, woundThresholds: event.target.checked } })} /><span><strong>Unchained wound thresholds</strong><small>Apply −1/−2/−3 to AC, saves, attacks, skills, and caster levels below 75%/50%/25% HP.</small></span></label>
@@ -72,7 +91,7 @@ export function CharacterDefenseInputs({ sheet }: { sheet: CharacterSheet }) {
         }).filter((item): item is NonNullable<typeof item> => item !== null);
         sheet.update({ defenses: { ...defenses, damageReduction } });
       }} />
-      <TextBlock label="Energy immunities (one per line)" value={(defenses.energyImmunities ?? []).join("\n")} onChange={(value) => sheet.update({ defenses: { ...defenses, energyImmunities: value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean) } })} />
+      <LineListBlock key={sheet.character.id} label="Energy immunities (one per line)" values={defenses.energyImmunities ?? []} onChange={(values) => sheet.update({ defenses: { ...defenses, energyImmunities: values } })} />
     </div>
   </section>;
 }

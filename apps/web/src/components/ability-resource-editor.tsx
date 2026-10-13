@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useLayoutEffect, useRef, useState, type ChangeEvent } from "react";
 import { abilityCatalog, spellCatalog } from "@threepointpf/rules-data";
 import {
   cloneAbilityDefinition,
@@ -64,7 +64,7 @@ function resourceFacts(sheet: CharacterSheet): ResourceFacts {
   };
 }
 
-async function mutateResource(sheet: CharacterSheet, operation: "spend" | "restore" | "refresh", id: string, isCurrent: () => boolean = () => true) {
+async function mutateResource(sheet: CharacterSheet, operation: "spend" | "restore" | "refresh", id: string, isCurrent: () => boolean, reportStale: () => void) {
   try {
     const facts = resourceFacts(sheet);
     const definition = sheet.character.resources?.find((item) => item.id === id);
@@ -76,49 +76,63 @@ async function mutateResource(sheet: CharacterSheet, operation: "spend" | "resto
     if (operation === "spend" && definition?.refresh.kind === "rechargeRoll") {
       const rolled = await sheet.rollPlan(createRechargeRollPlan(sheet.character, definition));
       if (!rolled) return;
-      if (!isCurrent()) return;
+      if (!isCurrent()) { reportStale(); return; }
       rechargeTotal = rolled.total;
     }
     const character = operation === "spend"
-      ? spendResource(sheet.character, id, 1, facts, (_dice) => rechargeTotal!)
+      ? spendResource(sheet.character, id, 1, facts, () => rechargeTotal!)
       : operation === "restore"
         ? restoreResource(sheet.character, id, 1, facts)
         : refreshResource(sheet.character, id);
     sheet.update(character, `${operation} ${id}`);
   } catch (error) {
-    sheet.fail(error instanceof Error ? error.message : "Resource update failed");
+    if (isCurrent()) sheet.fail(error instanceof Error ? error.message : "Resource update failed");
   }
 }
 
-export function QuickResourceControls({ sheet, resourceId }: { sheet: CharacterSheet; resourceId: string }) {
+type ResourceControlProps = { sheet: CharacterSheet; resourceId: string; detailed?: boolean };
+
+export function QuickResourceControls(props: ResourceControlProps) {
+  return <ResourceControls key={JSON.stringify([props.sheet.character.id, props.resourceId])} {...props} />;
+}
+
+function ResourceControls({ sheet, resourceId, detailed = false }: ResourceControlProps) {
   const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const activeCharacterId = useRef(sheet.character.id);
-  useEffect(() => {
-    if (activeCharacterId.current === sheet.character.id) return;
-    activeCharacterId.current = sheet.character.id;
-    busyRef.current = false;
-    setBusy(false);
-  }, [sheet.character.id]);
+  const pending = useRef<object | null>(null);
+  const mounted = useRef(false);
+  const latest = useRef({ sheet, resourceId });
+  useLayoutEffect(() => { latest.current = { sheet, resourceId }; });
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; pending.current = null; };
+  }, []);
   const resource = sheet.derived.resources.find((item) => item.id === resourceId);
   if (!resource) return null;
   const recovering = sheet.mode === "hosted" && hasPendingHostedResourceSpend(sheet.character.id, resourceId);
-  const update = async (operation: "spend" | "restore") => {
-    if (busyRef.current) return;
-    busyRef.current = true;
+  const update = async (operation: "spend" | "restore" | "refresh") => {
+    if (pending.current) return;
+    const request = {};
+    pending.current = request;
     setBusy(true);
-    const characterId = sheet.character.id;
-    try { await mutateResource(sheet, operation, resourceId, () => activeCharacterId.current === characterId); }
-    finally {
-      if (activeCharacterId.current === characterId) {
-        busyRef.current = false;
+    const character = sheet.character;
+    const sameContext = () => mounted.current && pending.current === request && latest.current.resourceId === resourceId && latest.current.sheet.character.id === character.id;
+    const isCurrent = () => sameContext() && latest.current.sheet.character === character;
+    try {
+      await mutateResource(sheet, operation, resourceId, isCurrent, () => {
+        if (sameContext()) latest.current.sheet.fail("The character changed while recharge dice were rolling. No resource was spent. Try again with the current sheet.");
+      });
+    } finally {
+      if (mounted.current && pending.current === request) {
+        pending.current = null;
         setBusy(false);
       }
     }
   };
-  return <span className="summary-resource-controls" aria-label={`Adjust ${resource.name}`}>
-    <button type="button" aria-label={recovering ? `Recover previous ${resource.name} spend` : `Spend one ${resource.name}`} title={recovering ? `Recover the unconfirmed ${resource.name} spend` : `Spend one ${resource.name}`} disabled={busy || resource.remaining === 0 && !recovering} onClick={() => void update("spend")}>{recovering ? "↺" : "−1"}</button>
-    <button type="button" aria-label={`Restore one ${resource.name}`} title={`Restore one ${resource.name}`} disabled={busy || resource.spent <= 0} onClick={() => void update("restore")}>+1</button>
+  const buttonClass = detailed ? "table-action" : undefined;
+  return <span className={detailed ? "mini-fields" : "summary-resource-controls"} aria-label={`Adjust ${resource.name}`} aria-busy={busy}>
+    <button type="button" className={buttonClass} aria-label={recovering ? `Recover previous ${resource.name} spend` : detailed ? `Spend ${resource.name}` : `Spend one ${resource.name}`} title={recovering ? `Recover the unconfirmed ${resource.name} spend` : `Spend one ${resource.name}`} disabled={busy || resource.remaining === 0 && !recovering} onClick={() => void update("spend")}>{recovering ? "↺" : "−1"}</button>
+    <button type="button" className={buttonClass} aria-label={detailed ? `Restore ${resource.name}` : `Restore one ${resource.name}`} title={`Restore one ${resource.name}`} disabled={busy || resource.spent <= 0} onClick={() => void update("restore")}>+1</button>
+    {detailed && <button type="button" className={buttonClass} aria-label={`Refresh ${resource.name}`} disabled={busy} onClick={() => void update("refresh")}>Refresh</button>}
   </span>;
 }
 
@@ -140,6 +154,7 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
   const [derivedTerms, setDerivedTerms] = useState<ResourceMaximumTerm[]>([]);
   const [refreshKind, setRefreshKind] = useState<ResourceRefreshRule["kind"]>("daily");
   const [refreshValue, setRefreshValue] = useState("1");
+  const [refreshDiceCount, setRefreshDiceCount] = useState("1");
 
   const reset = () => {
     setEditingId(null);
@@ -150,6 +165,7 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
     setDerivedTerms([]);
     setRefreshKind("daily");
     setRefreshValue("1");
+    setRefreshDiceCount("1");
   };
   const edit = (resource: ResourceDefinition) => {
     if (authoringRef.current) authoringRef.current.open = true;
@@ -163,6 +179,7 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
     if (term?.kind === "abilityModifier") setDerivedAbility(term.ability);
     if (term?.kind === "abilityModifier") setDerivedAbilitySource(term.source ?? "current");
     setRefreshKind(resource.refresh.kind);
+    setRefreshDiceCount(String(resource.refresh.kind === "rechargeRoll" ? resource.refresh.dice.count : 1));
     setRefreshValue(String(resource.refresh.kind === "interval" ? resource.refresh.rounds : resource.refresh.kind === "rechargeRoll" ? resource.refresh.dice.sides : 1));
   };
   const save = () => {
@@ -173,6 +190,12 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
     }
     const id = editingId ?? nextId(`resource-${slug(name) || "custom"}`, (sheet.character.resources ?? []).map((item) => item.id));
     const interval = Math.max(1, Math.floor(Number(refreshValue) || 1));
+    const diceCount = Number(refreshDiceCount);
+    const diceSides = Number(refreshValue);
+    if (refreshKind === "rechargeRoll" && (!Number.isSafeInteger(diceCount) || diceCount < 1 || !Number.isSafeInteger(diceSides) || diceSides < 1)) {
+      sheet.fail("Recharge dice need a positive whole number of dice and sides.");
+      return;
+    }
     const resource: ResourceDefinition = {
       id,
       name: name.trim(),
@@ -189,7 +212,7 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
       refresh: refreshKind === "interval"
         ? { kind: "interval", rounds: interval }
         : refreshKind === "rechargeRoll"
-          ? { kind: "rechargeRoll", dice: { count: 1, sides: interval } }
+          ? { kind: "rechargeRoll", dice: { count: diceCount, sides: diceSides } }
           : { kind: refreshKind } as ResourceRefreshRule,
     };
     const resources = editingId
@@ -210,13 +233,13 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
       resourceStates: (sheet.character.resourceStates ?? []).filter((item) => item.resourceId !== resource.id),
     }, `Removed ${resource.name}`);
   };
-  const mutate = (operation: "spend" | "restore" | "refresh", id: string) => mutateResource(sheet, operation, id);
 
   return <section className="editor-subsection ability-resource-section" aria-label="Resources">
     <h3>Resources</h3>
     <p className="muted">Use or restore points during play. Open Manage when you need to change a resource.</p>
     {sheet.derived.resources.map((resource) => {
-      const definition = sheet.character.resources?.find((item) => item.id === resource.id)!;
+      const definition = sheet.character.resources?.find((item) => item.id === resource.id);
+      if (!definition) return null;
       return <div className="feature-row enabled" key={resource.id}>
         <div>
           <b>{resource.name}</b>
@@ -227,9 +250,7 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
           </small>
         </div>
         <div className="mini-fields">
-          <button className="table-action" aria-label={`Spend ${resource.name}`} onClick={() => void mutate("spend", resource.id)}>−1</button>
-          <button className="table-action" aria-label={`Restore ${resource.name}`} onClick={() => mutate("restore", resource.id)}>+1</button>
-          <button className="table-action" aria-label={`Refresh ${resource.name}`} onClick={() => mutate("refresh", resource.id)}>Refresh</button>
+          <QuickResourceControls sheet={sheet} resourceId={resource.id} detailed />
           <details className="feature-rules-notes"><summary>Manage</summary><button className="table-action" aria-label={`Edit resource ${resource.name}`} onClick={() => edit(definition)}>Edit</button><button className="table-action" aria-label={`Remove resource ${resource.name}`} onClick={() => remove(definition)}>Remove</button></details>
         </div>
       </div>;
@@ -248,9 +269,13 @@ function ResourceEditor({ sheet }: { sheet: CharacterSheet }) {
       </select>}
       {maximumKind === "derived" && <select aria-label="Resource maximum ability source" value={derivedAbilitySource} onChange={(event) => setDerivedAbilitySource(event.target.value as typeof derivedAbilitySource)}><option value="current">Current derived modifier</option><option value="base">Base ability modifier</option></select>}
       <select aria-label="Resource refresh rule" value={refreshKind} onChange={(event) => setRefreshKind(event.target.value as ResourceRefreshRule["kind"])}>
-        <option value="manual">Manual</option><option value="round">Per round</option><option value="encounter">Encounter</option><option value="rest">Rest</option><option value="daily">Daily</option><option value="interval">Fixed interval</option><option value="rechargeRoll">Recharge roll (1dN)</option><option value="unlimited">Unlimited / at-will</option>
+        <option value="manual">Manual</option><option value="round">Per round</option><option value="encounter">Encounter</option><option value="rest">Rest</option><option value="daily">Daily</option><option value="interval">Fixed interval</option><option value="rechargeRoll">Recharge roll</option><option value="unlimited">Unlimited / at-will</option>
       </select>
-      {(refreshKind === "interval" || refreshKind === "rechargeRoll") && <input aria-label="Resource refresh rounds" type="number" min="1" value={refreshValue} onChange={(event) => setRefreshValue(event.target.value)} />}
+      {refreshKind === "interval" && <input aria-label="Resource refresh rounds" type="number" min="1" step="1" value={refreshValue} onChange={(event) => setRefreshValue(event.target.value)} />}
+      {refreshKind === "rechargeRoll" && <>
+        <label>Number of dice<input aria-label="Resource recharge dice count" type="number" min="1" step="1" value={refreshDiceCount} onChange={(event) => setRefreshDiceCount(event.target.value)} /></label>
+        <label>Sides per die<input aria-label="Resource recharge die sides" type="number" min="1" step="1" value={refreshValue} onChange={(event) => setRefreshValue(event.target.value)} /></label>
+      </>}
       <button className="button quiet" onClick={save}>{editingId ? "Save resource" : "+ Add resource"}</button>
       {editingId && <button className="button quiet" onClick={reset}>Cancel edit</button>}
     </div>

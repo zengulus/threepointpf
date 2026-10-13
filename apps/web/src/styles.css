@@ -4752,3 +4752,5 @@ summary:focus-visible {
     padding: 6px 8px;
   }
 }
+
+.hosted-roll-history-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: .75rem; }

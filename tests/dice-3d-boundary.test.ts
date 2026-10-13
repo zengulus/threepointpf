@@ -1276,6 +1276,7 @@ describe("the values live in the renderer's scene, on the dice", () => {
 describe("the chosen skin reaches the renderer's own scene", () => {
   /** A stand-in shaped like the parts of upstream the look is applied through. */
   interface FakeUpstreamBox {
+    resize(): void;
     desk: { material: FakeMaterial; receiveShadow: boolean };
     light: { color: FakeColor; intensity: number };
     light_amb: { color: FakeColor; groundColor: FakeColor; intensity: number };

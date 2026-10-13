@@ -436,6 +436,7 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
       longsword!.definition,
       attackContext(engine(character), longsword!.definition, {
         kind: "damage",
+        actionKind: "standardAttack",
       }),
     );
     expect(oneHanded.modifier).toBe(9);
@@ -448,6 +449,7 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
       greatsword!.definition,
       attackContext(engine(character), greatsword!.definition, {
         kind: "damage",
+        actionKind: "standardAttack",
       }),
     );
     expect(
@@ -488,9 +490,9 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
     expect(greatsword(8, 0).modifier).toBe(-1);
     expect(greatsword(8, 1).modifier).toBe(0);
     expect(
-      greatsword(17, 0).provenance.modifier?.map((item) => item.label),
+      greatsword(17, 0).provenance?.modifier?.map((item) => item.label),
     ).toContain("STR damage (1.5×)");
-    expect(greatsword(8, 0).provenance.modifier?.map((item) => item.label)).toContain(
+    expect(greatsword(8, 0).provenance?.modifier?.map((item) => item.label)).toContain(
       "STR damage (1×)",
     );
   });
@@ -581,6 +583,7 @@ describe("contextual rolls: attack eligibility, touch and full attacks", () => {
       definition,
       attackContext(rules, definition, {
         kind: "attack",
+        actionKind: "standardAttack",
         excludeFlags: ["combat-expertise"],
       }),
     );

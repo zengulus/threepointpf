@@ -125,6 +125,17 @@ test("two spontaneous sources keep their own spell slots", async ({ page }) => {
 test("Summary and Combat use paired action plans for ordinary weapon play", async ({
   page,
 }) => {
+  // This case exercises ordinary damage. A random critical correctly replaces
+  // that control with critical damage, which has its own deterministic test.
+  await page.addInitScript(() => {
+    Object.defineProperty(window.crypto, "getRandomValues", {
+      configurable: true,
+      value: (values: Uint32Array) => {
+        values.fill(9); // 9 % 20 + 1 = 10: a non-critical attack roll.
+        return values;
+      },
+    });
+  });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await loadShowcase(page);

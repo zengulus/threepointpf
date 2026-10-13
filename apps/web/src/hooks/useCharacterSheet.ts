@@ -62,6 +62,7 @@ import {
   type DicePresentation,
 } from "./useDicePresentation";
 import { useDiscordRollSettings } from "./useDiscordRollSettings";
+import { useRecordedRollHistory } from "./useRecordedRollHistory";
 import { publishCompletedRoll } from "../lib/discord-roll-publishing";
 import { formatRollResultNotice } from "../lib/roll-result";
 import { hostedDeliveryNotice, recordHostedResourceSpend, recordHostedRoll } from "../lib/hosted-roll";
@@ -250,7 +251,8 @@ export function useCharacterSheetController({
     resolved: ResolvedRoll;
   } | null>(null);
   const [lastHostedRoll, setLastHostedRoll] = useState<HostedRollResponse | null>(null);
-  const [rollHistory, setRollHistory] = useState<HostedRollResponse[]>([]);
+  const recordedHistory = useRecordedRollHistory(mode, characterId);
+  const { rememberRoll: rememberRecordedRoll } = recordedHistory;
   const [criticalAttackResults, setCriticalAttackResults] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<{
     label: string;
@@ -369,7 +371,6 @@ export function useCharacterSheetController({
     setIsDirty(false);
     setLastRoll(null);
     setLastHostedRoll(null);
-    setRollHistory([]);
     setIntegrationNotice(null);
     setPendingTargetRoll(null);
     setPendingTargetValue("");
@@ -1031,7 +1032,7 @@ export function useCharacterSheetController({
       // asked to land the dice on them.
       setLastRoll({ plan: displayPlan, resolved: result });
       setLastHostedRoll(recorded);
-      if (recorded) setRollHistory((previous) => [recorded, ...previous.filter((item) => item.rollId !== recorded.rollId)].slice(0, 20));
+      if (recorded) rememberRecordedRoll(recorded);
       try { dice.present(displayPlan, result, { characterName: character.name }); }
       catch { /* The recorded result and delivery status remain visible without 3D dice. */ }
       if (plan.context.kind === "attack") {
@@ -1064,19 +1065,6 @@ export function useCharacterSheetController({
     }
   };
   useEffect(() => {
-    if (mode !== "hosted" || !characterId) return;
-    let active = true;
-    const refresh = () => {
-      fetch(`/api/rolls?characterId=${encodeURIComponent(characterId)}`, { credentials: "same-origin" })
-        .then(async (response) => response.ok ? response.json() as Promise<{ rolls: HostedRollResponse[] }> : null)
-        .then((body) => { if (active && body) setRollHistory(body.rolls); })
-        .catch(() => { /* History remains available on the next refresh. */ });
-    };
-    refresh();
-    const timer = globalThis.setInterval(refresh, 15_000);
-    return () => { active = false; globalThis.clearInterval(timer); };
-  }, [characterId, mode]);
-  useEffect(() => {
     if (mode !== "hosted" || !lastHostedRoll || !["pending", "sending", "retryable_failed"].includes(lastHostedRoll.delivery.state)) return;
     let active = true;
     const poll = async () => {
@@ -1086,13 +1074,13 @@ export function useCharacterSheetController({
         const recorded = await response.json() as HostedRollResponse;
         if (!active || recorded.rollId !== lastHostedRoll.rollId) return;
         setLastHostedRoll(recorded);
-        setRollHistory((previous) => previous.map((item) => item.rollId === recorded.rollId ? recorded : item));
+        rememberRecordedRoll(recorded);
         setIntegrationNotice(`${hostedDeliveryNotice(recorded.delivery)} Roll reference: ${recorded.rollId.slice(0, 8)}.`);
       } catch { /* The recorded roll remains available for the next status check. */ }
     };
     const timer = globalThis.setInterval(() => { void poll(); }, 5_000);
     return () => { active = false; globalThis.clearInterval(timer); };
-  }, [lastHostedRoll?.rollId, lastHostedRoll?.delivery.state, mode]);
+  }, [lastHostedRoll, mode, rememberRecordedRoll]);
   const retryHostedDelivery = async (target: HostedRollResponse | null = lastHostedRoll) => {
     if (!target) return;
     const unknown = target.delivery.state === "delivery_unknown";
@@ -1106,7 +1094,7 @@ export function useCharacterSheetController({
       const body = await response.json() as HostedRollResponse & { error?: { message?: string } };
       if (!response.ok) throw new Error(body.error?.message ?? "Discord delivery could not be retried.");
       if (lastHostedRoll?.rollId === body.rollId) setLastHostedRoll(body);
-      setRollHistory((previous) => previous.map((item) => item.rollId === body.rollId ? body : item));
+      rememberRecordedRoll(body);
       setIntegrationNotice(`${hostedDeliveryNotice(body.delivery)} Roll reference: ${body.rollId.slice(0, 8)}.`);
     } catch (failure) {
       setIntegrationNotice("Discord delivery: " + errorText(failure));
@@ -1594,7 +1582,7 @@ export function useCharacterSheetController({
     if (characterRef.current.id !== activeCharacterId || loadRevision.current !== loadGeneration) return true;
     setLastRoll({ plan: recorded.plan, resolved: recorded.result });
     setLastHostedRoll(recorded);
-    setRollHistory((previous) => [recorded, ...previous.filter((item) => item.rollId !== recorded.rollId)].slice(0, 20));
+    rememberRecordedRoll(recorded);
     try { dice.present(recorded.plan, recorded.result, { characterName: recorded.characterName }); }
     catch { /* The stored result remains visible without the dice renderer. */ }
     if (editRevision.current !== editGeneration || isDirtyRef.current) {
@@ -1890,7 +1878,7 @@ export function useCharacterSheetController({
     discord,
     lastRoll,
     lastHostedRoll,
-    rollHistory,
+    ...recordedHistory,
     retryHostedDelivery,
     rollPlan,
     spendRechargeResource,
