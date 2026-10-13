@@ -24,7 +24,10 @@ for (const viewport of [{ width: 1440, height: 960 }, { width: 390, height: 844 
     expect(contents).toContain("Includes unsaved sheet edits");
     expect(contents).toContain("Fortitude save: 1d20");
     expect(contents).toContain("WEAPON ROLLS");
-    await expect(page.getByText("Unsaved changes", { exact: true }).first()).toBeVisible();
+    // The compact toolbar intentionally hides .sheet-notice on mobile.
+    // Check the unchanged dirty state and its visible export-menu reminder.
+    await expect(page.locator(".sheet-notice")).toHaveText("Unsaved changes");
+    await expect(menu.getByText("Includes your unsaved edits. Downloading does not save them.", { exact: true })).toBeVisible();
     await summary.click(); await expect(downloadButton).toBeHidden();
     await summary.click(); await expect(downloadButton).toBeVisible();
     await page.screenshot({ path: `test-results/play-reference-${viewport.width}.png`, fullPage: false });
