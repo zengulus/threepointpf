@@ -10,23 +10,39 @@ import { processDiscordDelivery } from "../../../lib/discord-delivery";
 import { loadRollEvent, ROLL_RULES_VERSION, secureRollFaces, storedRollResponse, type RollEventRow } from "../../../lib/roll-events";
 
 const MAX_ROLLS_PER_MINUTE = 60;
+const ROLL_HISTORY_PAGE_SIZE = 20;
 
-/** Latest recorded results for one currently accessible character. */
+/** Recorded results for one currently accessible character, newest first. */
 export async function GET(request: Request) {
   const actor = await currentAccount(request);
   if (!actor) return sessionRequired();
-  const characterId = new URL(request.url).searchParams.get("characterId");
+  const searchParams = new URL(request.url).searchParams;
+  const characterId = searchParams.get("characterId");
   if (!characterId || characterId.length > 128) return error("validation", "Choose a character.", 400);
   if (!await mayReadCharacter(actor, characterId)) return error("not-found", "Character not found.", 404);
-  const rows = await getDb().prepare(`SELECT r.id, r.actor_id AS actorId, r.client_request_id AS clientRequestId,
+  const before = searchParams.get("before");
+  if (before !== null && (searchParams.getAll("before").length !== 1 || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(before)))
+    return error("validation", "Choose a valid roll history cursor.", 400);
+  const db = getDb();
+  const cursor = before === null ? null : await db.prepare(
+    "SELECT id, created_at_ms AS createdAtMs FROM roll_events WHERE character_id = ? AND id = ?",
+  ).bind(characterId, before).first<{ id: string; createdAtMs: number }>();
+  if (before !== null && !cursor) return error("validation", "Choose a valid roll history cursor.", 400);
+  const rows = await db.prepare(`SELECT r.id, r.actor_id AS actorId, r.client_request_id AS clientRequestId,
     r.request_hash AS requestHash, r.character_id AS characterId, r.character_name AS characterName,
     r.character_revision AS characterRevision, r.plan_json AS planJson, r.result_json AS resultJson,
     r.created_at AS createdAt, d.state, d.message_id AS messageId,
     d.next_attempt_at_ms AS nextAttemptAtMs, d.safe_error_code AS safeErrorCode
     FROM roll_events r JOIN discord_deliveries d ON d.roll_id = r.id
-    WHERE r.character_id = ? ORDER BY r.created_at_ms DESC, r.id DESC LIMIT 20`)
-    .bind(characterId).all<RollEventRow>();
-  return json({ rolls: rows.results.map(storedRollResponse) });
+    WHERE r.character_id = ?${cursor ? " AND (r.created_at_ms < ? OR (r.created_at_ms = ? AND r.id < ?))" : ""}
+    ORDER BY r.created_at_ms DESC, r.id DESC LIMIT ?`)
+    .bind(characterId, ...(cursor ? [cursor.createdAtMs, cursor.createdAtMs, cursor.id] : []), ROLL_HISTORY_PAGE_SIZE + 1)
+    .all<RollEventRow>();
+  const page = rows.results.slice(0, ROLL_HISTORY_PAGE_SIZE);
+  return json({
+    rolls: page.map(storedRollResponse),
+    nextCursor: rows.results.length > ROLL_HISTORY_PAGE_SIZE ? page[page.length - 1]!.id : null,
+  });
 }
 
 function scheduleDelivery(db: D1Database, rollId: string, state: string) {

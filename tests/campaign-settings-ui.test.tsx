@@ -279,3 +279,83 @@ it("ignores a stale member-list failure after navigating to another campaign", a
   expect(membersPanel().queryByRole("status")).toBeNull();
   expect(screen.getByTestId("assignment-players").textContent).toBe("beta: beta player");
 });
+
+it("does not describe an unread Discord connection as disconnected", async () => {
+  const initial = pendingResponse();
+  mockRequests((path) => path.endsWith("/alpha/discord") ? initial.promise : undefined);
+  await openDiscord();
+  expect(screen.getByRole("status").textContent).toBe("Loading Discord connection…");
+  expect(screen.queryByText("No Discord channel connected.")).toBeNull();
+  await settle(initial, { connection: connection("123") });
+  expect(screen.getByText("Connected to Discord channel 123.")).toBeTruthy();
+  expect(screen.queryByText("Loading Discord connection…")).toBeNull();
+});
+
+it("retries an unreadable connection without losing its webhook draft or claiming it is disconnected", async () => {
+  const retry = pendingResponse(); let reads = 0;
+  mockRequests((path) => path.endsWith("/alpha/discord") ? (++reads === 1 ? json({ error: { message: "Temporary outage" } }, 503) : retry.promise) : undefined);
+  await openDiscord();
+  await screen.findByText("Temporary outage");
+  expect(screen.queryByText("No Discord channel connected.")).toBeNull();
+  enterWebhook("https://discord.com/api/webhooks/123/new-draft");
+  fireEvent.click(screen.getByRole("button", { name: "Retry connection status" }));
+  expect(screen.queryByText("Temporary outage")).toBeNull();
+  expect(screen.getByRole("status").textContent).toBe("Loading Discord connection…");
+  expect(screen.queryByRole("button", { name: "Retry connection status" })).toBeNull();
+  expect(reads).toBe(2);
+  await settle(retry, { connection: null });
+  expect(screen.getByText("No Discord channel connected.")).toBeTruthy();
+  expect((screen.getByLabelText("Discord webhook URL") as HTMLInputElement).value).toBe("https://discord.com/api/webhooks/123/new-draft");
+});
+
+it.each([200, 503])("ignores an obsolete connection retry after switching campaigns (HTTP %s)", async (status) => {
+  const retry = pendingResponse(); let reads = 0;
+  mockRequests((path) => path.endsWith("/alpha/discord") ? (++reads === 1 ? json({ error: { message: "Temporary outage" } }, 503) : retry.promise) : undefined);
+  await openDiscord();
+  fireEvent.click(await screen.findByRole("button", { name: "Retry connection status" }));
+  selectDiscordCampaign("beta");
+  await screen.findByText("No Discord channel connected.");
+  await settle(retry, status === 200 ? { connection: connection("stale-channel") } : { error: { message: "Stale retry failed" } }, status);
+  expect(screen.getByText("No Discord channel connected.")).toBeTruthy();
+  expect(screen.queryByText(/stale-channel|Stale retry failed/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Retry connection status" })).toBeNull();
+});
+
+it.each([200, 503])("does not let an older connection retry overwrite a successful connect (HTTP %s)", async (status) => {
+  const retry = pendingResponse(); let reads = 0;
+  mockRequests((path, init) => {
+    if (!path.endsWith("/alpha/discord")) return;
+    if (init.method === "PUT") return json({ connection: connection("new-channel") });
+    return ++reads === 1 ? json({ error: { message: "Temporary outage" } }, 503) : retry.promise;
+  });
+  await openDiscord();
+  fireEvent.click(await screen.findByRole("button", { name: "Retry connection status" }));
+  enterWebhook(); submitWebhook();
+  await screen.findByText("Connected to Discord channel new-channel.");
+  await settle(retry, status === 200 ? { connection: null } : { error: { message: "Stale retry failed" } }, status);
+  expect(screen.getByText("Connected to Discord channel new-channel.")).toBeTruthy();
+  expect(screen.queryByText(/Stale retry failed|Loading Discord connection/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Retry connection status" })).toBeNull();
+});
+
+it("can retry again after a repeated connection failure", async () => {
+  let reads = 0;
+  mockRequests((path) => path.endsWith("/alpha/discord") ? (++reads < 3 ? json({ error: { message: "Temporary outage" } }, 503) : json({ connection: connection("recovered") })) : undefined);
+  await openDiscord();
+  fireEvent.click(await screen.findByRole("button", { name: "Retry connection status" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Retry connection status" }));
+  await screen.findByText("Connected to Discord channel recovered.");
+  expect(reads).toBe(3);
+  expect(screen.queryByText("Temporary outage")).toBeNull();
+});
+
+it("ignores a connection retry that finishes after the settings are closed", async () => {
+  const retry = pendingResponse(); let reads = 0;
+  mockRequests((path) => path.endsWith("/alpha/discord") ? (++reads === 1 ? json({ error: { message: "Temporary outage" } }, 503) : retry.promise) : undefined);
+  const view = await openDiscord();
+  fireEvent.click(await screen.findByRole("button", { name: "Retry connection status" }));
+  view.unmount();
+  await settle(retry, { error: { message: "Late failure" } }, 503);
+  expect(screen.queryByText("Late failure")).toBeNull();
+  expect(reads).toBe(2);
+});

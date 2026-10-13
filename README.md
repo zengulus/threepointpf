@@ -6,6 +6,8 @@ The account-backed campaign Site is [3.PF Character Sheet](https://threepointpf-
 
 The hosted application source, Worker routes, D1 migrations, tests, and build tools now live in this repository. The [player and Discord implementation plan](docs/PLAYER-DISCORD-IMPLEMENTATION-PLAN.md) records the deployed Site revision, completed work, security limits, and remaining acceptance gates. `.openai/hosting.json` identifies the existing Site; preserve its project ID and audience when publishing.
 
+For the latest Site-to-GitHub development transfer, see [VS Code handoff](docs/VSCODE-HANDOFF.md).
+
 For a fresh checkout, run `pnpm install --frozen-lockfile`, `pnpm test`, and `pnpm build`. The public GitHub Pages demo remains a separate browser-only build: `pnpm build:demo` followed by `pnpm check:demo`.
 
 A deterministic Pathfinder/3.PF web sheet with character-global advancement, N-track progression, inspectable calculations, custom content, and shared browser/Tabletop Simulator roll plans. Rules semantics — including the domain-only character lifecycle — live in `rules-core`; imported and authored content is injected by callers.
@@ -92,6 +94,8 @@ Commit returns ordinary authored character state usable by the current sheet and
 - Set abilities, size and five movement modes. Summary exposes current/max HP, lethal and nonlethal damage, temporary HP, and damage/healing/temp HP actions. Damage consumes temporary HP first and can leave current HP negative; healing reduces damage to zero and does not restore temporary HP. Nonlethal damage at current HP staggers the character; exceeding current HP causes unconsciousness and helpless AC, and linked attackers account for the target state. These runtime values persist with the character snapshot. Add catalog conditions, armor/shields/weapons, or structured custom effects/items. Inspect combat values, abilities, damage, movement, skills and class levels for their dependency/source trails.
 
 ### Character files
+
+**Play reference → Download play reference** downloads a plain-text snapshot of the current character's defenses, health, common rolls, individual weapon sequences, skills and resource counts. Formulas come from the same rules engine as the sheet, including active effects and unsaved edits. It performs no roll and does not save or upload the character. Re-export after changes: the file does not sync. Use the sheet for action availability, situational modifiers, multi-weapon actions, critical damage, spells and abilities. The text file is a manual-play aid; use the JSON export below for backups and re-importing.
 
 Export downloads a readable `*.threepointpf.json` envelope with format `threepointpf-character` and version `1`. It contains canonical `CharacterInput`, including character-local content, lifecycle provenance, resource usage, and runtime health; derived values are recomputed after import. Import parses the envelope, rejects unknown versions, validates the `CharacterInput`, normalizes progression references against injected and character-local catalogs, then derives the sheet before saving. When the imported ID already exists, the app asks whether to import a copy with a new outer character ID; local content IDs remain stable. Files are processed in the browser, with no upload service.
 

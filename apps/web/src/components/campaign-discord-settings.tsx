@@ -18,6 +18,8 @@ export function CampaignDiscordSettings() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignId, setCampaignId] = useState("");
   const [connection, setConnection] = useState<Connection | null>(null);
+  const [connectionState, setConnectionState] = useState<"loading" | "ready" | "error">("loading");
+  const [readAttempt, setReadAttempt] = useState(0);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,10 +48,10 @@ export function CampaignDiscordSettings() {
     const version = ++connectionRequestVersion.current;
     if (!campaignId) return () => { active = false; };
     void request<{ connection: Connection | null }>(`/api/campaigns/${encodeURIComponent(campaignId)}/discord`)
-      .then((result) => { if (active && version === connectionRequestVersion.current) setConnection(result.connection); })
-      .catch((cause: unknown) => { if (active && version === connectionRequestVersion.current) setNotice(cause instanceof Error ? cause.message : "Could not load Discord settings."); });
+      .then((result) => { if (active && version === connectionRequestVersion.current) { setConnection(result.connection); setConnectionState("ready"); } })
+      .catch((cause: unknown) => { if (active && version === connectionRequestVersion.current) { setConnectionState("error"); setNotice(cause instanceof Error ? cause.message : "Could not load Discord settings."); } });
     return () => { active = false; };
-  }, [campaignId]);
+  }, [campaignId, readAttempt]);
 
   function selectCampaign(id: string) {
     // A campaign change also abandons its draft and pending UI updates.
@@ -58,6 +60,7 @@ export function CampaignDiscordSettings() {
     busyRef.current = false;
     setBusy(false);
     setConnection(null);
+    setConnectionState("loading");
     setDraft("");
     setCampaignId(id);
     setNotice("");
@@ -88,6 +91,7 @@ export function CampaignDiscordSettings() {
       if (!isCurrent()) return;
       connectionRequestVersion.current += 1;
       setConnection(result.connection);
+      setConnectionState("ready");
       setDraft((current) => current === draft ? "" : current);
       setNotice("Discord channel connected. New server-recorded hosted rolls will be sent here.");
     } catch (cause) {
@@ -104,6 +108,7 @@ export function CampaignDiscordSettings() {
       if (!isCurrent()) return;
       connectionRequestVersion.current += 1;
       setConnection(null);
+      setConnectionState("ready");
       setNotice("Discord disconnected for this campaign.");
     } catch (cause) {
       if (isCurrent()) setNotice(cause instanceof Error ? cause.message : "Could not disconnect Discord.");
@@ -128,7 +133,14 @@ export function CampaignDiscordSettings() {
     <p className="account-copy">Connect one channel for the campaign. Players will not need the webhook URL. This setup verifies the channel without posting a message.</p>
     {campaigns.length === 0 ? <p className="account-copy">Create a campaign before connecting its Discord channel.</p> : <>
       <label className="field"><span>Campaign</span><select value={campaignId} onChange={(event) => selectCampaign(event.target.value)}>{campaigns.map((campaign) => <option value={campaign.id} key={campaign.id}>{campaign.id}</option>)}</select></label>
-      <p className="account-copy">{connection ? `Connected to Discord channel ${connection.channelId}.` : "No Discord channel connected."}</p>
+      {connectionState === "loading" ? <p className="account-copy" role="status">Loading Discord connection…</p> : connectionState === "error" ? <div>
+        <p className="account-copy">Discord connection status is unavailable.</p>
+        <button type="button" className="button quiet" disabled={busy} onClick={() => {
+          setNotice("");
+          setConnectionState("loading");
+          setReadAttempt((current) => current + 1);
+        }}>Retry connection status</button>
+      </div> : <p className="account-copy">{connection ? `Connected to Discord channel ${connection.channelId}.` : "No Discord channel connected."}</p>}
       <form className="account-form" onSubmit={(event) => void connect(event)}><label>Discord webhook URL<input type="password" autoComplete="off" value={draft} onChange={(event) => setDraft(event.target.value)} required placeholder="https://discord.com/api/webhooks/…" /></label><button className="button primary" disabled={busy}>{connection ? "Replace channel" : "Connect channel"}</button></form>
       {connection && <div><button type="button" className="button quiet" disabled={busy} onClick={() => void sendTest()}>Send test message</button><button type="button" className="button quiet" disabled={busy} onClick={() => void disconnect()}>Disconnect channel</button></div>}
     </>}

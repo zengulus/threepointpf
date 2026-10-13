@@ -92,3 +92,20 @@ failed save blocks that roll and leaves the draft visible. The server returns
 `409` when another device has advanced the revision. The hosted sheet has
 not yet switched to the server roll endpoint; see
 `PLAYER-DISCORD-IMPLEMENTATION-PLAN.md` and `hosted-roll-api.md`.
+
+## Recorded roll history
+
+`GET /api/rolls?characterId=<id>` requires a current session and read access to
+that character. It returns `{ rolls, nextCursor }`: at most 20 server-recorded
+results, newest first, and a roll ID cursor when older results remain. Request
+`GET /api/rolls?characterId=<id>&before=<nextCursor>` to load the next page.
+Ordering is stable by creation timestamp and roll ID, including rolls recorded
+in the same millisecond. A cursor must belong to the selected character; a
+missing, malformed, or different character's cursor receives a validation
+error. Each page rechecks current character access. Reading history never rolls
+dice, spends resources, or sends a Discord message.
+
+The hosted sheet's **Recorded rolls** panel loads older pages on demand, keeps
+expanded history during refresh, and shows loading, empty, and retry states.
+Delivery retries remain explicit and retain the existing duplicate-warning
+confirmation for unconfirmed sends. Browser-only sheets do not call this API.

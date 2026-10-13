@@ -1,3 +1,4 @@
+import { RecordedRollHistory } from "./recorded-roll-history";
 import { formatModifier } from "@threepointpf/dice";
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AdvancementEditor, AdvancementSummary } from "./advancement";
@@ -20,8 +21,8 @@ import {
 import type { CharacterSheet } from "../hooks/useCharacterSheet";
 import type { ThemePreferenceController } from "../hooks/useThemePreference";
 import { characterFilename, copyWithNewCharacterId, exportCharacterSnapshot } from "../lib/character-portability";
+import { PlayReferenceExport } from "./play-reference-export";
 import { LifecycleWizard } from "./lifecycle-wizard";
-import { hostedDeliveryNotice } from "../lib/hosted-roll";
 import { SpellcastingPanel } from "./spellcasting-panel";
 import { CharacterNotesPanel } from "./character-record";
 import { WorkbookSystemsPanel } from "./workbook-systems-panel";
@@ -257,6 +258,7 @@ export function CharacterSheetView({
           <input ref={importInput} type="file" accept="application/json,.json" hidden aria-label="Import a ThreepointPF character or library .json file" onChange={(event) => { void importFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
           <button type="button" title="Import one character or restore a roster from a ThreepointPF .json backup" onClick={() => importInput.current?.click()}>Import JSON</button>
           <button type="button" title={`Download ${character.name} as a ThreepointPF .json file`} onClick={exportCurrent}>Export .json</button>
+          <PlayReferenceExport key={character.id} engine={sheet.engine} isDirty={sheet.isDirty} evaluationError={sheet.evaluated.error} />
           <details className="character-library-tools"><summary>Roster backup</summary><div className="character-library-menu"><p>Import JSON above accepts a character file or a full roster backup.</p><button type="button" onClick={() => void exportLibrary()}>Export all characters</button></div></details>
         </ManagementContainer>
         <div className="top-actions">
@@ -295,19 +297,7 @@ export function CharacterSheetView({
           </button>
         </div>
       </header>
-      {sheet.mode === "hosted" && sheet.rollHistory.length > 0 && (
-        <details className="hosted-roll-history panel">
-          <summary>Recent recorded rolls ({sheet.rollHistory.length})</summary>
-          <ol>
-            {sheet.rollHistory.map((roll) => <li key={roll.rollId}>
-              <span><b>{roll.plan.label}</b> · {roll.result.total} · {new Date(roll.createdAt).toLocaleString()}</span>
-              <span>{hostedDeliveryNotice(roll.delivery)} Reference: {roll.rollId.slice(0, 8)}</span>
-              {(roll.delivery.state === "retryable_failed" || roll.delivery.state === "delivery_unknown") &&
-                <button type="button" className="button quiet" onClick={() => void sheet.retryHostedDelivery(roll)}>Retry sending</button>}
-            </li>)}
-          </ol>
-        </details>
-      )}
+      {sheet.mode === "hosted" && <RecordedRollHistory history={sheet} retryDelivery={sheet.retryHostedDelivery} />}
       {lifecycleMode && <LifecycleWizard mode={lifecycleMode} sheet={sheet} onClose={() => setLifecycleMode(null)} />}
       {pendingCharacterImport && <div className="character-import-conflict-backdrop"><section className="character-import-conflict" role="dialog" aria-modal="true" aria-labelledby={`${viewId}-import-conflict-title`}>
         <h2 id={`${viewId}-import-conflict-title`}>Character already exists</h2>
